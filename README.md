@@ -1,78 +1,83 @@
-# React + TypeScript + Vite
+# ModoFriki Web
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Interfaz de **ModoFriki**, una biblioteca de cómics, manhwas, mangas y novelas en
+español. Esta fase es exclusivamente frontend: usa datos de demostración y no se
+conecta al backend.
 
-Currently, two official plugins are available:
+## Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- React 19 + Vite 8 + TypeScript 6.
+- React Router v7.
+- Tailwind CSS v4.
+- Lucide React, Motion y Sonner.
+- Zod para validación de formularios.
+- Vitest + Testing Library.
 
-## React Compiler
+## Empezar
 
-The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
-
-Note: This will impact Vite dev & build performances.
-You can also try [the experimental native React Compiler support in plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md#rust-react-compiler) by using `compiler: true` in the plugin options instead of using the Babel plugin.
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```bash
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
+La aplicación queda disponible en `http://localhost:5173`.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Scripts
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+| Script | Descripción |
+| --- | --- |
+| `npm run dev` | Servidor de desarrollo. |
+| `npm run build` | Verificación de tipos y build de producción. |
+| `npm run preview` | Previsualiza el build. |
+| `npm run lint` | ESLint. |
+| `npm run format` | Formatea con Prettier. |
+| `npm run test` | Tests en modo watch. |
+| `npm run test:run` | Tests una sola vez. |
 
+## Rutas
+
+| Ruta | Pantalla |
+| --- | --- |
+| `/` | Home con destacados, novedades y rankings. |
+| `/series` | Catálogo con búsqueda y filtros. |
+| `/series/:slug` | Ficha de serie, capítulos y comentarios. |
+| `/read/:slug/:chapter` | Lector en cascada o paginado. |
+| `/genres` | Géneros y tags. |
+| `/rankings` | Obras mejor valoradas. |
+| `/favorites` | Biblioteca personal. |
+| `/profile` | Perfil, historial y preferencias. |
+| `/login` y `/register` | Autenticación de demostración. |
+
+## Cuenta demo
+
+- Correo: `alex@modofriki.dev`
+- Contraseña: `modofriki`
+
+La autenticación es local y solo sirve para demostrar los flujos de interfaz.
+
+## Estructura
+
+```txt
+src/
+  app/          # App, router y providers
+  components/   # ui, layout, home, catalog, detail, reader, auth...
+  context/      # Auth, Library y UI
+  hooks/        # hooks reutilizables
+  data/         # mocks tipados
+  types/        # contratos del dominio
+  lib/          # utilidades
+  styles/       # tokens y estilos globales
+  pages/        # pantallas de cada ruta
 ```
+
+## Personalización
+
+Los colores y tipografías viven en `src/styles/tokens.css`. El acento naranja se
+controla con `--color-accent`.
+
+## Alcance
+
+- Solo frontend.
+- Sin panel de administración.
+- Sin llamadas al backend ni base de datos.
+- Datos e imágenes de demostración.
