@@ -32,13 +32,13 @@ const columns = [
 
 export function Footer() {
   return (
-    <footer className="mt-20 border-t border-line bg-surface/40">
-      <div className="container-mf grid gap-10 py-12 sm:grid-cols-2 lg:grid-cols-[1.4fr_repeat(3,1fr)]">
+    <footer className="border-line bg-surface/40 mt-16 border-t sm:mt-20">
+      <div className="container-mf grid gap-8 py-10 sm:grid-cols-2 sm:gap-10 sm:py-12 lg:grid-cols-[1.4fr_repeat(3,1fr)]">
         <div>
           <Link to="/" className="font-display text-2xl font-bold tracking-tight">
             MODO<span className="text-accent">FRIKI</span>
           </Link>
-          <p className="mt-4 max-w-xs text-sm leading-relaxed text-secondary">
+          <p className="text-secondary mt-4 max-w-xs text-sm leading-relaxed">
             Cómics, manhwas y novelas en español. Una biblioteca hecha por frikis, para
             frikis.
           </p>
@@ -48,21 +48,21 @@ export function Footer() {
               target="_blank"
               rel="noreferrer"
               aria-label="GitHub de ModoFriki"
-              className="flex size-9 items-center justify-center rounded-lg border border-line text-secondary transition-colors hover:border-accent/40 hover:text-accent"
+              className="border-line text-secondary hover:border-accent/40 hover:text-accent flex size-10 items-center justify-center rounded-lg border transition-colors"
             >
               <Code2 className="size-4" />
             </a>
             <a
               href="#"
               aria-label="Comunidad"
-              className="flex size-9 items-center justify-center rounded-lg border border-line text-secondary transition-colors hover:border-accent/40 hover:text-accent"
+              className="border-line text-secondary hover:border-accent/40 hover:text-accent flex size-10 items-center justify-center rounded-lg border transition-colors"
             >
               <MessageCircle className="size-4" />
             </a>
             <a
               href="#"
               aria-label="Apoyar el proyecto"
-              className="flex size-9 items-center justify-center rounded-lg border border-line text-secondary transition-colors hover:border-accent/40 hover:text-accent"
+              className="border-line text-secondary hover:border-accent/40 hover:text-accent flex size-10 items-center justify-center rounded-lg border transition-colors"
             >
               <Heart className="size-4" />
             </a>
@@ -71,13 +71,13 @@ export function Footer() {
 
         {columns.map((column) => (
           <div key={column.title}>
-            <h3 className="mb-4 text-sm font-semibold text-primary">{column.title}</h3>
+            <h3 className="text-primary mb-4 text-sm font-semibold">{column.title}</h3>
             <ul className="space-y-2.5">
               {column.links.map((link) => (
                 <li key={link.label}>
                   <Link
                     to={link.to}
-                    className="text-sm text-secondary transition-colors hover:text-accent"
+                    className="text-secondary hover:text-accent text-sm transition-colors"
                   >
                     {link.label}
                   </Link>
@@ -88,11 +88,11 @@ export function Footer() {
         ))}
       </div>
 
-      <div className="border-t border-line">
-        <div className="container-mf flex flex-col items-center justify-between gap-3 py-5 text-xs text-muted sm:flex-row">
+      <div className="border-line border-t">
+        <div className="container-mf text-muted flex flex-col items-center justify-between gap-3 py-5 text-xs sm:flex-row">
           <p>© 2026 ModoFriki. Hecho con demasiado café y cómics.</p>
           <p className="flex items-center gap-1.5">
-            <Sparkles className="size-3.5 text-accent" />
+            <Sparkles className="text-accent size-3.5" />
             Proyecto académico. Solo frontend, datos de demostración.
           </p>
         </div>

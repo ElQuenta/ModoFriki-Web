@@ -7,12 +7,16 @@ export function AnnouncementBar() {
   if (announcementDismissed) return null
 
   return (
-    <div className="relative border-b border-accent/20 bg-gradient-to-r from-accent/15 via-accent/5 to-transparent">
-      <div className="container-mf flex items-center justify-center gap-2 py-2 text-center text-xs text-secondary sm:text-sm">
-        <Sparkles className="size-3.5 shrink-0 text-accent" />
+    <div className="border-accent/20 from-accent/15 via-accent/5 relative border-b bg-gradient-to-r to-transparent">
+      <div className="container-mf text-secondary flex items-center justify-center gap-2 py-2 pr-10 text-center text-xs sm:pr-12 sm:text-sm">
+        <Sparkles className="text-accent size-3.5 shrink-0" />
         <p>
-          Nueva temporada de <span className="font-semibold text-primary">Cazador de Sombras</span>.{' '}
-          <Link to="/series/cazador-de-sombras" className="font-semibold text-accent hover:underline">
+          Nueva temporada de{' '}
+          <span className="text-primary font-semibold">Cazador de Sombras</span>.{' '}
+          <Link
+            to="/series/cazador-de-sombras"
+            className="text-accent font-semibold hover:underline"
+          >
             Leer ahora
           </Link>
         </p>
@@ -20,7 +24,7 @@ export function AnnouncementBar() {
           type="button"
           onClick={dismissAnnouncement}
           aria-label="Cerrar anuncio"
-          className="absolute right-3 flex size-7 items-center justify-center rounded-md text-muted transition-colors hover:bg-raised hover:text-primary sm:right-6"
+          className="text-muted hover:bg-raised hover:text-primary absolute right-2 flex size-10 items-center justify-center rounded-lg transition-colors sm:right-5"
         >
           <X className="size-3.5" />
         </button>

@@ -9,14 +9,22 @@
   html {
     color-scheme: dark;
     scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
   }
 
   body {
-    @apply bg-base font-sans text-primary antialiased;
+    @apply bg-base text-primary font-sans antialiased;
+    min-height: 100dvh;
+    overflow-x: clip;
     background-image:
       radial-gradient(circle at 15% -10%, rgba(255, 122, 0, 0.08), transparent 32rem),
       radial-gradient(circle at 90% 0%, rgba(255, 122, 0, 0.04), transparent 28rem);
-    background-attachment: fixed;
+  }
+
+  @media (min-width: 768px) {
+    body {
+      background-attachment: fixed;
+    }
   }
 
   ::selection {
@@ -64,7 +72,7 @@
   }
 
   .surface-card {
-    @apply rounded-2xl border border-line bg-surface;
+    @apply border-line bg-surface rounded-2xl border;
   }
 
   .text-balance {

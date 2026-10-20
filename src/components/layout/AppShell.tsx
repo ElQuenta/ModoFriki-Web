@@ -31,7 +31,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-dvh flex-col">
       <AnnouncementBar />
       <Header />
       <main className="flex-1">

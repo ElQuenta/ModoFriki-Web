@@ -34,30 +34,37 @@ export function Header() {
         'sticky top-0 z-40 border-b transition-all duration-300',
         scrolled
           ? 'border-line bg-base/90 shadow-[0_10px_30px_rgba(0,0,0,0.35)] backdrop-blur-xl'
-          : 'border-transparent bg-base/70 backdrop-blur-md',
+          : 'bg-base/70 border-transparent backdrop-blur-md',
       )}
     >
-      <div className="container-mf flex h-16 items-center gap-3 sm:h-18">
+      <div className="container-mf flex h-16 items-center gap-2 sm:h-18 sm:gap-3">
         <button
           type="button"
           onClick={openMobileNav}
           aria-label="Abrir menú"
-          className="flex size-10 items-center justify-center rounded-xl text-secondary transition-colors hover:bg-raised hover:text-primary lg:hidden"
+          className="text-secondary hover:bg-raised hover:text-primary flex size-10 items-center justify-center rounded-xl transition-colors lg:hidden"
         >
           <Menu className="size-5" />
         </button>
 
-        <Link to="/" className="group flex items-center gap-2.5" aria-label="ModoFriki, inicio">
-          <span className="relative flex size-9 items-center justify-center rounded-xl border border-accent/30 bg-accent/10 font-display text-lg font-bold text-accent shadow-glow">
+        <Link
+          to="/"
+          className="group flex items-center gap-2.5"
+          aria-label="ModoFriki, inicio"
+        >
+          <span className="border-accent/30 bg-accent/10 font-display text-accent shadow-glow relative flex size-9 items-center justify-center rounded-xl border text-lg font-bold">
             M
-            <span className="absolute -top-0.5 -right-0.5 size-2 rounded-full bg-accent" />
+            <span className="bg-accent absolute -top-0.5 -right-0.5 size-2 rounded-full" />
           </span>
-          <span className="font-display text-lg font-bold tracking-tight sm:text-xl">
+          <span className="font-display hidden text-lg font-bold tracking-tight sm:inline sm:text-xl">
             MODO<span className="text-accent">FRIKI</span>
           </span>
         </Link>
 
-        <nav className="ml-6 hidden items-center gap-1 lg:flex" aria-label="Navegación principal">
+        <nav
+          className="ml-6 hidden items-center gap-1 lg:flex"
+          aria-label="Navegación principal"
+        >
           {NAV_LINKS.map((link) => (
             <NavLink
               key={link.to}
@@ -81,12 +88,12 @@ export function Header() {
           <button
             type="button"
             onClick={openCommand}
-            className="hidden h-10 items-center gap-2 rounded-xl border border-line bg-surface px-3 text-sm text-muted transition-colors hover:border-line-strong hover:text-secondary md:flex"
+            className="border-line bg-surface text-muted hover:border-line-strong hover:text-secondary hidden h-10 items-center gap-2 rounded-xl border px-3 text-sm transition-colors md:flex"
             aria-label="Buscar series"
           >
             <Search className="size-4" />
             <span className="w-24 text-left">Buscar...</span>
-            <kbd className="rounded border border-line-strong bg-raised px-1.5 py-0.5 text-[10px] font-semibold text-secondary">
+            <kbd className="border-line-strong bg-raised text-secondary rounded border px-1.5 py-0.5 text-[10px] font-semibold">
               Ctrl K
             </kbd>
           </button>
@@ -95,7 +102,7 @@ export function Header() {
             type="button"
             onClick={openCommand}
             aria-label="Buscar"
-            className="flex size-10 items-center justify-center rounded-xl text-secondary transition-colors hover:bg-raised hover:text-primary md:hidden"
+            className="text-secondary hover:bg-raised hover:text-primary flex size-10 items-center justify-center rounded-xl transition-colors md:hidden"
           >
             <Search className="size-5" />
           </button>
@@ -103,11 +110,11 @@ export function Header() {
           <Link
             to="/favorites"
             aria-label={`Favoritos (${favoriteCount})`}
-            className="relative flex size-10 items-center justify-center rounded-xl text-secondary transition-colors hover:bg-raised hover:text-accent"
+            className="text-secondary hover:bg-raised hover:text-accent relative flex size-10 items-center justify-center rounded-xl transition-colors"
           >
             <Heart className="size-5" />
             {favoriteCount > 0 ? (
-              <span className="absolute -top-0.5 -right-0.5 flex min-w-5 items-center justify-center rounded-full bg-accent px-1 text-[10px] font-bold text-base">
+              <span className="bg-accent absolute -top-0.5 -right-0.5 flex min-w-5 items-center justify-center rounded-full px-1 text-base text-[10px] font-bold">
                 {favoriteCount}
               </span>
             ) : null}
@@ -118,7 +125,7 @@ export function Header() {
               <button
                 type="button"
                 onClick={() => setMenuOpen((value) => !value)}
-                className="flex items-center gap-2 rounded-xl p-1 pr-2 transition-colors hover:bg-raised"
+                className="hover:bg-raised flex items-center gap-2 rounded-xl p-1 pr-2 transition-colors"
                 aria-haspopup="menu"
                 aria-expanded={menuOpen}
               >
@@ -128,7 +135,7 @@ export function Header() {
                 </span>
                 <ChevronDown
                   className={cn(
-                    'hidden size-4 text-muted transition-transform sm:block',
+                    'text-muted hidden size-4 transition-transform sm:block',
                     menuOpen && 'rotate-180',
                   )}
                 />
@@ -136,17 +143,17 @@ export function Header() {
               {menuOpen ? (
                 <div
                   role="menu"
-                  className="animate-fade-up absolute right-0 mt-2 w-56 overflow-hidden rounded-xl border border-line bg-surface p-1.5 shadow-card"
+                  className="animate-fade-up border-line bg-surface shadow-card absolute right-0 mt-2 w-56 overflow-hidden rounded-xl border p-1.5"
                 >
-                  <div className="border-b border-line px-3 py-2.5">
+                  <div className="border-line border-b px-3 py-2.5">
                     <p className="truncate text-sm font-semibold">{user.name}</p>
-                    <p className="truncate text-xs text-muted">{user.email}</p>
+                    <p className="text-muted truncate text-xs">{user.email}</p>
                   </div>
                   <Link
                     to="/profile"
                     onClick={() => setMenuOpen(false)}
                     role="menuitem"
-                    className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm text-secondary transition-colors hover:bg-raised hover:text-primary"
+                    className="text-secondary hover:bg-raised hover:text-primary flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm transition-colors"
                   >
                     <UserRound className="size-4" /> Mi perfil
                   </Link>
@@ -154,7 +161,7 @@ export function Header() {
                     to="/favorites"
                     onClick={() => setMenuOpen(false)}
                     role="menuitem"
-                    className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm text-secondary transition-colors hover:bg-raised hover:text-primary"
+                    className="text-secondary hover:bg-raised hover:text-primary flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm transition-colors"
                   >
                     <Library className="size-4" /> Mi biblioteca
                   </Link>
@@ -162,7 +169,7 @@ export function Header() {
                     to="/profile"
                     onClick={() => setMenuOpen(false)}
                     role="menuitem"
-                    className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm text-secondary transition-colors hover:bg-raised hover:text-primary"
+                    className="text-secondary hover:bg-raised hover:text-primary flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm transition-colors"
                   >
                     <Settings className="size-4" /> Preferencias
                   </Link>
@@ -173,7 +180,7 @@ export function Header() {
                       setMenuOpen(false)
                     }}
                     role="menuitem"
-                    className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm text-danger transition-colors hover:bg-danger/10"
+                    className="text-danger hover:bg-danger/10 flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm transition-colors"
                   >
                     <LogOut className="size-4" /> Cerrar sesión
                   </button>
@@ -181,9 +188,24 @@ export function Header() {
               ) : null}
             </div>
           ) : (
-            <Link to="/login" className={buttonStyles({ size: 'sm', className: 'hidden sm:inline-flex' })}>
-              Entrar
-            </Link>
+            <>
+              <Link
+                to="/login"
+                aria-label="Iniciar sesión"
+                className="text-secondary hover:bg-raised hover:text-primary flex size-10 items-center justify-center rounded-xl transition-colors sm:hidden"
+              >
+                <UserRound className="size-5" />
+              </Link>
+              <Link
+                to="/login"
+                className={buttonStyles({
+                  size: 'sm',
+                  className: 'hidden sm:inline-flex',
+                })}
+              >
+                Entrar
+              </Link>
+            </>
           )}
         </div>
       </div>

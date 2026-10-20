@@ -27,16 +27,20 @@ export function MobileNav() {
         className="absolute inset-0 bg-black/75 backdrop-blur-sm"
         onClick={closeMobileNav}
       />
-      <aside className="animate-fade-in absolute inset-y-0 left-0 flex w-[min(88vw,22rem)] flex-col border-r border-line bg-base p-5">
+      <aside className="animate-fade-in border-line bg-base absolute inset-y-0 left-0 flex w-[min(88vw,22rem)] flex-col border-r p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
         <div className="flex items-center justify-between">
-          <Link to="/" onClick={closeMobileNav} className="font-display text-xl font-bold">
+          <Link
+            to="/"
+            onClick={closeMobileNav}
+            className="font-display text-xl font-bold"
+          >
             MODO<span className="text-accent">FRIKI</span>
           </Link>
           <button
             type="button"
             onClick={closeMobileNav}
             aria-label="Cerrar menú"
-            className="flex size-10 items-center justify-center rounded-xl text-secondary hover:bg-raised hover:text-primary"
+            className="text-secondary hover:bg-raised hover:text-primary flex size-10 items-center justify-center rounded-xl"
           >
             <X className="size-5" />
           </button>
@@ -48,7 +52,7 @@ export function MobileNav() {
             closeMobileNav()
             openCommand()
           }}
-          className="mt-6 flex h-11 items-center gap-2 rounded-xl border border-line bg-surface px-3 text-sm text-muted"
+          className="border-line bg-surface text-muted mt-6 flex h-11 items-center gap-2 rounded-xl border px-3 text-sm"
         >
           <Search className="size-4" /> Buscar series, capítulos...
         </button>
@@ -90,23 +94,23 @@ export function MobileNav() {
           >
             <Heart className="size-5" />
             Favoritos
-            <span className="ml-auto rounded-full bg-accent/10 px-2 py-0.5 text-xs text-accent">
+            <span className="bg-accent/10 text-accent ml-auto rounded-full px-2 py-0.5 text-xs">
               {favoriteCount}
             </span>
           </NavLink>
         </nav>
 
-        <div className="mt-auto border-t border-line pt-5">
+        <div className="border-line mt-auto border-t pt-5">
           {user ? (
             <Link
               to="/profile"
               onClick={closeMobileNav}
-              className="flex items-center gap-3 rounded-xl p-2 transition-colors hover:bg-raised"
+              className="hover:bg-raised flex items-center gap-3 rounded-xl p-2 transition-colors"
             >
               <Avatar src={user.avatarUrl} alt={user.name} />
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold">{user.name}</p>
-                <p className="truncate text-xs text-muted">{user.role}</p>
+                <p className="text-muted truncate text-xs">{user.role}</p>
               </div>
             </Link>
           ) : (
