@@ -94,3 +94,17 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
 
   return payload?.data as T
 }
+
+/** Reintenta errores de red o 5xx (no los 4xx). Úsalo con operaciones idempotentes. */
+export async function withRetry<T>(run: () => Promise<T>, attempts = 3): Promise<T> {
+  for (let attempt = 1; ; attempt += 1) {
+    try {
+      return await run()
+    } catch (error) {
+      const retriable =
+        error instanceof ApiError && (error.status === 0 || error.status >= 500)
+      if (!retriable || attempt >= attempts) throw error
+      await new Promise((resolve) => setTimeout(resolve, 500 * attempt))
+    }
+  }
+}
