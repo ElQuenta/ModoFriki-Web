@@ -38,23 +38,30 @@ export function SeriesDetail({
   return (
     <div>
       <div className="relative">
-        <div className="absolute inset-0 h-[420px] overflow-hidden">
+        <div className="absolute inset-0 h-[320px] overflow-hidden sm:h-[420px]">
           <img
             src={series.bannerUrl}
             alt=""
             className="size-full object-cover object-center"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-base via-base/80 to-base/30" />
-          <div className="absolute inset-0 bg-gradient-to-r from-base/80 to-transparent" />
+          <div className="from-base via-base/80 to-base/30 absolute inset-0 bg-gradient-to-t" />
+          <div className="from-base/80 absolute inset-0 bg-gradient-to-r to-transparent" />
         </div>
 
-        <div className="container-mf relative pt-8 pb-10">
-          <nav className="mb-8 flex items-center gap-2 text-xs text-muted" aria-label="Migas de pan">
-            <Link to="/" className="hover:text-accent">Inicio</Link>
-            <span>/</span>
-            <Link to="/series" className="hover:text-accent">Catálogo</Link>
-            <span>/</span>
-            <span className="truncate text-secondary">{series.title}</span>
+        <div className="container-mf relative pt-6 pb-8 sm:pt-8 sm:pb-10">
+          <nav
+            className="text-muted mb-6 flex items-center gap-1.5 overflow-hidden text-[11px] sm:mb-8 sm:gap-2 sm:text-xs"
+            aria-label="Migas de pan"
+          >
+            <Link to="/" className="hover:text-accent shrink-0">
+              Inicio
+            </Link>
+            <span className="shrink-0">/</span>
+            <Link to="/series" className="hover:text-accent shrink-0">
+              Catálogo
+            </Link>
+            <span className="shrink-0">/</span>
+            <span className="text-secondary truncate">{series.title}</span>
           </nav>
 
           <div className="flex flex-col gap-6 sm:flex-row sm:items-end">
@@ -62,7 +69,7 @@ export function SeriesDetail({
               src={series.coverUrl}
               alt={`Portada de ${series.title}`}
               title={series.title}
-              className="h-64 w-44 shrink-0 rounded-2xl border border-line shadow-card sm:h-80 sm:w-56"
+              className="border-line shadow-card mx-auto h-60 w-40 shrink-0 rounded-2xl border sm:mx-0 sm:h-80 sm:w-56"
             />
             <div className="min-w-0 flex-1 pb-1">
               <div className="mb-3 flex flex-wrap gap-2">
@@ -75,15 +82,15 @@ export function SeriesDetail({
               <h1 className="font-display text-3xl leading-tight font-bold tracking-tight text-balance sm:text-5xl">
                 {series.title}
               </h1>
-              <p className="mt-2 text-sm text-secondary">
+              <p className="text-secondary mt-2 text-sm">
                 {series.alternativeTitles.join(' · ')}
               </p>
 
-              <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-secondary">
-                <span className="flex items-center gap-1.5 font-semibold text-warning">
+              <div className="text-secondary mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
+                <span className="text-warning flex items-center gap-1.5 font-semibold">
                   <Star className="size-4 fill-current" />
                   {formatRating(series.rating)}
-                  <span className="font-normal text-muted">
+                  <span className="text-muted font-normal">
                     ({formatViews(series.ratingCount)} votos)
                   </span>
                 </span>
@@ -98,13 +105,15 @@ export function SeriesDetail({
                 </span>
               </div>
 
-              <div className="mt-6 flex flex-wrap gap-3">
+              <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-3">
                 <Link
                   to={`/read/${series.slug}/${progress?.chapterNumber ?? 1}`}
-                  className={buttonStyles({ size: 'lg' })}
+                  className={buttonStyles({ size: 'lg', className: 'w-full sm:w-auto' })}
                 >
                   <Play className="size-5 fill-current" />
-                  {progress ? `Continuar cap. ${progress.chapterNumber}` : 'Empezar a leer'}
+                  {progress
+                    ? `Continuar cap. ${progress.chapterNumber}`
+                    : 'Empezar a leer'}
                 </Link>
                 <button
                   type="button"
@@ -112,7 +121,10 @@ export function SeriesDetail({
                   className={buttonStyles({
                     variant: 'secondary',
                     size: 'lg',
-                    className: cn(favorite && 'border-accent/40 text-accent'),
+                    className: cn(
+                      'w-full sm:w-auto',
+                      favorite && 'border-accent/40 text-accent',
+                    ),
                   })}
                 >
                   <Heart className={cn('size-5', favorite && 'fill-current')} />
@@ -121,7 +133,11 @@ export function SeriesDetail({
                 {latest ? (
                   <Link
                     to={`/read/${series.slug}/${latest.number}`}
-                    className={buttonStyles({ variant: 'ghost', size: 'lg' })}
+                    className={buttonStyles({
+                      variant: 'ghost',
+                      size: 'lg',
+                      className: 'w-full sm:w-auto',
+                    })}
                   >
                     Último capítulo
                   </Link>
@@ -136,13 +152,15 @@ export function SeriesDetail({
         <div className="min-w-0">
           <section className="surface-card p-5 sm:p-6">
             <h2 className="font-display text-xl font-bold">Sinopsis</h2>
-            <p className="mt-3 text-sm leading-relaxed text-secondary">{series.synopsis}</p>
+            <p className="text-secondary mt-3 text-sm leading-relaxed">
+              {series.synopsis}
+            </p>
             <div className="mt-5 flex flex-wrap gap-2">
               {series.genres.map((genre) => (
                 <Link
                   key={genre}
                   to={`/series?genre=${encodeURIComponent(genre)}`}
-                  className="rounded-full border border-line bg-raised px-3 py-1 text-xs text-secondary transition-colors hover:border-accent/40 hover:text-accent"
+                  className="border-line bg-raised text-secondary hover:border-accent/40 hover:text-accent rounded-full border px-3 py-1 text-xs transition-colors"
                 >
                   {genre}
                 </Link>
@@ -150,7 +168,7 @@ export function SeriesDetail({
               {series.tags.map((tag) => (
                 <span
                   key={tag}
-                  className="rounded-full border border-accent/20 bg-accent/5 px-3 py-1 text-xs text-accent/90"
+                  className="border-accent/20 bg-accent/5 text-accent/90 rounded-full border px-3 py-1 text-xs"
                 >
                   #{tag}
                 </span>
@@ -159,48 +177,49 @@ export function SeriesDetail({
           </section>
 
           <section className="mt-6">
-            <div className="mb-4 flex items-end justify-between">
+            <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <h2 className="font-display text-xl font-bold sm:text-2xl">Capítulos</h2>
-                <p className="mt-1 text-xs text-secondary">
+                <p className="text-secondary mt-1 text-xs">
                   {chapters.length} capítulos disponibles · orden descendente
                 </p>
               </div>
               {first ? (
                 <Link
                   to={`/read/${series.slug}/${first.number}`}
-                  className="text-xs font-semibold text-accent hover:underline"
+                  className="text-accent self-start text-xs font-semibold hover:underline sm:self-auto"
                 >
                   Leer desde el inicio
                 </Link>
               ) : null}
             </div>
 
-            <div className="overflow-hidden rounded-2xl border border-line bg-surface">
+            <div className="border-line bg-surface overflow-hidden rounded-2xl border">
               {visibleChapters.map((chapter, index) => (
                 <Link
                   key={chapter.id}
                   to={`/read/${series.slug}/${chapter.number}`}
                   className={cn(
-                    'group flex items-center gap-3 px-4 py-3 transition-colors hover:bg-raised sm:gap-4 sm:px-5',
-                    index !== visibleChapters.length - 1 && 'border-b border-line',
+                    'group hover:bg-raised flex items-center gap-3 px-4 py-3 transition-colors sm:gap-4 sm:px-5',
+                    index !== visibleChapters.length - 1 && 'border-line border-b',
                   )}
                 >
-                  <span className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-line bg-base font-display text-sm font-bold text-secondary transition-colors group-hover:border-accent/40 group-hover:text-accent">
+                  <span className="border-line bg-base font-display text-secondary group-hover:border-accent/40 group-hover:text-accent flex size-9 shrink-0 items-center justify-center rounded-lg border text-sm font-bold transition-colors">
                     {chapter.number}
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium transition-colors group-hover:text-accent">
+                    <p className="group-hover:text-accent truncate text-sm font-medium transition-colors">
                       {chapter.title}
                     </p>
-                    <p className="mt-0.5 text-[11px] text-muted">
-                      {formatDate(chapter.releaseDate)} · {formatViews(chapter.views)} vistas
+                    <p className="text-muted mt-0.5 text-[11px]">
+                      {formatDate(chapter.releaseDate)} · {formatViews(chapter.views)}{' '}
+                      vistas
                     </p>
                   </div>
-                  <span className="hidden text-[11px] text-muted sm:block">
+                  <span className="text-muted hidden text-[11px] sm:block">
                     {chapter.pages.length} páginas
                   </span>
-                  <Play className="size-4 shrink-0 text-muted transition-colors group-hover:text-accent" />
+                  <Play className="text-muted group-hover:text-accent size-4 shrink-0 transition-colors" />
                 </Link>
               ))}
             </div>
@@ -209,18 +228,18 @@ export function SeriesDetail({
               <button
                 type="button"
                 onClick={() => setShowAll((value) => !value)}
-                className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl border border-line bg-surface py-2.5 text-xs font-semibold text-secondary transition-colors hover:border-accent/40 hover:text-accent"
+                className="border-line bg-surface text-secondary hover:border-accent/40 hover:text-accent mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl border py-2.5 text-xs font-semibold transition-colors"
               >
                 {showAll ? 'Mostrar menos' : `Ver los ${chapters.length} capítulos`}
-                <ChevronDown className={cn('size-4 transition-transform', showAll && 'rotate-180')} />
+                <ChevronDown
+                  className={cn('size-4 transition-transform', showAll && 'rotate-180')}
+                />
               </button>
             ) : null}
           </section>
-
-          <CommentSection seriesId={series.id} />
         </div>
 
-        <aside className="space-y-4">
+        <aside className="order-2 space-y-4 lg:order-none lg:col-start-2 lg:row-span-2 lg:row-start-1">
           <div className="surface-card p-5">
             <h2 className="font-display text-base font-bold">Ficha técnica</h2>
             <dl className="mt-4 space-y-3 text-sm">
@@ -252,10 +271,10 @@ export function SeriesDetail({
           </div>
 
           <div className="surface-card p-5">
-            <h2 className="flex items-center gap-2 font-display text-base font-bold">
-              <Users className="size-4 text-accent" /> Comunidad
+            <h2 className="font-display flex items-center gap-2 text-base font-bold">
+              <Users className="text-accent size-4" /> Comunidad
             </h2>
-            <p className="mt-2 text-xs leading-relaxed text-secondary">
+            <p className="text-secondary mt-2 text-xs leading-relaxed">
               Únete a la conversación, comparte teorías y descubre nuevas lecturas con
               otros frikis.
             </p>
@@ -264,6 +283,10 @@ export function SeriesDetail({
             </Link>
           </div>
         </aside>
+
+        <div className="order-3 min-w-0 lg:order-none lg:col-start-1 lg:row-start-2">
+          <CommentSection seriesId={series.id} />
+        </div>
       </div>
     </div>
   )

@@ -39,15 +39,15 @@ export function CommentSection({ seriesId }: { seriesId: string }) {
   return (
     <section className="mt-8">
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="flex items-center gap-2 font-display text-xl font-bold">
-          <MessageCircle className="size-5 text-accent" />
+        <h2 className="font-display flex items-center gap-2 text-xl font-bold">
+          <MessageCircle className="text-accent size-5" />
           Comentarios
-          <span className="text-sm font-normal text-muted">({comments.length})</span>
+          <span className="text-muted text-sm font-normal">({comments.length})</span>
         </h2>
       </div>
 
-      <div className="surface-card p-4">
-        <div className="flex gap-3">
+      <div className="surface-card p-3 sm:p-4">
+        <div className="flex gap-2.5 sm:gap-3">
           <Avatar
             src={user?.avatarUrl ?? ''}
             alt={user?.name ?? 'Lector'}
@@ -60,11 +60,18 @@ export function CommentSection({ seriesId }: { seriesId: string }) {
               onChange={(event) => setText(event.target.value)}
               placeholder="Comparte tu teoría, sin spoilers..."
               rows={3}
-              className="w-full resize-none rounded-xl border border-line bg-base px-3 py-2.5 text-sm text-primary outline-none transition-colors placeholder:text-muted focus:border-accent/60"
+              className="border-line bg-base text-primary placeholder:text-muted focus:border-accent/60 w-full resize-none rounded-xl border px-3 py-2.5 text-sm transition-colors outline-none"
             />
-            <div className="mt-2 flex items-center justify-between">
-              <p className="text-[11px] text-muted">Sé respetuoso. Los spoilers van marcados.</p>
-              <Button size="sm" onClick={submit} disabled={!text.trim()}>
+            <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-muted text-[11px]">
+                Sé respetuoso. Los spoilers van marcados.
+              </p>
+              <Button
+                size="sm"
+                onClick={submit}
+                disabled={!text.trim()}
+                className="w-full sm:w-auto"
+              >
                 <Send className="size-3.5" /> Publicar
               </Button>
             </div>
@@ -76,17 +83,17 @@ export function CommentSection({ seriesId }: { seriesId: string }) {
         {comments.map((comment) => {
           const isLiked = liked[comment.id]
           return (
-            <article key={comment.id} className="surface-card p-4">
-              <div className="flex gap-3">
+            <article key={comment.id} className="surface-card p-3 sm:p-4">
+              <div className="flex gap-2.5 sm:gap-3">
                 <Avatar src={comment.userAvatar} alt={comment.userName} size="sm" />
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="text-sm font-semibold">{comment.userName}</p>
-                    <span className="text-[11px] text-muted">
+                    <span className="text-muted text-[11px]">
                       {formatRelativeDate(comment.createdAt)}
                     </span>
                     {comment.chapterNumber ? (
-                      <span className="rounded bg-raised px-1.5 py-0.5 text-[10px] text-muted">
+                      <span className="bg-raised text-muted rounded px-1.5 py-0.5 text-[10px]">
                         Cap. {comment.chapterNumber}
                       </span>
                     ) : null}
@@ -98,13 +105,13 @@ export function CommentSection({ seriesId }: { seriesId: string }) {
                       onClick={() =>
                         setRevealed((current) => ({ ...current, [comment.id]: true }))
                       }
-                      className="mt-2 flex w-full items-center gap-2 rounded-lg border border-warning/20 bg-warning/5 px-3 py-2 text-left text-xs text-warning"
+                      className="border-warning/20 bg-warning/5 text-warning mt-2 flex w-full items-center gap-2 rounded-lg border px-3 py-2 text-left text-xs"
                     >
                       <TriangleAlert className="size-3.5" />
                       Este comentario contiene spoilers. Toca para revelar.
                     </button>
                   ) : (
-                    <p className="mt-2 text-sm leading-relaxed text-secondary">
+                    <p className="text-secondary mt-2 text-sm leading-relaxed">
                       {comment.content}
                     </p>
                   )}
@@ -126,7 +133,7 @@ export function CommentSection({ seriesId }: { seriesId: string }) {
                       <Heart className={cn('size-3.5', isLiked && 'fill-current')} />
                       {comment.likes + (isLiked ? 1 : 0)}
                     </button>
-                    <span className="text-[11px] text-muted">
+                    <span className="text-muted text-[11px]">
                       {comment.replies.length} respuesta
                       {comment.replies.length === 1 ? '' : 's'}
                     </span>
@@ -135,17 +142,17 @@ export function CommentSection({ seriesId }: { seriesId: string }) {
                   {comment.replies.map((reply) => (
                     <div
                       key={reply.id}
-                      className="mt-3 flex gap-2.5 rounded-xl border border-line bg-base/50 p-3"
+                      className="border-line bg-base/50 mt-3 flex gap-2 rounded-xl border p-2.5 sm:gap-2.5 sm:p-3"
                     >
                       <Avatar src={reply.userAvatar} alt={reply.userName} size="sm" />
-                      <div>
+                      <div className="min-w-0">
                         <p className="text-xs font-semibold">
                           {reply.userName}{' '}
-                          <span className="ml-1 font-normal text-muted">
+                          <span className="text-muted ml-1 font-normal">
                             {formatRelativeDate(reply.createdAt)}
                           </span>
                         </p>
-                        <p className="mt-1 text-xs leading-relaxed text-secondary">
+                        <p className="text-secondary mt-1 text-xs leading-relaxed">
                           {reply.content}
                         </p>
                       </div>
