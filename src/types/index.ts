@@ -1,6 +1,12 @@
-export type SeriesType = 'Manhwa' | 'Manga' | 'Manhua' | 'Novela'
+export type SeriesType = string
 
-export type SeriesStatus = 'En emisión' | 'Finalizado' | 'En pausa'
+export type SeriesStatus = 'En emisión' | 'Finalizado' | 'En pausa' | 'Cancelado'
+
+export type ReleaseStatus = 'ONGOING' | 'COMPLETED' | 'HIATUS' | 'CANCELLED'
+
+export type PublicationStatus = 'DRAFT' | 'PUBLISHED'
+
+export type ChapterKind = 'NORMAL' | 'EXTRA' | 'ANNOUNCEMENT'
 
 export type ReadingMode = 'cascade' | 'paginated'
 
@@ -19,11 +25,21 @@ export interface ChapterPage {
 export interface Chapter {
   id: string
   seriesId: string
-  number: number
+  /** Decimal serializado por el backend ("12.5"). */
+  number: string
   title: string
+  kind?: ChapterKind
+  status?: PublicationStatus
+  version?: number
   releaseDate: string
-  views: number
+  views?: number
   pages: ChapterPage[]
+}
+
+export interface Taxonomy {
+  id: string
+  name: string
+  slug: string
 }
 
 export interface Series {
@@ -34,20 +50,29 @@ export interface Series {
   coverUrl: string
   bannerUrl: string
   type: SeriesType
-  status: SeriesStatus
-  rating: number
-  ratingCount: number
-  views: number
+  typeId?: string
+  status?: SeriesStatus
+  releaseStatus?: ReleaseStatus
+  publicationStatus?: PublicationStatus
+  rating?: number
+  ratingCount?: number
+  views?: number
   synopsis: string
-  author: string
-  artist: string
-  scanlationGroup: string
   genres: string[]
-  tags: string[]
-  isFeatured: boolean
-  totalChapters: number
-  updatedAt: string
-  accent: string
+  genreItems?: Taxonomy[]
+  updatedAt?: string
+  totalChapters?: number
+  isFeatured?: boolean
+  accent?: string
+  author?: string
+  artist?: string
+  scanlationGroup?: string
+  tags?: string[]
+}
+
+export interface LatestChapterItem {
+  chapter: Chapter
+  series: Series
 }
 
 export interface CommentReply {
@@ -100,7 +125,7 @@ export interface FavoriteItem {
 export interface ReadingProgress {
   seriesId: string
   chapterId: string
-  chapterNumber: number
+  chapterNumber: string
   page: number
   totalPages: number
   percentage: number
@@ -113,4 +138,4 @@ export interface ReaderSettings {
   zoom: number
 }
 
-export type SortOption = 'recent' | 'rating' | 'views' | 'title'
+export type SortOption = 'recent' | 'views'
