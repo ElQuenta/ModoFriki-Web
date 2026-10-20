@@ -15,7 +15,7 @@ const SEED_PROGRESS: Record<string, ReadingProgress> = {
   s1: {
     seriesId: 's1',
     chapterId: 'cazador-de-sombras-cap-5',
-    chapterNumber: 5,
+    chapterNumber: '5',
     page: 3,
     totalPages: 5,
     percentage: 60,
@@ -24,7 +24,7 @@ const SEED_PROGRESS: Record<string, ReadingProgress> = {
   s12: {
     seriesId: 's12',
     chapterId: 'codigo-rojo-cap-2',
-    chapterNumber: 2,
+    chapterNumber: '2',
     page: 2,
     totalPages: 5,
     percentage: 40,
@@ -44,7 +44,7 @@ interface LibraryContextValue {
   updateProgress: (
     seriesId: string,
     chapterId: string,
-    chapterNumber: number,
+    chapterNumber: string,
     page: number,
     totalPages: number,
   ) => void
@@ -110,7 +110,7 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     (
       seriesId: string,
       chapterId: string,
-      chapterNumber: number,
+      chapterNumber: string,
       page: number,
       totalPages: number,
     ) => {

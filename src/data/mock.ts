@@ -1,50 +1,10 @@
-import type { Chapter, Series, UserComment } from '@/types'
+import type { Series, UserComment } from '@/types'
 
 const unsplash = (id: string, width: number) =>
   `https://images.unsplash.com/${id}?auto=format&fit=crop&w=${width}&q=80`
 
 const cover = (id: string) => unsplash(id, 640)
 const banner = (id: string) => unsplash(id, 1800)
-
-export const GENRES = [
-  'Acción',
-  'Aventura',
-  'Academia',
-  'Fantasía',
-  'Romance',
-  'Comedia',
-  'Drama',
-  'Terror',
-  'Misterio',
-  'Thriller',
-  'Sci-Fi',
-  'Sobrenatural',
-  'Reencarnación',
-  'Cultivación',
-  'Psicológico',
-  'Slice of Life',
-  'Mecha',
-  'Deportes',
-] as const
-
-export const TAGS = [
-  'Isekai',
-  'Protagonista OP',
-  'Venganza',
-  'Academia',
-  'Magia',
-  'Dragones',
-  'Cyberpunk',
-  'Apocalipsis',
-  'Anti-héroe',
-  'Romance lento',
-  'Sistema',
-  'Mazmorras',
-  'Regresión',
-  'Guerreros',
-  'Política',
-  'Comedia negra',
-] as const
 
 export const SERIES: Series[] = [
   {
@@ -337,67 +297,6 @@ export const SERIES: Series[] = [
   },
 ]
 
-const CHAPTER_TITLES = [
-  'El despertar',
-  'Una puerta entre sombras',
-  'Lo que quedó atrás',
-  'El precio de mirar',
-  'Sin marcha atrás',
-  'La ciudad que respira',
-  'Cicatrices de luz',
-  'El nombre del miedo',
-  'Nadie sale limpio',
-  'La última señal',
-  'Cuando cae el telón',
-  'Cenizas al amanecer',
-  'El pacto roto',
-  'Un lugar al que volver',
-  'Lo que elegimos ser',
-  'La grieta',
-  'Contra el reloj',
-  'Después del final',
-]
-
-function makePages(slug: string, chapterNumber: number) {
-  return Array.from({ length: 5 }, (_, index) => {
-    const pageNumber = index + 1
-    return {
-      id: `${slug}-${chapterNumber}-${pageNumber}`,
-      pageNumber,
-      imageUrl: `https://picsum.photos/seed/${slug}-${chapterNumber}-${pageNumber}/900/1300`,
-      caption:
-        pageNumber === 1
-          ? `Capítulo ${chapterNumber}`
-          : pageNumber === 4
-            ? 'La historia continúa.'
-            : undefined,
-      dialogue:
-        pageNumber === 2
-          ? '—No deberías haber venido hasta aquí.'
-          : pageNumber === 3
-            ? '—Ya no queda nadie más a quien culpar.'
-            : undefined,
-    }
-  })
-}
-
-export const CHAPTERS: Chapter[] = SERIES.flatMap((series) =>
-  Array.from({ length: 18 }, (_, index) => {
-    const number = index + 1
-    return {
-      id: `${series.slug}-cap-${number}`,
-      seriesId: series.id,
-      number,
-      title: CHAPTER_TITLES[index] ?? `Capítulo ${number}`,
-      releaseDate: new Date(
-        Date.parse(series.updatedAt) - index * 6 * 24 * 60 * 60 * 1000,
-      ).toISOString(),
-      views: Math.round(series.views / (number * 1.8) + 1200),
-      pages: makePages(series.slug, number),
-    }
-  }),
-)
-
 const AVATARS = [
   'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80',
   'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=120&q=80',
@@ -446,12 +345,12 @@ export const COMMENTS: UserComment[] = SERIES.flatMap((series, seriesIndex) =>
     return {
       id: `${series.slug}-comment-${index + 1}`,
       seriesId: series.id,
-      chapterNumber: Math.max(1, series.totalChapters - index),
+      chapterNumber: Math.max(1, (series.totalChapters ?? 1) - index),
       userName: user.name,
       userAvatar: user.avatarUrl,
       content: COMMENT_TEXTS[(seriesIndex + index) % COMMENT_TEXTS.length],
       createdAt: new Date(
-        Date.parse(series.updatedAt) - index * 12 * 60 * 60 * 1000,
+        Date.parse(series.updatedAt ?? '2026-10-01') - index * 12 * 60 * 60 * 1000,
       ).toISOString(),
       likes: 24 + seriesIndex * 7 + index * 13,
       spoiler: index === 3,
@@ -464,7 +363,8 @@ export const COMMENTS: UserComment[] = SERIES.flatMap((series, seriesIndex) =>
                 userAvatar: DEMO_USERS[(seriesIndex + 1) % DEMO_USERS.length].avatarUrl,
                 content: 'Totalmente de acuerdo. Ese panel lo cambia todo.',
                 createdAt: new Date(
-                  Date.parse(series.updatedAt) - index * 10 * 60 * 60 * 1000,
+                  Date.parse(series.updatedAt ?? '2026-10-01') -
+                    index * 10 * 60 * 60 * 1000,
                 ).toISOString(),
               },
             ]
@@ -473,28 +373,6 @@ export const COMMENTS: UserComment[] = SERIES.flatMap((series, seriesIndex) =>
   }),
 )
 
-export const FEATURED_SERIES = SERIES.filter((series) => series.isFeatured)
-
-export function getSeriesBySlug(slug: string): Series | undefined {
-  return SERIES.find((series) => series.slug === slug)
-}
-
-export function getChaptersForSeries(seriesId: string): Chapter[] {
-  return CHAPTERS.filter((chapter) => chapter.seriesId === seriesId).sort(
-    (a, b) => b.number - a.number,
-  )
-}
-
-export function getChapter(seriesId: string, number: number): Chapter | undefined {
-  return CHAPTERS.find(
-    (chapter) => chapter.seriesId === seriesId && chapter.number === number,
-  )
-}
-
 export function getCommentsForSeries(seriesId: string): UserComment[] {
   return COMMENTS.filter((comment) => comment.seriesId === seriesId)
-}
-
-export function getSeriesForGenre(genre: string): Series[] {
-  return SERIES.filter((series) => series.genres.includes(genre))
 }

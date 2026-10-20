@@ -4,8 +4,7 @@ import { HeroFeatured } from '@/components/home/HeroFeatured'
 import { ContinueReading, GenreStrip } from '@/components/home/ContinueReading'
 import { LatestChapters } from '@/components/home/LatestChapters'
 import { RankingSection } from '@/components/home/RankingSection'
-import { PopularSection } from '@/components/home/PopularSection'
-import { NovelsSection } from '@/components/home/NovelsSection'
+import { ForYouSection, PopularSection } from '@/components/home/PopularSection'
 import { useDocumentTitle } from '@/hooks/useDocumentTitle'
 import { buttonStyles } from '@/components/ui/button'
 
@@ -20,7 +19,7 @@ export function HomePage() {
       <LatestChapters />
       <RankingSection />
       <PopularSection />
-      <NovelsSection />
+      <ForYouSection />
 
       <section className="container-mf mt-14 sm:mt-16">
         <div className="border-accent/25 from-accent/15 via-surface to-surface relative overflow-hidden rounded-2xl border bg-gradient-to-br p-5 sm:rounded-3xl sm:p-10">
@@ -33,8 +32,8 @@ export function HomePage() {
               Tu próxima obsesión está a un clic.
             </h2>
             <p className="text-secondary mt-3 text-sm leading-relaxed">
-              Explora más de 200 capítulos de manhwas, mangas, manhuas y novelas. Guarda
-              tus favoritos y continúa leyendo en cualquier dispositivo.
+              Explora capítulos de manhwas, mangas, manhuas y novelas. Guarda tus
+              favoritos y continúa leyendo en cualquier dispositivo.
             </p>
             <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-3">
               <Link

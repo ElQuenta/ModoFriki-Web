@@ -13,7 +13,7 @@ import { SERIES } from '@/data/mock'
 import { FAVORITE_STATUSES, ROLE_LABELS } from '@/lib/constants'
 import type { ReadingMode } from '@/types'
 import { cn } from '@/lib/cn'
-import { formatDate } from '@/lib/format'
+import { formatChapterNumber, formatDate } from '@/lib/format'
 import { useAuth } from '@/hooks/useAuth'
 import { useLibrary } from '@/hooks/useLibrary'
 import { useReaderSettings } from '@/hooks/useReaderSettings'
@@ -129,7 +129,7 @@ export function ProfileView() {
                 return (
                   <Link
                     key={series.id}
-                    to={`/read/${series.slug}/${item.chapterNumber}`}
+                    to={`/read/${series.id}/${item.chapterId}`}
                     className={cn(
                       'group hover:bg-raised flex items-center gap-3 p-3 transition-colors sm:gap-4',
                       index !== history.length - 1 && 'border-line border-b',
@@ -146,8 +146,8 @@ export function ProfileView() {
                         {series.title}
                       </p>
                       <p className="text-muted mt-0.5 text-[11px]">
-                        Cap. {item.chapterNumber} · Página {item.page} de{' '}
-                        {item.totalPages}
+                        Cap. {formatChapterNumber(item.chapterNumber)} · Página{' '}
+                        {item.page} de {item.totalPages}
                       </p>
                       <div className="bg-raised mt-2 h-1.5 max-w-xs overflow-hidden rounded-full">
                         <div
