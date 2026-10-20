@@ -10,7 +10,7 @@ import {
   UserRound,
 } from 'lucide-react'
 import { SERIES } from '@/data/mock'
-import { FAVORITE_STATUSES } from '@/lib/constants'
+import { FAVORITE_STATUSES, ROLE_LABELS } from '@/lib/constants'
 import type { ReadingMode } from '@/types'
 import { cn } from '@/lib/cn'
 import { formatDate } from '@/lib/format'
@@ -65,23 +65,21 @@ export function ProfileView() {
         <div className="px-4 pb-5 sm:px-8 sm:pb-6">
           <div className="-mt-10 flex flex-col gap-4 sm:-mt-12 sm:flex-row sm:items-end">
             <Avatar
-              src={user.avatarUrl}
-              alt={user.name}
+              alt={user.username}
               size="xl"
               className="border-surface size-24 self-center border-4 sm:size-28 sm:self-auto"
             />
             <div className="min-w-0 flex-1 pb-1">
               <div className="flex flex-wrap items-center gap-2">
                 <h1 className="font-display text-2xl font-bold sm:text-3xl">
-                  {user.name}
+                  {user.username}
                 </h1>
-                <Badge tone="accent">{user.role}</Badge>
+                <Badge tone="accent">{ROLE_LABELS[user.role]}</Badge>
               </div>
               <p className="text-muted mt-1 text-sm">@{user.username}</p>
-              <p className="text-secondary mt-2 max-w-xl text-sm">{user.bio}</p>
               <p className="text-muted mt-2 flex items-center gap-1.5 text-[11px]">
                 <CalendarDays className="size-3.5" /> Miembro desde{' '}
-                {formatDate(user.joinedAt)}
+                {formatDate(user.createdAt)}
               </p>
             </div>
             <Button
@@ -207,7 +205,7 @@ export function ProfileView() {
               </div>
               <div className="flex justify-between gap-3">
                 <dt className="text-muted">Rol</dt>
-                <dd className="font-medium">{user.role}</dd>
+                <dd className="font-medium">{ROLE_LABELS[user.role]}</dd>
               </div>
               <div className="flex justify-between gap-3">
                 <dt className="text-muted">Estado</dt>

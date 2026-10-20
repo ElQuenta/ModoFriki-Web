@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import {
   Eye,
   EyeOff,
@@ -12,31 +12,43 @@ import {
 } from 'lucide-react'
 import { z } from 'zod'
 import { toast } from 'sonner'
-import { DEMO_USERS } from '@/data/mock'
+import { ApiError, errorMessage } from '@/lib/api'
 import { useAuth } from '@/hooks/useAuth'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/cn'
 
 const loginSchema = z.object({
-  email: z.email('Escribe un correo válido.'),
-  password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres.'),
+  email: z.email('Escribe un correo válido.').max(254, 'El correo es demasiado largo.'),
+  password: z
+    .string()
+    .min(8, 'La contraseña debe tener al menos 8 caracteres.')
+    .refine(
+      (value) => new TextEncoder().encode(value).length <= 72,
+      'La contraseña no puede pasar de 72 caracteres.',
+    ),
 })
 
 const registerSchema = loginSchema.extend({
-  name: z.string().min(2, 'Escribe tu nombre.'),
+  name: z
+    .string()
+    .trim()
+    .min(3, 'Tu usuario debe tener al menos 3 caracteres.')
+    .max(32, 'Tu usuario no puede pasar de 32 caracteres.'),
 })
 
 export function AuthView({ mode }: { mode: 'login' | 'register' }) {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { login, register } = useAuth()
   const [name, setName] = useState('')
-  const [email, setEmail] = useState(mode === 'login' ? DEMO_USERS[0].email : '')
-  const [password, setPassword] = useState(mode === 'login' ? 'modofriki' : '')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
+  const [submitting, setSubmitting] = useState(false)
   const isLogin = mode === 'login'
 
-  const submit = (event: FormEvent) => {
+  const submit = async (event: FormEvent) => {
     event.preventDefault()
     setError('')
 
@@ -49,14 +61,28 @@ export function AuthView({ mode }: { mode: 'login' | 'register' }) {
       return
     }
 
-    const authResult = isLogin ? login(email, password) : register(name, email, password)
-    if (!authResult.ok) {
-      setError(authResult.error ?? 'No pudimos iniciar sesión.')
+    setSubmitting(true)
+    try {
+      if (isLogin) await login(email.trim(), password)
+      else await register(name.trim(), email.trim(), password)
+    } catch (caught) {
+      if (caught instanceof ApiError && caught.status === 409) {
+        setError('Ese email o usuario ya existe.')
+      } else if (caught instanceof ApiError && caught.status === 401) {
+        setError('El correo o la contraseña no son correctos.')
+      } else {
+        setError(errorMessage(caught, 'No pudimos iniciar sesión.'))
+      }
       return
+    } finally {
+      setSubmitting(false)
     }
 
     toast.success(isLogin ? 'Bienvenido de vuelta' : 'Cuenta creada')
-    navigate('/')
+    const next = searchParams.get('next')
+    navigate(next?.startsWith('/') && !next.startsWith('//') ? next : '/', {
+      replace: true,
+    })
   }
 
   return (
@@ -86,7 +112,7 @@ export function AuthView({ mode }: { mode: 'login' | 'register' }) {
               </p>
               <div className="text-muted mt-6 flex items-center gap-2 text-xs">
                 <ShieldCheck className="text-success size-4" />
-                Cuenta de demostración. No se envían datos reales.
+                Tu sesión dura 7 días en este dispositivo.
               </div>
             </div>
           </div>
@@ -111,15 +137,16 @@ export function AuthView({ mode }: { mode: 'login' | 'register' }) {
             {!isLogin ? (
               <label className="block">
                 <span className="text-secondary mb-1.5 block text-xs font-semibold">
-                  Nombre
+                  Usuario
                 </span>
                 <span className="relative block">
                   <User className="text-muted absolute top-1/2 left-3.5 size-4 -translate-y-1/2" />
                   <input
                     value={name}
                     onChange={(event) => setName(event.target.value)}
-                    autoComplete="name"
-                    placeholder="Tu nombre friki"
+                    autoComplete="username"
+                    maxLength={32}
+                    placeholder="Tu usuario friki"
                     className="border-line bg-base placeholder:text-muted focus:border-accent/60 h-11 w-full rounded-xl border pr-3 pl-10 text-sm transition-colors outline-none"
                   />
                 </span>
@@ -153,7 +180,8 @@ export function AuthView({ mode }: { mode: 'login' | 'register' }) {
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
                   autoComplete={isLogin ? 'current-password' : 'new-password'}
-                  placeholder="Mínimo 6 caracteres"
+                  placeholder="Mínimo 8 caracteres"
+                  maxLength={72}
                   className="border-line bg-base placeholder:text-muted focus:border-accent/60 h-11 w-full rounded-xl border pr-11 pl-3.5 text-sm transition-colors outline-none"
                 />
                 <button
@@ -177,19 +205,11 @@ export function AuthView({ mode }: { mode: 'login' | 'register' }) {
               </p>
             ) : null}
 
-            <Button type="submit" size="lg" className="w-full">
+            <Button type="submit" size="lg" className="w-full" disabled={submitting}>
               {isLogin ? <LogIn className="size-4" /> : <UserPlus className="size-4" />}
               {isLogin ? 'Entrar' : 'Crear cuenta'}
             </Button>
           </form>
-
-          <div className="border-line bg-base/60 mt-5 rounded-xl border p-3">
-            <p className="text-secondary text-[11px] font-semibold">Cuenta de prueba</p>
-            <p className="text-muted mt-1 text-[11px] break-all">
-              {DEMO_USERS[0].email} · contraseña:{' '}
-              <span className="text-accent">modofriki</span>
-            </p>
-          </div>
 
           <p className="text-secondary mt-6 text-center text-sm">
             {isLogin ? '¿No tienes cuenta?' : '¿Ya tienes cuenta?'}{' '}

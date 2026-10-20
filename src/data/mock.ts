@@ -1,4 +1,4 @@
-import type { Chapter, Series, User, UserComment } from '@/types'
+import type { Chapter, Series, UserComment } from '@/types'
 
 const unsplash = (id: string, width: number) =>
   `https://images.unsplash.com/${id}?auto=format&fit=crop&w=${width}&q=80`
@@ -405,17 +405,13 @@ const AVATARS = [
   'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=120&q=80',
 ]
 
-export const DEMO_USERS: User[] = [
+export const DEMO_USERS = [
   {
     id: 'u1',
     name: 'Alex Ríos',
     username: 'alexfrik',
     email: 'alex@modofriki.dev',
     avatarUrl: AVATARS[0],
-    role: 'Lector',
-    bio: 'Leo más manhwas de los que debería. Siempre buscando una buena historia de venganza.',
-    joinedAt: '2025-02-14T00:00:00.000Z',
-    preferences: { readerMode: 'cascade', readingWidth: 'normal', reduceMotion: false },
   },
   {
     id: 'u2',
@@ -423,10 +419,6 @@ export const DEMO_USERS: User[] = [
     username: 'ninacomics',
     email: 'nina@modofriki.dev',
     avatarUrl: AVATARS[2],
-    role: 'Traductora',
-    bio: 'Traduzco fantasía y romances lentos. Si hay dragones, probablemente lo he leído.',
-    joinedAt: '2024-08-03T00:00:00.000Z',
-    preferences: { readerMode: 'paginated', readingWidth: 'compact', reduceMotion: false },
   },
   {
     id: 'u3',
@@ -434,10 +426,6 @@ export const DEMO_USERS: User[] = [
     username: 'danivega',
     email: 'dani@modofriki.dev',
     avatarUrl: AVATARS[1],
-    role: 'Admin',
-    bio: 'Editor de ModoFriki. Colecciono portadas que no caben en mi escritorio.',
-    joinedAt: '2024-01-20T00:00:00.000Z',
-    preferences: { readerMode: 'cascade', readingWidth: 'wide', reduceMotion: false },
   },
 ]
 

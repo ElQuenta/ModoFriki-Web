@@ -23,8 +23,8 @@ export function CommentSection({ seriesId }: { seriesId: string }) {
       {
         id: crypto.randomUUID(),
         seriesId,
-        userName: user?.name ?? 'Lector anónimo',
-        userAvatar: user?.avatarUrl ?? '',
+        userName: user?.username ?? 'Lector anónimo',
+        userAvatar: '',
         content: text.trim(),
         createdAt: new Date().toISOString(),
         likes: 0,
@@ -48,12 +48,7 @@ export function CommentSection({ seriesId }: { seriesId: string }) {
 
       <div className="surface-card p-3 sm:p-4">
         <div className="flex gap-2.5 sm:gap-3">
-          <Avatar
-            src={user?.avatarUrl ?? ''}
-            alt={user?.name ?? 'Lector'}
-            size="sm"
-            className="mt-1"
-          />
+          <Avatar alt={user?.username ?? 'Lector'} size="sm" className="mt-1" />
           <div className="min-w-0 flex-1">
             <textarea
               value={text}
