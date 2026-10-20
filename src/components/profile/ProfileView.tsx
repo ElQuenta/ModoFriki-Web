@@ -4,7 +4,6 @@ import {
   CalendarDays,
   CheckCircle2,
   Clock3,
-  LogIn,
   LogOut,
   Settings2,
   Trash2,
@@ -46,55 +45,67 @@ export function ProfileView() {
 
   const history = Object.values(progress)
     .sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt))
-    .map((item) => ({ item, series: SERIES.find((series) => series.id === item.seriesId) }))
+    .map((item) => ({
+      item,
+      series: SERIES.find((series) => series.id === item.seriesId),
+    }))
     .filter((entry) => entry.series)
 
-  const reading = Object.values(favorites).filter((item) => item.status === 'Leyendo').length
+  const reading = Object.values(favorites).filter(
+    (item) => item.status === 'Leyendo',
+  ).length
   const completed = Object.values(favorites).filter(
     (item) => item.status === 'Completado',
   ).length
 
   return (
     <div className="container-mf pt-8 pb-4">
-      <div className="relative overflow-hidden rounded-3xl border border-line bg-surface">
-        <div className="h-32 bg-gradient-to-r from-accent/25 via-accent/10 to-transparent sm:h-40" />
-        <div className="px-5 pb-6 sm:px-8">
+      <div className="border-line bg-surface relative overflow-hidden rounded-3xl border">
+        <div className="from-accent/25 via-accent/10 h-28 bg-gradient-to-r to-transparent sm:h-40" />
+        <div className="px-4 pb-5 sm:px-8 sm:pb-6">
           <div className="-mt-10 flex flex-col gap-4 sm:-mt-12 sm:flex-row sm:items-end">
             <Avatar
               src={user.avatarUrl}
               alt={user.name}
               size="xl"
-              className="size-24 border-4 border-surface sm:size-28"
+              className="border-surface size-24 self-center border-4 sm:size-28 sm:self-auto"
             />
             <div className="min-w-0 flex-1 pb-1">
               <div className="flex flex-wrap items-center gap-2">
-                <h1 className="font-display text-2xl font-bold sm:text-3xl">{user.name}</h1>
+                <h1 className="font-display text-2xl font-bold sm:text-3xl">
+                  {user.name}
+                </h1>
                 <Badge tone="accent">{user.role}</Badge>
               </div>
-              <p className="mt-1 text-sm text-muted">@{user.username}</p>
-              <p className="mt-2 max-w-xl text-sm text-secondary">{user.bio}</p>
-              <p className="mt-2 flex items-center gap-1.5 text-[11px] text-muted">
-                <CalendarDays className="size-3.5" /> Miembro desde {formatDate(user.joinedAt)}
+              <p className="text-muted mt-1 text-sm">@{user.username}</p>
+              <p className="text-secondary mt-2 max-w-xl text-sm">{user.bio}</p>
+              <p className="text-muted mt-2 flex items-center gap-1.5 text-[11px]">
+                <CalendarDays className="size-3.5" /> Miembro desde{' '}
+                {formatDate(user.joinedAt)}
               </p>
             </div>
-            <Button variant="secondary" onClick={logout} className="sm:mb-1">
+            <Button
+              variant="secondary"
+              onClick={logout}
+              className="w-full sm:mb-1 sm:w-auto"
+            >
               <LogOut className="size-4" /> Cerrar sesión
             </Button>
           </div>
         </div>
       </div>
 
-      <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="mt-6 grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-3">
         {[
           { label: 'Favoritos', value: Object.keys(favorites).length, icon: BookOpen },
           { label: 'Leyendo', value: reading, icon: Clock3 },
           { label: 'Completados', value: completed, icon: CheckCircle2 },
           { label: 'En historial', value: history.length, icon: Settings2 },
         ].map((stat) => (
-          <div key={stat.label} className="surface-card p-4">
-            <stat.icon className="size-4 text-accent" />
-            <p className="mt-2 font-display text-2xl font-bold">{stat.value}</p>
-            <p className="text-[11px] text-muted">{stat.label}</p>
+          <div key={stat.label} className="surface-card p-3.5 sm:p-4">
+            <stat.icon className="text-accent size-4" />
+            <p className="font-display mt-2 text-2xl font-bold">{stat.value}</p>
+            <p className="text-muted text-[11px]">{stat.label}</p>
           </div>
         ))}
       </div>
@@ -114,7 +125,7 @@ export function ProfileView() {
               actionTo="/series"
             />
           ) : (
-            <div className="overflow-hidden rounded-2xl border border-line bg-surface">
+            <div className="border-line bg-surface overflow-hidden rounded-2xl border">
               {history.map(({ item, series }, index) => {
                 if (!series) return null
                 return (
@@ -122,8 +133,8 @@ export function ProfileView() {
                     key={series.id}
                     to={`/read/${series.slug}/${item.chapterNumber}`}
                     className={cn(
-                      'group flex items-center gap-3 p-3 transition-colors hover:bg-raised sm:gap-4',
-                      index !== history.length - 1 && 'border-b border-line',
+                      'group hover:bg-raised flex items-center gap-3 p-3 transition-colors sm:gap-4',
+                      index !== history.length - 1 && 'border-line border-b',
                     )}
                   >
                     <CoverImage
@@ -133,20 +144,23 @@ export function ProfileView() {
                       className="h-20 w-14 shrink-0 rounded-lg"
                     />
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold transition-colors group-hover:text-accent">
+                      <p className="group-hover:text-accent truncate text-sm font-semibold transition-colors">
                         {series.title}
                       </p>
-                      <p className="mt-0.5 text-[11px] text-muted">
-                        Cap. {item.chapterNumber} · Página {item.page} de {item.totalPages}
+                      <p className="text-muted mt-0.5 text-[11px]">
+                        Cap. {item.chapterNumber} · Página {item.page} de{' '}
+                        {item.totalPages}
                       </p>
-                      <div className="mt-2 h-1.5 max-w-xs overflow-hidden rounded-full bg-raised">
+                      <div className="bg-raised mt-2 h-1.5 max-w-xs overflow-hidden rounded-full">
                         <div
-                          className="h-full rounded-full bg-accent"
+                          className="bg-accent h-full rounded-full"
                           style={{ width: `${item.percentage}%` }}
                         />
                       </div>
                     </div>
-                    <Badge tone="accent">{item.percentage}%</Badge>
+                    <Badge tone="accent" className="shrink-0">
+                      {item.percentage}%
+                    </Badge>
                   </Link>
                 )
               })}
@@ -156,10 +170,10 @@ export function ProfileView() {
 
         <aside className="space-y-4">
           <div className="surface-card p-5">
-            <h2 className="flex items-center gap-2 font-display text-base font-bold">
-              <Settings2 className="size-4 text-accent" /> Preferencias
+            <h2 className="font-display flex items-center gap-2 text-base font-bold">
+              <Settings2 className="text-accent size-4" /> Preferencias
             </h2>
-            <p className="mt-3 text-[11px] font-semibold tracking-wider text-muted uppercase">
+            <p className="text-muted mt-3 text-[11px] font-semibold tracking-wider uppercase">
               Modo de lectura
             </p>
             <div className="mt-2 grid grid-cols-2 gap-2">
@@ -179,7 +193,7 @@ export function ProfileView() {
                 </button>
               ))}
             </div>
-            <p className="mt-3 text-[11px] text-muted">
+            <p className="text-muted mt-3 text-[11px]">
               El modo se guarda en este dispositivo y se aplica al lector.
             </p>
           </div>
@@ -188,8 +202,8 @@ export function ProfileView() {
             <h2 className="font-display text-base font-bold">Tu cuenta</h2>
             <dl className="mt-3 space-y-2 text-xs">
               <div className="flex justify-between gap-3">
-                <dt className="text-muted">Correo</dt>
-                <dd className="truncate font-medium">{user.email}</dd>
+                <dt className="text-muted shrink-0">Correo</dt>
+                <dd className="min-w-0 truncate text-right font-medium">{user.email}</dd>
               </div>
               <div className="flex justify-between gap-3">
                 <dt className="text-muted">Rol</dt>
@@ -197,7 +211,7 @@ export function ProfileView() {
               </div>
               <div className="flex justify-between gap-3">
                 <dt className="text-muted">Estado</dt>
-                <dd className="font-medium text-success">Activo</dd>
+                <dd className="text-success font-medium">Activo</dd>
               </div>
             </dl>
             <Button variant="danger" onClick={logout} className="mt-4 w-full">
@@ -209,7 +223,7 @@ export function ProfileView() {
             <button
               type="button"
               onClick={clearHistory}
-              className="flex w-full items-center justify-center gap-2 rounded-xl border border-line py-2.5 text-xs font-semibold text-muted transition-colors hover:border-danger/40 hover:text-danger"
+              className="border-line text-muted hover:border-danger/40 hover:text-danger flex w-full items-center justify-center gap-2 rounded-xl border py-2.5 text-xs font-semibold transition-colors"
             >
               <Trash2 className="size-3.5" /> Borrar historial
             </button>
@@ -224,22 +238,16 @@ export function ProfileView() {
         </aside>
       </div>
 
-      <div className="mt-10 grid gap-3 sm:grid-cols-3">
+      <div className="mt-10 grid gap-2.5 sm:grid-cols-3 sm:gap-3">
         {FAVORITE_STATUSES.map((status) => (
-          <div key={status} className="rounded-xl border border-line bg-surface p-4">
-            <p className="text-xs text-muted">{status}</p>
-            <p className="mt-1 font-display text-xl font-bold">
+          <div key={status} className="border-line bg-surface rounded-xl border p-4">
+            <p className="text-muted text-xs">{status}</p>
+            <p className="font-display mt-1 text-xl font-bold">
               {Object.values(favorites).filter((item) => item.status === status).length}
             </p>
           </div>
         ))}
       </div>
-
-      {!user ? (
-        <Link to="/login" className={buttonStyles({ className: 'mt-6' })}>
-          <LogIn className="size-4" /> Iniciar sesión
-        </Link>
-      ) : null}
     </div>
   )
 }

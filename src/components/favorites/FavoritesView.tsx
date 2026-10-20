@@ -24,24 +24,21 @@ export function FavoritesView() {
     .filter((item) => item.series)
     .filter((item) => filter === 'Todos' || item.favorite.status === filter)
 
-  const counts = FAVORITE_STATUSES.reduce<Record<string, number>>(
-    (acc, status) => {
-      acc[status] = Object.values(favorites).filter((item) => item.status === status).length
-      return acc
-    },
-    {},
-  )
+  const counts = FAVORITE_STATUSES.reduce<Record<string, number>>((acc, status) => {
+    acc[status] = Object.values(favorites).filter((item) => item.status === status).length
+    return acc
+  }, {})
 
   return (
     <div className="container-mf pt-8 pb-4">
       <div className="mb-8">
-        <p className="mb-2 text-xs font-bold tracking-[0.2em] text-accent uppercase">
+        <p className="text-accent mb-2 text-xs font-bold tracking-[0.2em] uppercase">
           Tu biblioteca
         </p>
         <h1 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">
           Favoritos
         </h1>
-        <p className="mt-3 max-w-xl text-sm text-secondary">
+        <p className="text-secondary mt-3 max-w-xl text-sm">
           {Object.keys(favorites).length} series guardadas. Organízalas por estado y
           retoma la lectura cuando quieras.
         </p>
@@ -86,7 +83,7 @@ export function FavoritesView() {
           actionTo="/series"
         />
       ) : (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5">
           {items.map(({ favorite, series }) => {
             if (!series) return null
             return (
@@ -99,7 +96,7 @@ export function FavoritesView() {
                       setFavoriteStatus(series.id, event.target.value as FavoriteStatus)
                     }
                     aria-label={`Estado de ${series.title}`}
-                    className="h-8 min-w-0 flex-1 rounded-lg border border-line bg-surface px-2 text-[11px] text-secondary outline-none focus:border-accent/60"
+                    className="border-line bg-surface text-secondary focus:border-accent/60 h-10 min-w-0 flex-1 rounded-lg border px-2 text-[11px] outline-none"
                   >
                     {FAVORITE_STATUSES.map((status) => (
                       <option key={status} value={status}>
@@ -111,7 +108,7 @@ export function FavoritesView() {
                     type="button"
                     onClick={() => removeFavorite(series.id)}
                     aria-label={`Quitar ${series.title} de favoritos`}
-                    className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-line text-muted transition-colors hover:border-danger/40 hover:text-danger"
+                    className="border-line text-muted hover:border-danger/40 hover:text-danger flex size-10 shrink-0 items-center justify-center rounded-lg border transition-colors"
                   >
                     <Trash2 className="size-3.5" />
                   </button>
@@ -122,17 +119,24 @@ export function FavoritesView() {
         </div>
       )}
 
-      <div className="mt-10 flex flex-wrap gap-3 rounded-2xl border border-accent/20 bg-accent/5 p-5">
-        <div className="flex size-10 items-center justify-center rounded-xl bg-accent/10 text-accent">
+      <div className="border-accent/20 bg-accent/5 mt-10 flex flex-col gap-3 rounded-2xl border p-4 sm:flex-row sm:items-center sm:p-5">
+        <div className="bg-accent/10 text-accent flex size-10 items-center justify-center rounded-xl">
           <BookOpen className="size-5" />
         </div>
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold">¿Buscas algo nuevo?</p>
-          <p className="mt-1 text-xs text-secondary">
+          <p className="text-secondary mt-1 text-xs">
             El catálogo se actualiza con nuevas series y capítulos cada semana.
           </p>
         </div>
-        <Link to="/series" className={buttonStyles({ variant: 'secondary', size: 'sm' })}>
+        <Link
+          to="/series"
+          className={buttonStyles({
+            variant: 'secondary',
+            size: 'sm',
+            className: 'w-full sm:w-auto',
+          })}
+        >
           Ver catálogo
         </Link>
       </div>
