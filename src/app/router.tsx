@@ -10,6 +10,7 @@ import { ProfilePage } from '@/pages/ProfilePage'
 import { LoginPage } from '@/pages/LoginPage'
 import { RegisterPage } from '@/pages/RegisterPage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
+import { AdminPage } from '@/pages/AdminPage'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 
 export function AppRoutes() {
@@ -34,6 +35,14 @@ export function AppRoutes() {
         element={
           <ProtectedRoute>
             <ProfilePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin"
+        element={
+          <ProtectedRoute roles={['ADMIN', 'EDITOR']}>
+            <AdminPage />
           </ProtectedRoute>
         }
       />
