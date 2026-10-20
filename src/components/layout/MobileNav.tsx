@@ -1,5 +1,15 @@
 import { Link, NavLink } from 'react-router-dom'
-import { Heart, Home, Library, Search, Sparkles, Trophy, X, LogIn } from 'lucide-react'
+import {
+  Heart,
+  Home,
+  Library,
+  Search,
+  ShieldCheck,
+  Sparkles,
+  Trophy,
+  X,
+  LogIn,
+} from 'lucide-react'
 import { NAV_LINKS, ROLE_LABELS } from '@/lib/constants'
 import { cn } from '@/lib/cn'
 import { useUI } from '@/hooks/useUI'
@@ -98,6 +108,23 @@ export function MobileNav() {
               {favoriteCount}
             </span>
           </NavLink>
+          {user && user.role !== 'BASIC' ? (
+            <NavLink
+              to="/admin"
+              onClick={closeMobileNav}
+              className={({ isActive }) =>
+                cn(
+                  'flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-colors',
+                  isActive
+                    ? 'bg-accent/10 text-accent'
+                    : 'text-secondary hover:bg-raised hover:text-primary',
+                )
+              }
+            >
+              <ShieldCheck className="size-5" />
+              Panel
+            </NavLink>
+          ) : null}
         </nav>
 
         <div className="border-line mt-auto border-t pt-5">

@@ -8,6 +8,7 @@ import {
   LogOut,
   Settings,
   Library,
+  ShieldCheck,
 } from 'lucide-react'
 import { useState } from 'react'
 import { NAV_LINKS } from '@/lib/constants'
@@ -165,6 +166,16 @@ export function Header() {
                   >
                     <Library className="size-4" /> Mi biblioteca
                   </Link>
+                  {user.role !== 'BASIC' ? (
+                    <Link
+                      to="/admin"
+                      onClick={() => setMenuOpen(false)}
+                      role="menuitem"
+                      className="text-secondary hover:bg-raised hover:text-primary flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm transition-colors"
+                    >
+                      <ShieldCheck className="size-4" /> Panel
+                    </Link>
+                  ) : null}
                   <Link
                     to="/profile"
                     onClick={() => setMenuOpen(false)}
