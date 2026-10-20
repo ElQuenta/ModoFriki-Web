@@ -6,7 +6,7 @@ export function Avatar({
   size = 'md',
   className,
 }: {
-  src: string
+  src?: string
   alt: string
   size?: 'sm' | 'md' | 'lg' | 'xl'
   className?: string
@@ -21,21 +21,23 @@ export function Avatar({
   return (
     <span
       className={cn(
-        'relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full border border-line bg-raised font-bold text-accent',
+        'border-line bg-raised text-accent relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full border font-bold',
         sizes[size],
         className,
       )}
     >
-      <span aria-hidden>{alt.slice(0, 1).toUpperCase()}</span>
-      <img
-        src={src}
-        alt={alt}
-        loading="lazy"
-        className="absolute inset-0 size-full object-cover"
-        onError={(event) => {
-          event.currentTarget.style.display = 'none'
-        }}
-      />
+      <span aria-hidden>{alt.slice(0, 2).toUpperCase()}</span>
+      {src ? (
+        <img
+          src={src}
+          alt={alt}
+          loading="lazy"
+          className="absolute inset-0 size-full object-cover"
+          onError={(event) => {
+            event.currentTarget.style.display = 'none'
+          }}
+        />
+      ) : null}
     </span>
   )
 }

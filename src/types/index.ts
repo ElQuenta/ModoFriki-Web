@@ -6,7 +6,7 @@ export type ReadingMode = 'cascade' | 'paginated'
 
 export type FavoriteStatus = 'Leyendo' | 'Por leer' | 'Completado' | 'En pausa'
 
-export type UserRole = 'Lector' | 'Traductor' | 'Traductora' | 'Admin'
+export type UserRole = 'BASIC' | 'EDITOR' | 'ADMIN'
 
 export interface ChapterPage {
   id: string
@@ -79,14 +79,16 @@ export interface UserPreferences {
 
 export interface User {
   id: string
-  name: string
   username: string
   email: string
-  avatarUrl: string
   role: UserRole
-  bio: string
-  joinedAt: string
-  preferences: UserPreferences
+  timezone: string
+  createdAt: string
+}
+
+export interface AuthSession {
+  user: User
+  token: string
 }
 
 export interface FavoriteItem {
