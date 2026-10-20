@@ -62,13 +62,7 @@ export function ReaderView({
   )
 
   useEffect(() => {
-    updateProgress(
-      series.id,
-      chapter.id,
-      chapter.number,
-      currentPage,
-      totalPages,
-    )
+    updateProgress(series.id, chapter.id, chapter.number, currentPage, totalPages)
   }, [series.id, chapter.id, chapter.number, currentPage, totalPages, updateProgress])
 
   useEffect(() => {
@@ -115,32 +109,37 @@ export function ReaderView({
   })
 
   return (
-    <div className="min-h-screen bg-base pb-24">
-      <header className="sticky top-0 z-40 border-b border-line bg-base/90 backdrop-blur-xl">
-        <div className="mx-auto flex h-16 max-w-7xl items-center gap-2 px-3 sm:px-5">
+    <div className="bg-base min-h-dvh pb-24">
+      <header className="border-line bg-base/90 sticky top-0 z-40 border-b backdrop-blur-xl">
+        <div className="mx-auto flex h-16 max-w-7xl items-center gap-1.5 px-2 sm:gap-2 sm:px-5">
           <Link
             to={`/series/${series.slug}`}
             aria-label="Volver a la serie"
-            className="flex size-10 shrink-0 items-center justify-center rounded-xl text-secondary transition-colors hover:bg-raised hover:text-primary"
+            className="text-secondary hover:bg-raised hover:text-primary flex size-10 shrink-0 items-center justify-center rounded-xl transition-colors"
           >
             <ArrowLeft className="size-5" />
           </Link>
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-semibold">{series.title}</p>
-            <p className="truncate text-[11px] text-muted">
+            <p className="text-muted truncate text-[11px]">
               Capítulo {chapter.number} · {chapter.title}
             </p>
           </div>
 
-          <div className="hidden items-center gap-1.5 sm:flex">
-            <Badge tone="neutral">{currentPage} / {totalPages}</Badge>
+          <div className="flex shrink-0 items-center">
+            <Badge
+              tone="neutral"
+              className="px-2 py-1 text-[10px] sm:px-2.5 sm:text-[11px]"
+            >
+              {currentPage} / {totalPages}
+            </Badge>
           </div>
 
           <button
             type="button"
             onClick={() => setMode(settings.mode === 'cascade' ? 'paginated' : 'cascade')}
             aria-label="Cambiar modo de lectura"
-            className="flex h-9 items-center gap-1.5 rounded-lg border border-line bg-surface px-2.5 text-xs font-medium text-secondary transition-colors hover:text-primary"
+            className="border-line bg-surface text-secondary hover:text-primary flex h-10 shrink-0 items-center gap-1.5 rounded-lg border px-2 text-xs font-medium transition-colors sm:px-2.5"
           >
             <List className="size-4" />
             <span className="hidden sm:inline">
@@ -153,7 +152,7 @@ export function ReaderView({
             aria-label="Ajustes de lectura"
             aria-expanded={settingsOpen}
             className={cn(
-              'flex size-9 items-center justify-center rounded-lg border transition-colors',
+              'flex size-10 shrink-0 items-center justify-center rounded-lg border transition-colors',
               settingsOpen
                 ? 'border-accent/40 bg-accent/10 text-accent'
                 : 'border-line bg-surface text-secondary hover:text-primary',
@@ -165,94 +164,108 @@ export function ReaderView({
             type="button"
             onClick={() => void toggleFullscreen()}
             aria-label="Pantalla completa"
-            className="hidden size-9 items-center justify-center rounded-lg border border-line bg-surface text-secondary transition-colors hover:text-primary sm:flex"
+            className="border-line bg-surface text-secondary hover:text-primary hidden size-10 shrink-0 items-center justify-center rounded-lg border transition-colors sm:flex"
           >
             {fullscreen ? <Shrink className="size-4" /> : <Expand className="size-4" />}
           </button>
         </div>
-        <div className="h-0.5 w-full bg-raised">
+        <div className="bg-raised h-0.5 w-full">
           <div
-            className="h-full bg-accent transition-all duration-300"
+            className="bg-accent h-full transition-all duration-300"
             style={{ width: `${(currentPage / totalPages) * 100}%` }}
           />
         </div>
       </header>
 
       {settingsOpen ? (
-        <div className="fixed inset-x-0 top-16 z-50 flex justify-end px-3 pt-2 sm:px-5">
-          <div className="animate-fade-up w-full max-w-xs rounded-2xl border border-line bg-surface p-4 shadow-card">
-            <div className="mb-3 flex items-center justify-between">
-              <h2 className="font-display text-sm font-bold">Ajustes de lectura</h2>
-              <button
-                type="button"
-                onClick={() => setSettingsOpen(false)}
-                aria-label="Cerrar ajustes"
-                className="flex size-7 items-center justify-center rounded-md text-muted hover:bg-raised hover:text-primary"
-              >
-                <X className="size-4" />
-              </button>
-            </div>
-
-            <p className="mb-1.5 text-[11px] font-semibold tracking-wider text-muted uppercase">
-              Modo
-            </p>
-            <div className="grid grid-cols-2 gap-2">
-              {(['cascade', 'paginated'] as const).map((mode) => (
+        <>
+          <button
+            type="button"
+            onClick={() => setSettingsOpen(false)}
+            aria-label="Cerrar ajustes"
+            className="fixed inset-0 z-40 bg-black/40 sm:hidden"
+          />
+          <div className="fixed inset-x-0 bottom-0 z-50 sm:inset-x-auto sm:top-16 sm:right-5 sm:bottom-auto">
+            <div className="animate-fade-up border-line bg-surface shadow-card w-full rounded-t-2xl border p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:w-80 sm:rounded-2xl sm:pb-4">
+              <div className="mb-3 flex items-center justify-between">
+                <h2 className="font-display text-sm font-bold">Ajustes de lectura</h2>
                 <button
-                  key={mode}
                   type="button"
-                  onClick={() => setMode(mode)}
-                  className={cn(
-                    'rounded-lg border px-3 py-2 text-xs font-medium transition-colors',
-                    settings.mode === mode
-                      ? 'border-accent/40 bg-accent/10 text-accent'
-                      : 'border-line text-secondary hover:text-primary',
-                  )}
+                  onClick={() => setSettingsOpen(false)}
+                  aria-label="Cerrar ajustes"
+                  className="text-muted hover:bg-raised hover:text-primary flex size-10 items-center justify-center rounded-lg"
                 >
-                  {mode === 'cascade' ? 'Cascada' : 'Paginado'}
+                  <X className="size-4" />
                 </button>
-              ))}
-            </div>
+              </div>
 
-            <p className="mt-4 mb-1.5 text-[11px] font-semibold tracking-wider text-muted uppercase">
-              Ancho
-            </p>
-            <div className="grid grid-cols-3 gap-2">
-              {(['compact', 'normal', 'wide'] as const).map((width) => (
-                <button
-                  key={width}
-                  type="button"
-                  onClick={() => setWidth(width)}
-                  className={cn(
-                    'rounded-lg border px-2 py-2 text-xs font-medium capitalize transition-colors',
-                    settings.width === width
-                      ? 'border-accent/40 bg-accent/10 text-accent'
-                      : 'border-line text-secondary hover:text-primary',
-                  )}
-                >
-                  {width === 'compact' ? 'Compacto' : width === 'normal' ? 'Normal' : 'Amplio'}
-                </button>
-              ))}
-            </div>
-
-            <div className="mt-4 flex items-center justify-between">
-              <p className="text-[11px] font-semibold tracking-wider text-muted uppercase">
-                Zoom
+              <p className="text-muted mb-1.5 text-[11px] font-semibold tracking-wider uppercase">
+                Modo
               </p>
-              <span className="text-xs font-semibold text-accent">{settings.zoom}%</span>
+              <div className="grid grid-cols-2 gap-2">
+                {(['cascade', 'paginated'] as const).map((mode) => (
+                  <button
+                    key={mode}
+                    type="button"
+                    onClick={() => setMode(mode)}
+                    className={cn(
+                      'rounded-lg border px-3 py-2 text-xs font-medium transition-colors',
+                      settings.mode === mode
+                        ? 'border-accent/40 bg-accent/10 text-accent'
+                        : 'border-line text-secondary hover:text-primary',
+                    )}
+                  >
+                    {mode === 'cascade' ? 'Cascada' : 'Paginado'}
+                  </button>
+                ))}
+              </div>
+
+              <p className="text-muted mt-4 mb-1.5 text-[11px] font-semibold tracking-wider uppercase">
+                Ancho
+              </p>
+              <div className="grid grid-cols-3 gap-2">
+                {(['compact', 'normal', 'wide'] as const).map((width) => (
+                  <button
+                    key={width}
+                    type="button"
+                    onClick={() => setWidth(width)}
+                    className={cn(
+                      'rounded-lg border px-2 py-2 text-xs font-medium capitalize transition-colors',
+                      settings.width === width
+                        ? 'border-accent/40 bg-accent/10 text-accent'
+                        : 'border-line text-secondary hover:text-primary',
+                    )}
+                  >
+                    {width === 'compact'
+                      ? 'Compacto'
+                      : width === 'normal'
+                        ? 'Normal'
+                        : 'Amplio'}
+                  </button>
+                ))}
+              </div>
+
+              <div className="mt-4 flex items-center justify-between">
+                <p className="text-muted text-[11px] font-semibold tracking-wider uppercase">
+                  Zoom
+                </p>
+                <span className="text-accent text-xs font-semibold">
+                  {settings.zoom}%
+                </span>
+              </div>
+              <input
+                type="range"
+                min={70}
+                max={140}
+                step={10}
+                value={settings.zoom}
+                onChange={(event) => setZoom(Number(event.target.value))}
+                aria-label="Zoom de lectura"
+                className="mt-2 h-6 w-full accent-[var(--color-accent)]"
+              />
             </div>
-            <input
-              type="range"
-              min={70}
-              max={140}
-              step={10}
-              value={settings.zoom}
-              onChange={(event) => setZoom(Number(event.target.value))}
-              aria-label="Zoom de lectura"
-              className="mt-2 w-full accent-[var(--color-accent)]"
-            />
           </div>
-        </div>
+        </>
       ) : null}
 
       <main className="reader-canvas mx-auto px-2 pt-4 sm:px-4">
@@ -261,8 +274,11 @@ export function ReaderView({
             {pages.map((item, itemIndex) => (
               <div
                 key={item.id}
-                className="relative overflow-hidden rounded-lg bg-surface"
-                style={{ width: `${settings.zoom}%`, marginInline: 'auto' }}
+                className="bg-surface relative overflow-hidden rounded-lg"
+                style={{
+                  width: `min(${settings.zoom}%, calc(100vw - 2rem))`,
+                  marginInline: 'auto',
+                }}
               >
                 <img
                   src={item.imageUrl}
@@ -284,11 +300,14 @@ export function ReaderView({
         ) : (
           <div className={cn('mx-auto', widthClass[settings.width])}>
             {page ? (
-              <div className="relative overflow-hidden rounded-xl border border-line bg-surface">
+              <div
+                className="border-line bg-surface relative mx-auto overflow-hidden rounded-xl border"
+                style={{ width: `min(${settings.zoom}%, calc(100vw - 2rem))` }}
+              >
                 <img
                   src={page.imageUrl}
                   alt={`Página ${page.pageNumber} de ${chapter.title}`}
-                  className="block h-auto w-full"
+                  className="block max-h-[calc(100dvh-11rem)] w-full object-contain"
                 />
                 {page.dialogue ? (
                   <p className="absolute right-4 bottom-4 left-4 rounded-lg border border-white/15 bg-black/75 px-4 py-3 text-center text-sm font-medium text-white backdrop-blur">
@@ -298,61 +317,74 @@ export function ReaderView({
               </div>
             ) : null}
 
-            <div className="mt-4 flex items-center justify-between gap-3">
+            <div className="mt-4 flex items-center justify-between gap-2 sm:gap-3">
               <button
                 type="button"
                 onClick={() => goToPage(pageIndex - 1)}
                 disabled={pageIndex === 0}
-                className={buttonStyles({ variant: 'secondary', size: 'md' })}
+                aria-label="Página anterior"
+                className={buttonStyles({
+                  variant: 'secondary',
+                  size: 'md',
+                  className: 'px-3 sm:px-5',
+                })}
               >
-                <ChevronLeft className="size-4" /> Anterior
+                <ChevronLeft className="size-4 shrink-0" />
+                <span className="hidden sm:inline">Anterior</span>
               </button>
-              <span className="text-xs text-muted">
+              <span className="text-muted shrink-0 text-xs">
                 {currentPage} de {totalPages}
               </span>
               <button
                 type="button"
                 onClick={() => goToPage(pageIndex + 1)}
                 disabled={pageIndex >= totalPages - 1}
-                className={buttonStyles({ size: 'md' })}
+                aria-label="Página siguiente"
+                className={buttonStyles({ size: 'md', className: 'px-3 sm:px-5' })}
               >
-                Siguiente <ChevronRight className="size-4" />
+                <span className="hidden sm:inline">Siguiente</span>
+                <ChevronRight className="size-4 shrink-0" />
               </button>
             </div>
           </div>
         )}
       </main>
 
-      <footer className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-base/95 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center gap-2 px-3 py-2.5 sm:px-5">
+      <footer className="border-line bg-base/95 fixed inset-x-0 bottom-0 z-40 border-t pb-[env(safe-area-inset-bottom)] backdrop-blur-xl">
+        <div className="mx-auto flex max-w-7xl items-center gap-1.5 px-2 py-2 sm:gap-2 sm:px-5 sm:py-2.5">
           {previousChapter ? (
             <Link
               to={`/read/${series.slug}/${previousChapter.number}`}
-              className={buttonStyles({ variant: 'ghost', size: 'sm', className: 'min-w-0' })}
+              aria-label={`Capítulo anterior: ${previousChapter.number}`}
+              className={buttonStyles({
+                variant: 'ghost',
+                size: 'sm',
+                className: 'shrink-0 px-2 sm:px-3.5',
+              })}
             >
               <ChevronLeft className="size-4 shrink-0" />
-              <span className="truncate">Cap. {previousChapter.number}</span>
+              <span className="hidden truncate sm:inline">
+                Cap. {previousChapter.number}
+              </span>
             </Link>
           ) : (
-            <span className="w-24" />
+            <span className="w-10 shrink-0 sm:w-24" aria-hidden />
           )}
 
-          <div className="flex flex-1 items-center justify-center gap-1">
+          <div className="flex min-w-0 flex-1 items-center justify-center gap-1">
             <button
               type="button"
               onClick={() => goToPage(Math.max(0, pageIndex - 1))}
               aria-label="Página anterior"
-              className="flex size-9 items-center justify-center rounded-lg text-secondary hover:bg-raised hover:text-primary"
+              className="text-secondary hover:bg-raised hover:text-primary flex size-10 shrink-0 items-center justify-center rounded-lg"
             >
               <ChevronLeft className="size-5" />
             </button>
             <select
               value={chapter.number}
-              onChange={(event) =>
-                navigate(`/read/${series.slug}/${event.target.value}`)
-              }
+              onChange={(event) => navigate(`/read/${series.slug}/${event.target.value}`)}
               aria-label="Seleccionar capítulo"
-              className="h-9 max-w-28 rounded-lg border border-line bg-surface px-2 text-xs text-secondary outline-none focus:border-accent/60"
+              className="border-line bg-surface text-secondary focus:border-accent/60 h-10 max-w-32 min-w-0 flex-1 rounded-lg border px-2 text-xs outline-none sm:max-w-28"
             >
               {chapters.map((item) => (
                 <option key={item.id} value={item.number}>
@@ -364,7 +396,7 @@ export function ReaderView({
               type="button"
               onClick={() => goToPage(Math.min(totalPages - 1, pageIndex + 1))}
               aria-label="Página siguiente"
-              className="flex size-9 items-center justify-center rounded-lg text-secondary hover:bg-raised hover:text-primary"
+              className="text-secondary hover:bg-raised hover:text-primary flex size-10 shrink-0 items-center justify-center rounded-lg"
             >
               <ChevronRight className="size-5" />
             </button>
@@ -373,13 +405,19 @@ export function ReaderView({
           {nextChapter ? (
             <Link
               to={`/read/${series.slug}/${nextChapter.number}`}
-              className={buttonStyles({ size: 'sm', className: 'min-w-0' })}
+              aria-label={`Capítulo siguiente: ${nextChapter.number}`}
+              className={buttonStyles({
+                size: 'sm',
+                className: 'shrink-0 px-2 sm:px-3.5',
+              })}
             >
-              <span className="truncate">Cap. {nextChapter.number}</span>
+              <span className="hidden truncate sm:inline">Cap. {nextChapter.number}</span>
               <ChevronRight className="size-4 shrink-0" />
             </Link>
           ) : (
-            <span className="w-24 text-right text-[11px] text-muted">Último capítulo</span>
+            <span className="text-muted w-10 shrink-0 text-right text-[11px] sm:w-24">
+              <span className="hidden sm:inline">Último capítulo</span>
+            </span>
           )}
         </div>
       </footer>
