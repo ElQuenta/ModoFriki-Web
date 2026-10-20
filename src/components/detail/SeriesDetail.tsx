@@ -388,7 +388,7 @@ export function SeriesDetail({
         </aside>
 
         <div className="order-3 min-w-0 lg:order-none lg:col-start-1 lg:row-start-2">
-          <CommentSection seriesId={series.id} />
+          <CommentSection targetType="WORK" targetId={series.id} />
         </div>
       </div>
     </div>

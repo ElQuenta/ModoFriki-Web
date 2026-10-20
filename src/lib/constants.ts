@@ -21,6 +21,7 @@ export const SORT_OPTIONS = [
 export const READER_KEY = 'modofriki_reader'
 export const PROGRESS_KEY = 'modofriki_progress'
 export const TOKEN_KEY = 'modofriki_token'
+export const VOTES_KEY = 'modofriki_votes'
 export const UI_KEY = 'modofriki_ui'
 
 export const ROLE_LABELS: Record<UserRole, string> = {
