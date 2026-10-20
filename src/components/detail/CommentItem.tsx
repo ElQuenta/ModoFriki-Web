@@ -75,11 +75,17 @@ export function CommentItem({
       else delete all[comment.id]
       writeStorage(VOTES_KEY, all)
     }
+    // Votar, responder y reportar suben la revisión del comentario en el backend.
+    const revision = comment.revision + 1
     remember(next)
-    onChange({ ...comment, votes: optimistic })
+    onChange({ ...comment, votes: optimistic, revision })
     try {
       if (next)
-        onChange({ ...comment, votes: await community.voteComment(comment.id, next) })
+        onChange({
+          ...comment,
+          votes: await community.voteComment(comment.id, next),
+          revision,
+        })
       else await community.removeVote(comment.id)
     } catch (error) {
       remember(previous)
@@ -138,6 +144,7 @@ export function CommentItem({
     try {
       const created = await community.createComment({ parentCommentId: comment.id }, body)
       setReplies((current) => [...(current ?? []), created])
+      onChange({ ...comment, revision: comment.revision + 1 })
       setRepliesOpen(true)
       setReply('')
       setReplying(false)
