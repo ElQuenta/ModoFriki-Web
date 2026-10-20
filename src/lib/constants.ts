@@ -22,9 +22,7 @@ export const FAVORITE_STATUSES: FavoriteStatus[] = [
 
 export const SORT_OPTIONS = [
   { value: 'recent', label: 'Recientes' },
-  { value: 'rating', label: 'Mejor valoradas' },
-  { value: 'views', label: 'Más leídas' },
-  { value: 'title', label: 'A-Z' },
+  { value: 'views', label: 'Más visitadas' },
 ] as const
 
 export const READER_KEY = 'modofriki_reader'
