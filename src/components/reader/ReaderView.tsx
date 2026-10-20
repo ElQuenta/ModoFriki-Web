@@ -13,6 +13,9 @@ import {
 import type { Chapter, Series } from '@/types'
 import { cn } from '@/lib/cn'
 import { formatChapterNumber } from '@/lib/format'
+import { withRetry } from '@/lib/api'
+import { getChapter } from '@/services/catalog'
+import { recordReadEvent } from '@/services/reading'
 import { useHotkeys } from '@/hooks/useHotkeys'
 import { useLibrary } from '@/hooks/useLibrary'
 import { useReaderSettings } from '@/hooks/useReaderSettings'
@@ -61,6 +64,25 @@ export function ReaderView({
     },
     [settings.mode, totalPages],
   )
+
+  // Una lectura por apertura: los reintentos reutilizan la misma clave.
+  const [readKey] = useState(() => crypto.randomUUID())
+  useEffect(() => {
+    withRetry(() => recordReadEvent(chapter.id, readKey)).catch(() => undefined)
+  }, [chapter.id, readKey])
+
+  // Precarga el capítulo siguiente y sus primeras páginas.
+  const nextId = nextChapter?.id
+  useEffect(() => {
+    if (!nextId) return
+    getChapter(series.id, nextId)
+      .then((next) =>
+        next.pages.slice(0, 3).forEach((item) => {
+          new Image().src = item.imageUrl
+        }),
+      )
+      .catch(() => undefined)
+  }, [series.id, nextId])
 
   useEffect(() => {
     updateProgress(series.id, chapter.id, chapter.number, currentPage, totalPages)

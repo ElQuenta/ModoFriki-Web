@@ -21,9 +21,12 @@ import { buttonStyles } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ErrorState } from '@/components/ui/empty-state'
 import { CommentSection } from './CommentSection'
+import { RatingControl } from './RatingControl'
+import { useAuth } from '@/hooks/useAuth'
+import { useWorkProgress, useWorkStats } from '@/hooks/useReading'
 
 export function SeriesDetail({
-  series,
+  series: work,
   chapters,
   chaptersLoading = false,
   chaptersError,
@@ -35,7 +38,16 @@ export function SeriesDetail({
   chaptersError?: string
   onRetryChapters?: () => void
 }) {
+  const { user } = useAuth()
   const { isFavorite, toggleFavorite, getProgress } = useLibrary()
+  const stats = useWorkStats(work.id)
+  const mine = useWorkProgress(work.id, stats.reload)
+  const series: Series = {
+    ...work,
+    rating: stats.data?.averageRating ?? undefined,
+    ratingCount: stats.data?.ratings,
+    views: stats.data?.visits ?? work.views,
+  }
   const [showAll, setShowAll] = useState(false)
   const favorite = isFavorite(series.id)
   const progress = getProgress(series.id)
@@ -143,7 +155,7 @@ export function SeriesDetail({
                 ) : null}
                 <button
                   type="button"
-                  onClick={() => toggleFavorite(series.id)}
+                  onClick={() => void toggleFavorite(series)}
                   className={buttonStyles({
                     variant: 'secondary',
                     size: 'lg',
@@ -229,32 +241,62 @@ export function SeriesDetail({
             ) : null}
             <div className="border-line bg-surface overflow-hidden rounded-2xl border empty:hidden">
               {visibleChapters.map((chapter, index) => (
-                <Link
+                <div
                   key={chapter.id}
-                  to={`/read/${series.id}/${chapter.id}`}
                   className={cn(
-                    'group hover:bg-raised flex items-center gap-3 px-4 py-3 transition-colors sm:gap-4 sm:px-5',
+                    'hover:bg-raised flex items-center transition-colors',
                     index !== visibleChapters.length - 1 && 'border-line border-b',
                   )}
                 >
-                  <span className="border-line bg-base font-display text-secondary group-hover:border-accent/40 group-hover:text-accent flex size-9 shrink-0 items-center justify-center rounded-lg border text-sm font-bold transition-colors">
-                    {formatChapterNumber(chapter.number)}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="group-hover:text-accent truncate text-sm font-medium transition-colors">
-                      {chapter.title || `Capítulo ${formatChapterNumber(chapter.number)}`}
-                    </p>
-                    <p className="text-muted mt-0.5 text-[11px]">
-                      {formatDate(chapter.releaseDate)}
-                      {chapter.kind === 'EXTRA' ? ' · Extra' : ''}
-                      {chapter.kind === 'ANNOUNCEMENT' ? ' · Anuncio' : ''}
-                    </p>
-                  </div>
-                  <span className="text-muted hidden text-[11px] sm:block">
-                    {chapter.pages.length} páginas
-                  </span>
-                  <Play className="text-muted group-hover:text-accent size-4 shrink-0 transition-colors" />
-                </Link>
+                  <Link
+                    to={`/read/${series.id}/${chapter.id}`}
+                    className="group flex min-w-0 flex-1 items-center gap-3 py-3 pl-4 sm:gap-4 sm:pl-5"
+                  >
+                    <span className="border-line bg-base font-display text-secondary group-hover:border-accent/40 group-hover:text-accent flex size-9 shrink-0 items-center justify-center rounded-lg border text-sm font-bold transition-colors">
+                      {formatChapterNumber(chapter.number)}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="group-hover:text-accent truncate text-sm font-medium transition-colors">
+                        {chapter.title ||
+                          `Capítulo ${formatChapterNumber(chapter.number)}`}
+                      </p>
+                      <p className="text-muted mt-0.5 text-[11px]">
+                        {formatDate(chapter.releaseDate)}
+                        {chapter.kind === 'EXTRA' ? ' · Extra' : ''}
+                        {chapter.kind === 'ANNOUNCEMENT' ? ' · Anuncio' : ''}
+                      </p>
+                    </div>
+                    <span className="text-muted hidden text-[11px] sm:block">
+                      {chapter.pages.length} páginas
+                    </span>
+                    <Play className="text-muted group-hover:text-accent size-4 shrink-0 transition-colors" />
+                  </Link>
+                  {user ? (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        void mine.setRead(chapter.id, !mine.readIds.has(chapter.id))
+                      }
+                      disabled={!mine.data}
+                      aria-pressed={mine.readIds.has(chapter.id)}
+                      aria-label={
+                        mine.readIds.has(chapter.id)
+                          ? `Marcar el capítulo ${formatChapterNumber(chapter.number)} como no leído`
+                          : `Marcar el capítulo ${formatChapterNumber(chapter.number)} como leído`
+                      }
+                      className={cn(
+                        'mx-2 flex size-10 shrink-0 items-center justify-center rounded-lg transition-colors disabled:opacity-40 sm:mx-3',
+                        mine.readIds.has(chapter.id)
+                          ? 'text-success hover:bg-success/10'
+                          : 'text-muted hover:text-primary hover:bg-raised',
+                      )}
+                    >
+                      <Check className="size-4" />
+                    </button>
+                  ) : (
+                    <span className="w-4 shrink-0 sm:w-5" />
+                  )}
+                </div>
               ))}
             </div>
 
@@ -296,18 +338,53 @@ export function SeriesDetail({
             </dl>
           </div>
 
-          <div className="surface-card p-5">
-            <h2 className="font-display flex items-center gap-2 text-base font-bold">
-              <Users className="text-accent size-4" /> Comunidad
-            </h2>
-            <p className="text-secondary mt-2 text-xs leading-relaxed">
-              Únete a la conversación, comparte teorías y descubre nuevas lecturas con
-              otros frikis.
-            </p>
-            <Link to="/register" className={buttonStyles({ className: 'mt-4 w-full' })}>
-              <Check className="size-4" /> Crear cuenta
-            </Link>
-          </div>
+          {user ? (
+            <div className="surface-card p-5">
+              <h2 className="font-display flex items-center gap-2 text-base font-bold">
+                <Star className="text-accent size-4" /> Tu lectura
+              </h2>
+              {mine.error ? (
+                <p className="text-danger mt-3 text-xs">{mine.error}</p>
+              ) : (
+                <>
+                  <div className="mt-3">
+                    <RatingControl
+                      value={mine.data?.score ?? null}
+                      onChange={(score) => void mine.setScore(score)}
+                      disabled={!mine.data}
+                    />
+                  </div>
+                  {mine.data ? (
+                    <>
+                      <p className="text-secondary mt-4 text-xs">
+                        {mine.data.readChapters} de {mine.data.totalChapters} capítulos
+                        leídos
+                      </p>
+                      <div className="bg-raised mt-2 h-1.5 overflow-hidden rounded-full">
+                        <div
+                          className="bg-accent h-full rounded-full"
+                          style={{ width: `${mine.data.completionPercentage}%` }}
+                        />
+                      </div>
+                    </>
+                  ) : null}
+                </>
+              )}
+            </div>
+          ) : (
+            <div className="surface-card p-5">
+              <h2 className="font-display flex items-center gap-2 text-base font-bold">
+                <Users className="text-accent size-4" /> Comunidad
+              </h2>
+              <p className="text-secondary mt-2 text-xs leading-relaxed">
+                Crea tu cuenta para valorar, guardar favoritos y llevar la cuenta de lo
+                que lees.
+              </p>
+              <Link to="/register" className={buttonStyles({ className: 'mt-4 w-full' })}>
+                <Check className="size-4" /> Crear cuenta
+              </Link>
+            </div>
+          )}
         </aside>
 
         <div className="order-3 min-w-0 lg:order-none lg:col-start-1 lg:row-start-2">

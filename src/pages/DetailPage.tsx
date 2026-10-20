@@ -47,6 +47,7 @@ export function DetailPage() {
 
   return (
     <SeriesDetail
+      key={work.data.id}
       series={work.data}
       chapters={chapters.data ?? []}
       chaptersLoading={chapters.loading && !chapters.data}

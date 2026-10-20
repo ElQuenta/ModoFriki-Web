@@ -10,8 +10,6 @@ export type ChapterKind = 'NORMAL' | 'EXTRA' | 'ANNOUNCEMENT'
 
 export type ReadingMode = 'cascade' | 'paginated'
 
-export type FavoriteStatus = 'Leyendo' | 'Por leer' | 'Completado' | 'En pausa'
-
 export type UserRole = 'BASIC' | 'EDITOR' | 'ADMIN'
 
 export interface ChapterPage {
@@ -118,8 +116,8 @@ export interface AuthSession {
 
 export interface FavoriteItem {
   seriesId: string
-  status: FavoriteStatus
   addedAt: string
+  series: Series
 }
 
 export interface ReadingProgress {
