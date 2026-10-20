@@ -1,11 +1,63 @@
 import { Link } from 'react-router-dom'
-import { ArrowUpRight, Hash, Layers } from 'lucide-react'
-import { GENRES, SERIES, TAGS } from '@/data/mock'
+import { ArrowUpRight, Layers, Shapes } from 'lucide-react'
+import type { Taxonomy } from '@/types'
 import { useDocumentTitle } from '@/hooks/useDocumentTitle'
+import { useGenres, useWorkTypes } from '@/hooks/useCatalog'
 import { Badge } from '@/components/ui/badge'
+import { Skeleton } from '@/components/ui/skeleton'
+import { ErrorState } from '@/components/ui/empty-state'
+
+function TaxonomyGrid({
+  items,
+  loading,
+  error,
+  reload,
+  param,
+}: {
+  items?: Taxonomy[]
+  loading: boolean
+  error?: string
+  reload: () => void
+  param: 'genre' | 'type'
+}) {
+  if (error) return <ErrorState message={error} onRetry={reload} />
+  if (loading && !items) {
+    return (
+      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3 lg:grid-cols-4">
+        {Array.from({ length: 8 }, (_, index) => (
+          <Skeleton key={index} className="h-16 w-full rounded-2xl" />
+        ))}
+      </div>
+    )
+  }
+  if (!items?.length) {
+    return <p className="text-secondary text-sm">Todavía no hay nada aquí.</p>
+  }
+  return (
+    <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3 lg:grid-cols-4">
+      {items.map((item) => (
+        <Link
+          key={item.id}
+          to={`/series?${param}=${item.id}`}
+          className="group border-line bg-surface hover:border-accent/40 relative overflow-hidden rounded-2xl border p-4 transition-all hover:-translate-y-0.5"
+        >
+          <div className="bg-accent/5 group-hover:bg-accent/10 absolute -top-8 -right-8 size-24 rounded-full blur-2xl transition-colors" />
+          <div className="flex items-start justify-between gap-2">
+            <p className="font-display group-hover:text-accent text-base font-bold transition-colors">
+              {item.name}
+            </p>
+            <ArrowUpRight className="text-muted group-hover:text-accent size-4 transition-colors" />
+          </div>
+        </Link>
+      ))}
+    </div>
+  )
+}
 
 export function GenresPage() {
-  useDocumentTitle('Géneros y tags')
+  useDocumentTitle('Géneros')
+  const genres = useGenres()
+  const types = useWorkTypes()
 
   return (
     <div className="container-mf pt-8 pb-4">
@@ -14,7 +66,7 @@ export function GenresPage() {
           Explora por categoría
         </p>
         <h1 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">
-          Géneros y tags
+          Géneros y tipos
         </h1>
         <p className="text-secondary mt-3 text-sm leading-relaxed">
           Encuentra exactamente lo que te apetece leer. Cada género reúne series de todos
@@ -26,63 +78,37 @@ export function GenresPage() {
         <h2 className="font-display mb-4 flex items-center gap-2 text-xl font-bold">
           <Layers className="text-accent size-5" /> Géneros
         </h2>
-        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3 lg:grid-cols-4">
-          {GENRES.map((genre) => {
-            const count = SERIES.filter((series) => series.genres.includes(genre)).length
-            return (
-              <Link
-                key={genre}
-                to={`/series?genre=${encodeURIComponent(genre)}`}
-                className="group border-line bg-surface hover:border-accent/40 relative overflow-hidden rounded-2xl border p-4 transition-all hover:-translate-y-0.5"
-              >
-                <div className="bg-accent/5 group-hover:bg-accent/10 absolute -top-8 -right-8 size-24 rounded-full blur-2xl transition-colors" />
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <p className="font-display group-hover:text-accent text-base font-bold transition-colors">
-                      {genre}
-                    </p>
-                    <p className="text-muted mt-1 text-[11px]">
-                      {count} {count === 1 ? 'serie' : 'series'}
-                    </p>
-                  </div>
-                  <ArrowUpRight className="text-muted group-hover:text-accent size-4 transition-colors" />
-                </div>
-              </Link>
-            )
-          })}
-        </div>
+        <TaxonomyGrid
+          items={genres.data}
+          loading={genres.loading}
+          error={genres.error}
+          reload={genres.reload}
+          param="genre"
+        />
       </section>
 
       <section className="mt-12">
         <h2 className="font-display mb-4 flex items-center gap-2 text-xl font-bold">
-          <Hash className="text-accent size-5" /> Tags populares
+          <Shapes className="text-accent size-5" /> Tipos de obra
         </h2>
-        <div className="flex flex-wrap gap-2">
-          {TAGS.map((tag) => {
-            const count = SERIES.filter((series) => series.tags.includes(tag)).length
-            return (
-              <Link
-                key={tag}
-                to={`/series?q=${encodeURIComponent(tag)}`}
-                className="border-line bg-surface text-secondary hover:border-accent/40 hover:text-accent inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm transition-colors"
-              >
-                #{tag}
-                <span className="text-muted text-[10px]">{count}</span>
-              </Link>
-            )
-          })}
-        </div>
+        <TaxonomyGrid
+          items={types.data}
+          loading={types.loading}
+          error={types.error}
+          reload={types.reload}
+          param="type"
+        />
       </section>
 
       <section className="border-line bg-surface mt-12 rounded-2xl border p-5">
         <Badge tone="accent">Tip</Badge>
         <p className="text-secondary mt-3 text-sm">
-          Puedes combinar filtros desde el catálogo: por ejemplo,{' '}
+          En el catálogo puedes combinar un tipo con un género, o ver{' '}
           <Link
-            to="/series?genre=Fantasía&status=En%20emisión&sort=rating"
+            to="/series?sort=views"
             className="text-accent font-semibold hover:underline"
           >
-            fantasía en emisión mejor valorada
+            las series más visitadas
           </Link>
           .
         </p>
