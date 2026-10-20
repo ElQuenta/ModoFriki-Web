@@ -1,11 +1,18 @@
-import { SERIES, getChaptersForSeries } from '@/data/mock'
+import { listLatestChapters } from '@/services/discovery'
+import { useAsync } from '@/hooks/useAsync'
 import { SeriesCard } from '@/components/catalog/SeriesCard'
 import { SectionHeader } from '@/components/ui/section-header'
+import { SeriesCardSkeleton } from '@/components/ui/skeleton'
+import { ErrorState } from '@/components/ui/empty-state'
 
 export function LatestChapters() {
-  const latest = [...SERIES]
-    .sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt))
-    .slice(0, 4)
+  const { data, loading, error, reload } = useAsync(
+    () => listLatestChapters({ limit: 8 }),
+    'latest-chapters',
+  )
+  const items = data?.items ?? []
+
+  if (!loading && !error && items.length === 0) return null
 
   return (
     <section className="container-mf mt-16">
@@ -16,15 +23,17 @@ export function LatestChapters() {
         actionLabel="Ver catálogo"
         actionTo="/series"
       />
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
-        {latest.map((series) => (
-          <SeriesCard
-            key={series.id}
-            series={series}
-            latestChapter={getChaptersForSeries(series.id)[0]}
-          />
-        ))}
-      </div>
+      {error ? (
+        <ErrorState message={error} onRetry={reload} />
+      ) : (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
+          {loading && !data
+            ? Array.from({ length: 4 }, (_, index) => <SeriesCardSkeleton key={index} />)
+            : items.map(({ series, chapter }) => (
+                <SeriesCard key={chapter.id} series={series} latestChapter={chapter} />
+              ))}
+        </div>
+      )}
     </section>
   )
 }
