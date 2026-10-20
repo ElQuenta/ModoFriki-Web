@@ -1,4 +1,4 @@
-import type { FavoriteStatus, SeriesStatus, SeriesType } from '@/types'
+import type { FavoriteStatus, SeriesStatus, SeriesType, UserRole } from '@/types'
 
 export const APP_NAME = 'ModoFriki'
 
@@ -30,5 +30,11 @@ export const SORT_OPTIONS = [
 export const READER_KEY = 'modofriki_reader'
 export const FAVORITES_KEY = 'modofriki_favorites'
 export const PROGRESS_KEY = 'modofriki_progress'
-export const AUTH_KEY = 'modofriki_auth'
+export const TOKEN_KEY = 'modofriki_token'
 export const UI_KEY = 'modofriki_ui'
+
+export const ROLE_LABELS: Record<UserRole, string> = {
+  BASIC: 'Lector',
+  EDITOR: 'Editor',
+  ADMIN: 'Admin',
+}
