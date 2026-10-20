@@ -73,25 +73,36 @@ export interface LatestChapterItem {
   series: Series
 }
 
-export interface CommentReply {
+export type CommentTargetType = 'WORK' | 'CHAPTER'
+
+export type ReportReason = 'SPAM' | 'HARASSMENT' | 'HATE' | 'SPOILER' | 'OTHER'
+
+export type ReportStatus = 'OPEN' | 'IN_REVIEW' | 'RESOLVED' | 'DISMISSED'
+
+export interface Comment {
   id: string
-  userName: string
-  userAvatar: string
-  content: string
+  author: { id: string; username: string } | null
+  targetType: CommentTargetType
+  targetId: string
+  parentCommentId: string | null
+  rootCommentId: string
+  bodyMarkdown: string | null
+  status: 'ACTIVE' | 'DELETED'
+  revision: number
   createdAt: string
+  editedAt: string | null
+  votes: { upvotes: number; downvotes: number; score: number }
 }
 
-export interface UserComment {
-  id: string
-  seriesId: string
-  chapterNumber?: number
-  userName: string
-  userAvatar: string
-  content: string
+export interface Cursor {
   createdAt: string
-  likes: number
-  spoiler: boolean
-  replies: CommentReply[]
+  id: string
+}
+
+export interface CursorPage<T> {
+  items: T[]
+  hasMore: boolean
+  nextCursor: Cursor | null
 }
 
 export interface UserPreferences {
