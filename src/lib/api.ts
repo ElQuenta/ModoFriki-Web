@@ -9,12 +9,41 @@ export const UNAUTHORIZED_EVENT = 'modofriki:unauthorized'
 
 export class ApiError extends Error {
   status: number
+  /** Mensaje original del backend (en inglés), útil para distinguir casos. */
+  detail?: string
 
-  constructor(message: string, status: number) {
+  constructor(message: string, status: number, detail?: string) {
     super(message)
     this.name = 'ApiError'
     this.status = status
+    this.detail = detail
   }
+}
+
+// Mensajes del backend que merecen un texto propio en vez del genérico por estado.
+const DETAILS: Record<string, string> = {
+  'A published work requires a cover':
+    'Para publicar la obra necesitas subir una portada.',
+  'Published work requires a cover': 'Para publicar la obra necesitas subir una portada.',
+  'Publish the work before publishing its chapters':
+    'Publica la obra antes de publicar sus capítulos.',
+  'Published chapters require pages':
+    'Para publicar el capítulo necesitas subir páginas.',
+  'Published chapter requires pages and a published work':
+    'Para publicar el capítulo necesitas páginas y que la obra esté publicada.',
+  'Chapter number already exists': 'Ya existe un capítulo con ese número.',
+  'Resource or media identifier already exists':
+    'Ya existe un elemento con ese nombre o slug.',
+  'Another upload is pending for this work':
+    'Hay otra subida en curso para esta obra. Espera un momento.',
+  'Work is not assigned to this editor':
+    'Esta obra no está asignada a tu cuenta de editor.',
+  'At least one page is required': 'Sube al menos una página.',
+  'Chapter exceeds 1000 pages': 'Un capítulo no puede pasar de 1000 páginas.',
+  'Invalid insertion position': 'La posición de inserción no es válida.',
+  'Unknown genre': 'Uno de los géneros no existe.',
+  'Unknown work type': 'El tipo de obra no existe.',
+  'Combined files exceed 100 MiB': 'Los archivos juntos pasan de 100 MiB.',
 }
 
 const MESSAGES: Record<number, string> = {
@@ -85,11 +114,12 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
   if (!response.ok) {
     if (response.status === 401 && token)
       window.dispatchEvent(new Event(UNAUTHORIZED_EVENT))
+    const detail = payload?.error?.message
     const message =
+      (detail && DETAILS[detail]) ??
       MESSAGES[response.status] ??
-      payload?.error?.message ??
       'Algo salió mal en el servidor.'
-    throw new ApiError(message, response.status)
+    throw new ApiError(message, response.status, detail)
   }
 
   return payload?.data as T
