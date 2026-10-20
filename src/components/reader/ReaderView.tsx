@@ -21,6 +21,7 @@ import { useLibrary } from '@/hooks/useLibrary'
 import { useReaderSettings } from '@/hooks/useReaderSettings'
 import { buttonStyles } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { CommentSection } from '@/components/detail/CommentSection'
 
 const widthClass = {
   compact: 'max-w-2xl',
@@ -373,6 +374,14 @@ export function ReaderView({
           </div>
         )}
       </main>
+
+      <div className="mx-auto max-w-3xl px-4 pb-8">
+        <CommentSection
+          targetType="CHAPTER"
+          targetId={chapter.id}
+          title="Comentarios del capítulo"
+        />
+      </div>
 
       <footer className="border-line bg-base/95 fixed inset-x-0 bottom-0 z-40 border-t pb-[env(safe-area-inset-bottom)] backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center gap-1.5 px-2 py-2 sm:gap-2 sm:px-5 sm:py-2.5">
