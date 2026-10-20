@@ -1,33 +1,18 @@
-import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Heart, Trash2, BookOpen } from 'lucide-react'
-import { FAVORITE_STATUSES } from '@/lib/constants'
-import { SERIES } from '@/data/mock'
-import type { FavoriteStatus } from '@/types'
-import { cn } from '@/lib/cn'
 import { useLibrary } from '@/hooks/useLibrary'
 import { SeriesCard } from '@/components/catalog/SeriesCard'
-import { EmptyState } from '@/components/ui/empty-state'
+import { EmptyState, ErrorState } from '@/components/ui/empty-state'
+import { SeriesCardSkeleton } from '@/components/ui/skeleton'
 import { buttonStyles } from '@/components/ui/button'
 
-type Filter = 'Todos' | FavoriteStatus
-
 export function FavoritesView() {
-  const { favorites, setFavoriteStatus, removeFavorite } = useLibrary()
-  const [filter, setFilter] = useState<Filter>('Todos')
+  const { favorites, favoritesLoading, favoritesError, reloadFavorites, removeFavorite } =
+    useLibrary()
 
-  const items = Object.values(favorites)
-    .map((favorite) => ({
-      favorite,
-      series: SERIES.find((series) => series.id === favorite.seriesId),
-    }))
-    .filter((item) => item.series)
-    .filter((item) => filter === 'Todos' || item.favorite.status === filter)
-
-  const counts = FAVORITE_STATUSES.reduce<Record<string, number>>((acc, status) => {
-    acc[status] = Object.values(favorites).filter((item) => item.status === status).length
-    return acc
-  }, {})
+  const items = Object.values(favorites).sort(
+    (a, b) => Date.parse(b.addedAt) - Date.parse(a.addedAt),
+  )
 
   return (
     <div className="container-mf pt-8 pb-4">
@@ -39,83 +24,41 @@ export function FavoritesView() {
           Favoritos
         </h1>
         <p className="text-secondary mt-3 max-w-xl text-sm">
-          {Object.keys(favorites).length} series guardadas. Organízalas por estado y
-          retoma la lectura cuando quieras.
+          {items.length} series guardadas. Retoma la lectura cuando quieras.
         </p>
       </div>
 
-      <div className="no-scrollbar mb-6 flex gap-2 overflow-x-auto pb-1">
-        <button
-          type="button"
-          onClick={() => setFilter('Todos')}
-          className={cn(
-            'shrink-0 rounded-full border px-4 py-2 text-xs font-semibold transition-colors',
-            filter === 'Todos'
-              ? 'border-accent/40 bg-accent/10 text-accent'
-              : 'border-line bg-surface text-secondary hover:text-primary',
-          )}
-        >
-          Todos ({Object.keys(favorites).length})
-        </button>
-        {FAVORITE_STATUSES.map((status) => (
-          <button
-            key={status}
-            type="button"
-            onClick={() => setFilter(status)}
-            className={cn(
-              'shrink-0 rounded-full border px-4 py-2 text-xs font-semibold transition-colors',
-              filter === status
-                ? 'border-accent/40 bg-accent/10 text-accent'
-                : 'border-line bg-surface text-secondary hover:text-primary',
-            )}
-          >
-            {status} ({counts[status] ?? 0})
-          </button>
-        ))}
-      </div>
-
-      {items.length === 0 ? (
+      {favoritesError ? (
+        <ErrorState message={favoritesError} onRetry={reloadFavorites} />
+      ) : favoritesLoading ? (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5">
+          {Array.from({ length: 5 }, (_, index) => (
+            <SeriesCardSkeleton key={index} />
+          ))}
+        </div>
+      ) : items.length === 0 ? (
         <EmptyState
           icon={Heart}
           title="Tu biblioteca está esperando"
-          description="Guarda series con el botón de favorito para tenerlas siempre a mano. Puedes organizarlas por estado de lectura."
+          description="Guarda series con el botón de favorito para tenerlas siempre a mano."
           actionLabel="Explorar catálogo"
           actionTo="/series"
         />
       ) : (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5">
-          {items.map(({ favorite, series }) => {
-            if (!series) return null
-            return (
-              <div key={series.id}>
-                <SeriesCard series={series} compact />
-                <div className="mt-2 flex items-center gap-1.5">
-                  <select
-                    value={favorite.status}
-                    onChange={(event) =>
-                      setFavoriteStatus(series.id, event.target.value as FavoriteStatus)
-                    }
-                    aria-label={`Estado de ${series.title}`}
-                    className="border-line bg-surface text-secondary focus:border-accent/60 h-10 min-w-0 flex-1 rounded-lg border px-2 text-[11px] outline-none"
-                  >
-                    {FAVORITE_STATUSES.map((status) => (
-                      <option key={status} value={status}>
-                        {status}
-                      </option>
-                    ))}
-                  </select>
-                  <button
-                    type="button"
-                    onClick={() => removeFavorite(series.id)}
-                    aria-label={`Quitar ${series.title} de favoritos`}
-                    className="border-line text-muted hover:border-danger/40 hover:text-danger flex size-10 shrink-0 items-center justify-center rounded-lg border transition-colors"
-                  >
-                    <Trash2 className="size-3.5" />
-                  </button>
-                </div>
-              </div>
-            )
-          })}
+          {items.map(({ series }) => (
+            <div key={series.id}>
+              <SeriesCard series={series} compact />
+              <button
+                type="button"
+                onClick={() => void removeFavorite(series.id)}
+                aria-label={`Quitar ${series.title} de favoritos`}
+                className="border-line text-muted hover:border-danger/40 hover:text-danger mt-2 flex h-10 w-full items-center justify-center gap-1.5 rounded-lg border text-xs transition-colors"
+              >
+                <Trash2 className="size-3.5" /> Quitar
+              </button>
+            </div>
+          ))}
         </div>
       )}
 

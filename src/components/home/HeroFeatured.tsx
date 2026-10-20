@@ -115,7 +115,7 @@ export function HeroFeatured() {
               </Link>
               <button
                 type="button"
-                onClick={() => toggleFavorite(series.id)}
+                onClick={() => void toggleFavorite(series)}
                 className={buttonStyles({
                   variant: 'secondary',
                   size: 'lg',

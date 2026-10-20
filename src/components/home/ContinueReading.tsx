@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom'
 import { ArrowRight, Clock3, Play } from 'lucide-react'
-import { SERIES } from '@/data/mock'
+import { listReadingHistory } from '@/services/reading'
+import { useAsync } from '@/hooks/useAsync'
+import { useAuth } from '@/hooks/useAuth'
 import { formatChapterNumber } from '@/lib/format'
 import { useLibrary } from '@/hooks/useLibrary'
 import { useGenres } from '@/hooks/useCatalog'
@@ -9,15 +11,19 @@ import { CoverImage } from '@/components/ui/cover-image'
 import { Badge } from '@/components/ui/badge'
 
 export function ContinueReading() {
-  const { progress } = useLibrary()
-  const entries = Object.values(progress)
-    .sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt))
+  const { user } = useAuth()
+  const { getProgress } = useLibrary()
+  const { data } = useAsync(
+    () => listReadingHistory(1, 20),
+    `history:${user?.id}`,
+    Boolean(user),
+  )
+
+  // Una entrada por obra: la lectura más reciente de cada una.
+  const seen = new Set<string>()
+  const entries = (user ? (data?.items ?? []) : [])
+    .filter((item) => !seen.has(item.series.id) && seen.add(item.series.id))
     .slice(0, 3)
-    .map((item) => ({
-      item,
-      series: SERIES.find((series) => series.id === item.seriesId),
-    }))
-    .filter((entry) => entry.series)
 
   if (entries.length === 0) return null
 
@@ -31,11 +37,13 @@ export function ContinueReading() {
         actionTo="/profile"
       />
       <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3">
-        {entries.map(({ item, series }) => {
-          if (!series) return null
+        {entries.map((item) => {
+          const { series } = item
+          const local = getProgress(series.id)
+          const page = local?.chapterId === item.chapterId ? local : undefined
           return (
             <article
-              key={item.seriesId}
+              key={series.id}
               className="group border-line bg-surface hover:border-accent/30 flex gap-3 rounded-2xl border p-3 transition-colors sm:gap-4"
             >
               <Link to={`/series/${series.id}`} className="shrink-0">
@@ -54,24 +62,32 @@ export function ContinueReading() {
                   >
                     {series.title}
                   </Link>
-                  <Badge tone="accent" className="shrink-0">
-                    {item.percentage}%
-                  </Badge>
+                  {item.isRead ? (
+                    <Badge tone="success" className="shrink-0">
+                      Leído
+                    </Badge>
+                  ) : page ? (
+                    <Badge tone="accent" className="shrink-0">
+                      {page.percentage}%
+                    </Badge>
+                  ) : null}
                 </div>
                 <p className="text-secondary mt-1 truncate text-xs">
-                  Cap. {formatChapterNumber(item.chapterNumber)} · Página {item.page} de{' '}
-                  {item.totalPages}
+                  Cap. {formatChapterNumber(item.chapterNumber)}
+                  {page ? ` · Página ${page.page} de ${page.totalPages}` : ''}
                 </p>
-                <div className="bg-raised mt-3 h-1.5 overflow-hidden rounded-full">
-                  <div
-                    className="bg-accent h-full rounded-full"
-                    style={{ width: `${item.percentage}%` }}
-                  />
-                </div>
+                {page ? (
+                  <div className="bg-raised mt-3 h-1.5 overflow-hidden rounded-full">
+                    <div
+                      className="bg-accent h-full rounded-full"
+                      style={{ width: `${page.percentage}%` }}
+                    />
+                  </div>
+                ) : null}
                 <div className="mt-auto flex items-center justify-between gap-2 pt-3">
                   <span className="text-muted flex items-center gap-1 text-[11px]">
                     <Clock3 className="size-3" />
-                    {new Date(item.updatedAt).toLocaleDateString('es', {
+                    {new Date(item.lastReadAt).toLocaleDateString('es', {
                       day: '2-digit',
                       month: 'short',
                     })}
