@@ -17,8 +17,8 @@ export function AppRoutes() {
     <Routes>
       <Route path="/" element={<HomePage />} />
       <Route path="/series" element={<CatalogPage />} />
-      <Route path="/series/:slug" element={<DetailPage />} />
-      <Route path="/read/:slug/:chapter" element={<ReaderPage />} />
+      <Route path="/series/:id/:slug?" element={<DetailPage />} />
+      <Route path="/read/:workId/:chapterId" element={<ReaderPage />} />
       <Route path="/genres" element={<GenresPage />} />
       <Route path="/rankings" element={<RankingsPage />} />
       <Route
