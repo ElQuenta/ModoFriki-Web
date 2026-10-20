@@ -45,3 +45,9 @@ export function percent(value: number, total: number): number {
   if (total <= 0) return 0
   return clamp(Math.round((value / total) * 100), 0, 100)
 }
+
+/** El backend serializa el número de capítulo como decimal ("12.500"). */
+export function formatChapterNumber(value: string): string {
+  const number = Number(value)
+  return Number.isFinite(number) ? String(number) : value
+}

@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   BookOpen,
@@ -6,14 +7,23 @@ import {
   Clock3,
   LogOut,
   Settings2,
-  Trash2,
+  Flame,
+  Trophy,
   UserRound,
 } from 'lucide-react'
-import { SERIES } from '@/data/mock'
-import { FAVORITE_STATUSES } from '@/lib/constants'
+import {
+  getReadingCalendar,
+  getReadingStats,
+  listReadingHistory,
+  type HistoryEntry,
+} from '@/services/reading'
+import { useAsync } from '@/hooks/useAsync'
+import { ErrorState } from '@/components/ui/empty-state'
+import { Skeleton } from '@/components/ui/skeleton'
+import { ROLE_LABELS } from '@/lib/constants'
 import type { ReadingMode } from '@/types'
 import { cn } from '@/lib/cn'
-import { formatDate } from '@/lib/format'
+import { formatChapterNumber, formatDate } from '@/lib/format'
 import { useAuth } from '@/hooks/useAuth'
 import { useLibrary } from '@/hooks/useLibrary'
 import { useReaderSettings } from '@/hooks/useReaderSettings'
@@ -26,7 +36,26 @@ import { SectionHeader } from '@/components/ui/section-header'
 
 export function ProfileView() {
   const { user, logout } = useAuth()
-  const { favorites, progress, clearHistory } = useLibrary()
+  const { getProgress } = useLibrary()
+  const [historyPages, setHistoryPages] = useState(1)
+  const stats = useAsync(getReadingStats, `reading-stats:${user?.id}`, Boolean(user))
+  const calendar = useAsync(
+    () => getReadingCalendar(),
+    `calendar:${user?.id}`,
+    Boolean(user),
+  )
+  const historyQuery = useAsync(
+    async () => {
+      const pages = await Promise.all(
+        Array.from({ length: historyPages }, (_, index) =>
+          listReadingHistory(index + 1, 20),
+        ),
+      )
+      return { items: pages.flatMap((page) => page.items), total: pages[0]?.total ?? 0 }
+    },
+    `history:${user?.id}:${historyPages}`,
+    Boolean(user),
+  )
   const { settings, setMode } = useReaderSettings()
 
   if (!user) {
@@ -43,20 +72,13 @@ export function ProfileView() {
     )
   }
 
-  const history = Object.values(progress)
-    .sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt))
-    .map((item) => ({
-      item,
-      series: SERIES.find((series) => series.id === item.seriesId),
-    }))
-    .filter((entry) => entry.series)
-
-  const reading = Object.values(favorites).filter(
-    (item) => item.status === 'Leyendo',
-  ).length
-  const completed = Object.values(favorites).filter(
-    (item) => item.status === 'Completado',
-  ).length
+  const history: HistoryEntry[] =
+    historyQuery.data?.items ?? historyQuery.staleData?.items ?? []
+  const hasMoreHistory = history.length < (historyQuery.data?.total ?? 0)
+  const maxDay = Math.max(
+    1,
+    ...(calendar.data?.days.map((day) => day.chaptersRead) ?? []),
+  )
 
   return (
     <div className="container-mf pt-8 pb-4">
@@ -65,23 +87,21 @@ export function ProfileView() {
         <div className="px-4 pb-5 sm:px-8 sm:pb-6">
           <div className="-mt-10 flex flex-col gap-4 sm:-mt-12 sm:flex-row sm:items-end">
             <Avatar
-              src={user.avatarUrl}
-              alt={user.name}
+              alt={user.username}
               size="xl"
               className="border-surface size-24 self-center border-4 sm:size-28 sm:self-auto"
             />
             <div className="min-w-0 flex-1 pb-1">
               <div className="flex flex-wrap items-center gap-2">
                 <h1 className="font-display text-2xl font-bold sm:text-3xl">
-                  {user.name}
+                  {user.username}
                 </h1>
-                <Badge tone="accent">{user.role}</Badge>
+                <Badge tone="accent">{ROLE_LABELS[user.role]}</Badge>
               </div>
               <p className="text-muted mt-1 text-sm">@{user.username}</p>
-              <p className="text-secondary mt-2 max-w-xl text-sm">{user.bio}</p>
               <p className="text-muted mt-2 flex items-center gap-1.5 text-[11px]">
                 <CalendarDays className="size-3.5" /> Miembro desde{' '}
-                {formatDate(user.joinedAt)}
+                {formatDate(user.createdAt)}
               </p>
             </div>
             <Button
@@ -95,20 +115,95 @@ export function ProfileView() {
         </div>
       </div>
 
+      {stats.error ? (
+        <ErrorState message={stats.error} onRetry={stats.reload} className="mt-6" />
+      ) : null}
       <div className="mt-6 grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-3">
         {[
-          { label: 'Favoritos', value: Object.keys(favorites).length, icon: BookOpen },
-          { label: 'Leyendo', value: reading, icon: Clock3 },
-          { label: 'Completados', value: completed, icon: CheckCircle2 },
-          { label: 'En historial', value: history.length, icon: Settings2 },
+          {
+            label: 'Racha actual',
+            value: stats.data?.currentStreak,
+            icon: Flame,
+            suffix: ' días',
+          },
+          {
+            label: 'Mejor racha',
+            value: stats.data?.longestStreak,
+            icon: Trophy,
+            suffix: ' días',
+          },
+          {
+            label: 'Capítulos leídos',
+            value: stats.data?.markedReadChapters,
+            icon: CheckCircle2,
+          },
+          { label: 'Favoritos', value: stats.data?.favorites, icon: BookOpen },
+          { label: 'Lecturas (7 días)', value: stats.data?.readsLast7Days, icon: Clock3 },
+          {
+            label: 'Lecturas (30 días)',
+            value: stats.data?.readsLast30Days,
+            icon: Clock3,
+          },
+          { label: 'Días activos', value: stats.data?.activeDays, icon: CalendarDays },
+          {
+            label: 'Lecturas totales',
+            value: stats.data?.recordedReads,
+            icon: Settings2,
+          },
         ].map((stat) => (
           <div key={stat.label} className="surface-card p-3.5 sm:p-4">
             <stat.icon className="text-accent size-4" />
-            <p className="font-display mt-2 text-2xl font-bold">{stat.value}</p>
+            {stat.value === undefined ? (
+              <Skeleton className="mt-2 h-8 w-12" />
+            ) : (
+              <p className="font-display mt-2 text-2xl font-bold">
+                {stat.value}
+                {'suffix' in stat && stat.suffix ? (
+                  <span className="text-muted text-xs font-normal">{stat.suffix}</span>
+                ) : null}
+              </p>
+            )}
             <p className="text-muted text-[11px]">{stat.label}</p>
           </div>
         ))}
       </div>
+
+      <section className="surface-card mt-6 p-5">
+        <h2 className="font-display flex items-center gap-2 text-base font-bold">
+          <CalendarDays className="text-accent size-4" /> Calendario de lectura
+        </h2>
+        {calendar.error ? (
+          <p className="text-danger mt-3 text-xs">{calendar.error}</p>
+        ) : !calendar.data ? (
+          <Skeleton className="mt-4 h-24 w-full" />
+        ) : (
+          <>
+            <div className="mt-4 grid grid-flow-col grid-rows-7 justify-start gap-1 overflow-x-auto pb-1">
+              {calendar.data.days.map((day) => (
+                <span
+                  key={day.date}
+                  title={`${formatDate(day.date + 'T12:00:00')}: ${day.chaptersRead} capítulos`}
+                  aria-label={`${day.date}: ${day.chaptersRead} capítulos`}
+                  className="bg-raised size-3.5 rounded-[3px]"
+                  style={
+                    day.chaptersRead
+                      ? {
+                          backgroundColor: 'var(--color-accent)',
+                          opacity: 0.3 + 0.7 * (day.chaptersRead / maxDay),
+                        }
+                      : undefined
+                  }
+                />
+              ))}
+            </div>
+            <p className="text-muted mt-3 text-[11px]">
+              Del {formatDate(calendar.data.from + 'T12:00:00')} al{' '}
+              {formatDate(calendar.data.to + 'T12:00:00')} · zona horaria{' '}
+              {calendar.data.timezone}
+            </p>
+          </>
+        )}
+      </section>
 
       <div className="mt-10 grid gap-6 lg:grid-cols-[1fr_20rem]">
         <section>
@@ -116,7 +211,15 @@ export function ProfileView() {
             title="Historial de lectura"
             description="Retoma cualquiera de tus lecturas recientes."
           />
-          {history.length === 0 ? (
+          {historyQuery.error && history.length === 0 ? (
+            <ErrorState message={historyQuery.error} onRetry={historyQuery.reload} />
+          ) : historyQuery.loading && history.length === 0 ? (
+            <div className="space-y-2">
+              {Array.from({ length: 3 }, (_, index) => (
+                <Skeleton key={index} className="h-24 w-full" />
+              ))}
+            </div>
+          ) : history.length === 0 ? (
             <EmptyState
               icon={BookOpen}
               title="Todavía no has leído nada"
@@ -126,12 +229,14 @@ export function ProfileView() {
             />
           ) : (
             <div className="border-line bg-surface overflow-hidden rounded-2xl border">
-              {history.map(({ item, series }, index) => {
-                if (!series) return null
+              {history.map((item, index) => {
+                const { series } = item
+                const local = getProgress(series.id)
+                const page = local?.chapterId === item.chapterId ? local : undefined
                 return (
                   <Link
-                    key={series.id}
-                    to={`/read/${series.slug}/${item.chapterNumber}`}
+                    key={`${item.chapterId}-${item.lastReadAt}`}
+                    to={`/read/${series.id}/${item.chapterId}`}
                     className={cn(
                       'group hover:bg-raised flex items-center gap-3 p-3 transition-colors sm:gap-4',
                       index !== history.length - 1 && 'border-line border-b',
@@ -148,24 +253,34 @@ export function ProfileView() {
                         {series.title}
                       </p>
                       <p className="text-muted mt-0.5 text-[11px]">
-                        Cap. {item.chapterNumber} · Página {item.page} de{' '}
-                        {item.totalPages}
+                        Cap. {formatChapterNumber(item.chapterNumber)}
+                        {item.chapterTitle ? ` · ${item.chapterTitle}` : ''}
+                        {page ? ` · Página ${page.page} de ${page.totalPages}` : ''}
                       </p>
-                      <div className="bg-raised mt-2 h-1.5 max-w-xs overflow-hidden rounded-full">
-                        <div
-                          className="bg-accent h-full rounded-full"
-                          style={{ width: `${item.percentage}%` }}
-                        />
-                      </div>
+                      <p className="text-muted mt-1 text-[11px]">
+                        {formatDate(item.lastReadAt)}
+                      </p>
                     </div>
-                    <Badge tone="accent" className="shrink-0">
-                      {item.percentage}%
-                    </Badge>
+                    {item.isRead ? (
+                      <Badge tone="success" className="shrink-0">
+                        Leído
+                      </Badge>
+                    ) : null}
                   </Link>
                 )
               })}
             </div>
           )}
+          {hasMoreHistory ? (
+            <Button
+              variant="secondary"
+              onClick={() => setHistoryPages((value) => value + 1)}
+              disabled={historyQuery.loading}
+              className="mt-3 w-full"
+            >
+              {historyQuery.loading ? 'Cargando…' : 'Cargar más'}
+            </Button>
+          ) : null}
         </section>
 
         <aside className="space-y-4">
@@ -207,7 +322,7 @@ export function ProfileView() {
               </div>
               <div className="flex justify-between gap-3">
                 <dt className="text-muted">Rol</dt>
-                <dd className="font-medium">{user.role}</dd>
+                <dd className="font-medium">{ROLE_LABELS[user.role]}</dd>
               </div>
               <div className="flex justify-between gap-3">
                 <dt className="text-muted">Estado</dt>
@@ -219,16 +334,6 @@ export function ProfileView() {
             </Button>
           </div>
 
-          {history.length > 0 ? (
-            <button
-              type="button"
-              onClick={clearHistory}
-              className="border-line text-muted hover:border-danger/40 hover:text-danger flex w-full items-center justify-center gap-2 rounded-xl border py-2.5 text-xs font-semibold transition-colors"
-            >
-              <Trash2 className="size-3.5" /> Borrar historial
-            </button>
-          ) : null}
-
           <Link
             to="/favorites"
             className={buttonStyles({ variant: 'secondary', className: 'w-full' })}
@@ -236,17 +341,6 @@ export function ProfileView() {
             <BookOpen className="size-4" /> Ver favoritos
           </Link>
         </aside>
-      </div>
-
-      <div className="mt-10 grid gap-2.5 sm:grid-cols-3 sm:gap-3">
-        {FAVORITE_STATUSES.map((status) => (
-          <div key={status} className="border-line bg-surface rounded-xl border p-4">
-            <p className="text-muted text-xs">{status}</p>
-            <p className="font-display mt-1 text-xl font-bold">
-              {Object.values(favorites).filter((item) => item.status === status).length}
-            </p>
-          </div>
-        ))}
       </div>
     </div>
   )

@@ -1,116 +1,136 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useCallback, useMemo, type ReactNode } from 'react'
-import { FAVORITES_KEY, PROGRESS_KEY } from '@/lib/constants'
-import type { FavoriteItem, FavoriteStatus, ReadingProgress } from '@/types'
+import {
+  createContext,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react'
+import { useNavigate } from 'react-router-dom'
+import { toast } from 'sonner'
+import { PROGRESS_KEY } from '@/lib/constants'
+import { errorMessage } from '@/lib/api'
+import type { FavoriteItem, ReadingProgress, Series } from '@/types'
+import * as reading from '@/services/reading'
+import { useAuth } from '@/hooks/useAuth'
 import { useLocalStorage } from '@/hooks/useLocalStorage'
 import { percent } from '@/lib/format'
 
-const SEED_FAVORITES: Record<string, FavoriteItem> = {
-  s1: { seriesId: 's1', status: 'Leyendo', addedAt: '2026-10-01T10:00:00.000Z' },
-  s2: { seriesId: 's2', status: 'Por leer', addedAt: '2026-10-04T10:00:00.000Z' },
-  s10: { seriesId: 's10', status: 'Completado', addedAt: '2026-09-20T10:00:00.000Z' },
-}
-
-const SEED_PROGRESS: Record<string, ReadingProgress> = {
-  s1: {
-    seriesId: 's1',
-    chapterId: 'cazador-de-sombras-cap-5',
-    chapterNumber: 5,
-    page: 3,
-    totalPages: 5,
-    percentage: 60,
-    updatedAt: '2026-10-18T20:00:00.000Z',
-  },
-  s12: {
-    seriesId: 's12',
-    chapterId: 'codigo-rojo-cap-2',
-    chapterNumber: 2,
-    page: 2,
-    totalPages: 5,
-    percentage: 40,
-    updatedAt: '2026-10-17T18:00:00.000Z',
-  },
-}
-
 interface LibraryContextValue {
   favorites: Record<string, FavoriteItem>
-  progress: Record<string, ReadingProgress>
+  favoritesLoading: boolean
+  favoritesError?: string
+  reloadFavorites: () => void
   favoriteCount: number
-  toggleFavorite: (seriesId: string, status?: FavoriteStatus) => void
-  setFavoriteStatus: (seriesId: string, status: FavoriteStatus) => void
-  removeFavorite: (seriesId: string) => void
+  toggleFavorite: (series: Series) => Promise<void>
+  removeFavorite: (seriesId: string) => Promise<void>
   isFavorite: (seriesId: string) => boolean
-  getFavorite: (seriesId: string) => FavoriteItem | undefined
+  /** Página exacta dentro del capítulo: el backend solo guarda lectura por capítulo. */
+  progress: Record<string, ReadingProgress>
   updateProgress: (
     seriesId: string,
     chapterId: string,
-    chapterNumber: number,
+    chapterNumber: string,
     page: number,
     totalPages: number,
   ) => void
   getProgress: (seriesId: string) => ReadingProgress | undefined
-  clearHistory: () => void
+}
+
+function without<T>(record: Record<string, T>, key: string) {
+  const next = { ...record }
+  delete next[key]
+  return next
 }
 
 export const LibraryContext = createContext<LibraryContextValue | null>(null)
 
 export function LibraryProvider({ children }: { children: ReactNode }) {
-  const [favorites, setFavorites] = useLocalStorage<Record<string, FavoriteItem>>(
-    FAVORITES_KEY,
-    SEED_FAVORITES,
-  )
+  const { user } = useAuth()
+  const navigate = useNavigate()
+  const [favorites, setFavorites] = useState<Record<string, FavoriteItem>>({})
+  const [loaded, setLoaded] = useState<{ userId?: string; error?: string }>({})
+  const [nonce, setNonce] = useState(0)
   const [progress, setProgress] = useLocalStorage<Record<string, ReadingProgress>>(
     PROGRESS_KEY,
-    SEED_PROGRESS,
+    {},
+  )
+  const userId = user?.id
+
+  useEffect(() => {
+    if (!userId) return
+    let active = true
+    reading.listAllFavorites().then(
+      (items) => {
+        if (!active) return
+        setFavorites(
+          Object.fromEntries(
+            items.map((item) => [
+              item.series.id,
+              { seriesId: item.series.id, addedAt: item.addedAt, series: item.series },
+            ]),
+          ),
+        )
+        setLoaded({ userId })
+      },
+      (error: unknown) =>
+        active &&
+        setLoaded({
+          userId,
+          error: errorMessage(error, 'No pudimos cargar tus favoritos.'),
+        }),
+    )
+    return () => {
+      active = false
+    }
+  }, [userId, nonce])
+
+  const visibleFavorites = useMemo(() => (userId ? favorites : {}), [userId, favorites])
+
+  const removeFavorite = useCallback(
+    async (seriesId: string) => {
+      const previous = favorites[seriesId]
+      setFavorites((current) => without(current, seriesId))
+      try {
+        await reading.removeFavorite(seriesId)
+        toast.success('Quitado de favoritos')
+      } catch (error) {
+        if (previous) setFavorites((current) => ({ ...current, [seriesId]: previous }))
+        toast.error(errorMessage(error, 'No pudimos quitarlo de favoritos.'))
+      }
+    },
+    [favorites],
   )
 
   const toggleFavorite = useCallback(
-    (seriesId: string, status: FavoriteStatus = 'Leyendo') => {
-      setFavorites((current) => {
-        if (current[seriesId]) {
-          const next = { ...current }
-          delete next[seriesId]
-          return next
-        }
-        return {
-          ...current,
-          [seriesId]: { seriesId, status, addedAt: new Date().toISOString() },
-        }
-      })
-    },
-    [setFavorites],
-  )
-
-  const setFavoriteStatus = useCallback(
-    (seriesId: string, status: FavoriteStatus) => {
+    async (series: Series) => {
+      if (!userId) {
+        toast('Inicia sesión para guardar favoritos')
+        navigate(`/login?next=${encodeURIComponent(`/series/${series.id}`)}`)
+        return
+      }
+      if (favorites[series.id]) return removeFavorite(series.id)
       setFavorites((current) => ({
         ...current,
-        [seriesId]: {
-          seriesId,
-          status,
-          addedAt: current[seriesId]?.addedAt ?? new Date().toISOString(),
-        },
+        [series.id]: { seriesId: series.id, addedAt: new Date().toISOString(), series },
       }))
+      try {
+        await reading.addFavorite(series.id)
+        toast.success('Guardado en favoritos')
+      } catch (error) {
+        setFavorites((current) => without(current, series.id))
+        toast.error(errorMessage(error, 'No pudimos guardarlo en favoritos.'))
+      }
     },
-    [setFavorites],
-  )
-
-  const removeFavorite = useCallback(
-    (seriesId: string) => {
-      setFavorites((current) => {
-        const next = { ...current }
-        delete next[seriesId]
-        return next
-      })
-    },
-    [setFavorites],
+    [userId, favorites, removeFavorite, navigate],
   )
 
   const updateProgress = useCallback(
     (
       seriesId: string,
       chapterId: string,
-      chapterNumber: number,
+      chapterNumber: string,
       page: number,
       totalPages: number,
     ) => {
@@ -130,30 +150,31 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     [setProgress],
   )
 
-  const clearHistory = useCallback(() => setProgress({}), [setProgress])
+  const reloadFavorites = useCallback(() => setNonce((value) => value + 1), [])
 
   const value = useMemo(
     () => ({
-      favorites,
-      progress,
-      favoriteCount: Object.keys(favorites).length,
+      favorites: visibleFavorites,
+      favoritesLoading: Boolean(userId) && loaded.userId !== userId,
+      favoritesError: loaded.userId === userId ? loaded.error : undefined,
+      reloadFavorites,
+      favoriteCount: Object.keys(visibleFavorites).length,
       toggleFavorite,
-      setFavoriteStatus,
       removeFavorite,
-      isFavorite: (seriesId: string) => Boolean(favorites[seriesId]),
-      getFavorite: (seriesId: string) => favorites[seriesId],
+      isFavorite: (seriesId: string) => Boolean(visibleFavorites[seriesId]),
+      progress,
       updateProgress,
       getProgress: (seriesId: string) => progress[seriesId],
-      clearHistory,
     }),
     [
-      favorites,
-      progress,
+      visibleFavorites,
+      userId,
+      loaded,
+      reloadFavorites,
       toggleFavorite,
-      setFavoriteStatus,
       removeFavorite,
+      progress,
       updateProgress,
-      clearHistory,
     ],
   )
 

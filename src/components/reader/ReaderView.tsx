@@ -12,11 +12,16 @@ import {
 } from 'lucide-react'
 import type { Chapter, Series } from '@/types'
 import { cn } from '@/lib/cn'
+import { formatChapterNumber } from '@/lib/format'
+import { withRetry } from '@/lib/api'
+import { getChapter } from '@/services/catalog'
+import { recordReadEvent } from '@/services/reading'
 import { useHotkeys } from '@/hooks/useHotkeys'
 import { useLibrary } from '@/hooks/useLibrary'
 import { useReaderSettings } from '@/hooks/useReaderSettings'
 import { buttonStyles } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { CommentSection } from '@/components/detail/CommentSection'
 
 const widthClass = {
   compact: 'max-w-2xl',
@@ -38,7 +43,7 @@ export function ReaderView({
   const { getProgress, updateProgress } = useLibrary()
   const saved = getProgress(series.id)
   const [pageIndex, setPageIndex] = useState(() => {
-    if (saved?.chapterNumber === chapter.number) return Math.max(0, saved.page - 1)
+    if (saved?.chapterId === chapter.id) return Math.max(0, saved.page - 1)
     return 0
   })
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -60,6 +65,25 @@ export function ReaderView({
     },
     [settings.mode, totalPages],
   )
+
+  // Una lectura por apertura: los reintentos reutilizan la misma clave.
+  const [readKey] = useState(() => crypto.randomUUID())
+  useEffect(() => {
+    withRetry(() => recordReadEvent(chapter.id, readKey)).catch(() => undefined)
+  }, [chapter.id, readKey])
+
+  // Precarga el capítulo siguiente y sus primeras páginas.
+  const nextId = nextChapter?.id
+  useEffect(() => {
+    if (!nextId) return
+    getChapter(series.id, nextId)
+      .then((next) =>
+        next.pages.slice(0, 3).forEach((item) => {
+          new Image().src = item.imageUrl
+        }),
+      )
+      .catch(() => undefined)
+  }, [series.id, nextId])
 
   useEffect(() => {
     updateProgress(series.id, chapter.id, chapter.number, currentPage, totalPages)
@@ -113,7 +137,7 @@ export function ReaderView({
       <header className="border-line bg-base/90 sticky top-0 z-40 border-b backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-7xl items-center gap-1.5 px-2 sm:gap-2 sm:px-5">
           <Link
-            to={`/series/${series.slug}`}
+            to={`/series/${series.id}`}
             aria-label="Volver a la serie"
             className="text-secondary hover:bg-raised hover:text-primary flex size-10 shrink-0 items-center justify-center rounded-xl transition-colors"
           >
@@ -122,7 +146,8 @@ export function ReaderView({
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-semibold">{series.title}</p>
             <p className="text-muted truncate text-[11px]">
-              Capítulo {chapter.number} · {chapter.title}
+              Capítulo {formatChapterNumber(chapter.number)}
+              {chapter.title ? ` · ${chapter.title}` : ''}
             </p>
           </div>
 
@@ -282,7 +307,7 @@ export function ReaderView({
               >
                 <img
                   src={item.imageUrl}
-                  alt={`Página ${item.pageNumber} de ${chapter.title}`}
+                  alt={`Página ${item.pageNumber} del capítulo ${formatChapterNumber(chapter.number)}`}
                   loading={itemIndex < 2 ? 'eager' : 'lazy'}
                   className="block h-auto w-full"
                 />
@@ -306,7 +331,7 @@ export function ReaderView({
               >
                 <img
                   src={page.imageUrl}
-                  alt={`Página ${page.pageNumber} de ${chapter.title}`}
+                  alt={`Página ${page.pageNumber} del capítulo ${formatChapterNumber(chapter.number)}`}
                   className="block max-h-[calc(100dvh-11rem)] w-full object-contain"
                 />
                 {page.dialogue ? (
@@ -350,12 +375,20 @@ export function ReaderView({
         )}
       </main>
 
+      <div className="mx-auto max-w-3xl px-4 pb-8">
+        <CommentSection
+          targetType="CHAPTER"
+          targetId={chapter.id}
+          title="Comentarios del capítulo"
+        />
+      </div>
+
       <footer className="border-line bg-base/95 fixed inset-x-0 bottom-0 z-40 border-t pb-[env(safe-area-inset-bottom)] backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center gap-1.5 px-2 py-2 sm:gap-2 sm:px-5 sm:py-2.5">
           {previousChapter ? (
             <Link
-              to={`/read/${series.slug}/${previousChapter.number}`}
-              aria-label={`Capítulo anterior: ${previousChapter.number}`}
+              to={`/read/${series.id}/${previousChapter.id}`}
+              aria-label={`Capítulo anterior: ${formatChapterNumber(previousChapter.number)}`}
               className={buttonStyles({
                 variant: 'ghost',
                 size: 'sm',
@@ -364,7 +397,7 @@ export function ReaderView({
             >
               <ChevronLeft className="size-4 shrink-0" />
               <span className="hidden truncate sm:inline">
-                Cap. {previousChapter.number}
+                Cap. {formatChapterNumber(previousChapter.number)}
               </span>
             </Link>
           ) : (
@@ -381,14 +414,14 @@ export function ReaderView({
               <ChevronLeft className="size-5" />
             </button>
             <select
-              value={chapter.number}
-              onChange={(event) => navigate(`/read/${series.slug}/${event.target.value}`)}
+              value={chapter.id}
+              onChange={(event) => navigate(`/read/${series.id}/${event.target.value}`)}
               aria-label="Seleccionar capítulo"
               className="border-line bg-surface text-secondary focus:border-accent/60 h-10 max-w-32 min-w-0 flex-1 rounded-lg border px-2 text-xs outline-none sm:max-w-28"
             >
               {chapters.map((item) => (
-                <option key={item.id} value={item.number}>
-                  Cap. {item.number}
+                <option key={item.id} value={item.id}>
+                  Cap. {formatChapterNumber(item.number)}
                 </option>
               ))}
             </select>
@@ -404,14 +437,16 @@ export function ReaderView({
 
           {nextChapter ? (
             <Link
-              to={`/read/${series.slug}/${nextChapter.number}`}
-              aria-label={`Capítulo siguiente: ${nextChapter.number}`}
+              to={`/read/${series.id}/${nextChapter.id}`}
+              aria-label={`Capítulo siguiente: ${formatChapterNumber(nextChapter.number)}`}
               className={buttonStyles({
                 size: 'sm',
                 className: 'shrink-0 px-2 sm:px-3.5',
               })}
             >
-              <span className="hidden truncate sm:inline">Cap. {nextChapter.number}</span>
+              <span className="hidden truncate sm:inline">
+                Cap. {formatChapterNumber(nextChapter.number)}
+              </span>
               <ChevronRight className="size-4 shrink-0" />
             </Link>
           ) : (

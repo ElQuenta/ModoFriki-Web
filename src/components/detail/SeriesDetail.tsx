@@ -13,21 +13,41 @@ import {
 } from 'lucide-react'
 import type { Chapter, Series } from '@/types'
 import { cn } from '@/lib/cn'
-import { formatDate, formatRating, formatViews } from '@/lib/format'
+import { formatChapterNumber, formatDate, formatRating, formatViews } from '@/lib/format'
 import { useLibrary } from '@/hooks/useLibrary'
 import { Badge } from '@/components/ui/badge'
 import { CoverImage } from '@/components/ui/cover-image'
 import { buttonStyles } from '@/components/ui/button'
+import { Skeleton } from '@/components/ui/skeleton'
+import { ErrorState } from '@/components/ui/empty-state'
 import { CommentSection } from './CommentSection'
+import { RatingControl } from './RatingControl'
+import { useAuth } from '@/hooks/useAuth'
+import { useWorkProgress, useWorkStats } from '@/hooks/useReading'
 
 export function SeriesDetail({
-  series,
+  series: work,
   chapters,
+  chaptersLoading = false,
+  chaptersError,
+  onRetryChapters,
 }: {
   series: Series
   chapters: Chapter[]
+  chaptersLoading?: boolean
+  chaptersError?: string
+  onRetryChapters?: () => void
 }) {
+  const { user } = useAuth()
   const { isFavorite, toggleFavorite, getProgress } = useLibrary()
+  const stats = useWorkStats(work.id)
+  const mine = useWorkProgress(work.id, stats.reload)
+  const series: Series = {
+    ...work,
+    rating: stats.data?.averageRating ?? undefined,
+    ratingCount: stats.data?.ratings,
+    views: stats.data?.visits ?? work.views,
+  }
   const [showAll, setShowAll] = useState(false)
   const favorite = isFavorite(series.id)
   const progress = getProgress(series.id)
@@ -74,9 +94,14 @@ export function SeriesDetail({
             <div className="min-w-0 flex-1 pb-1">
               <div className="mb-3 flex flex-wrap gap-2">
                 <Badge tone="accent">{series.type}</Badge>
-                <Badge tone={series.status === 'En emisión' ? 'success' : 'neutral'}>
-                  {series.status}
-                </Badge>
+                {series.status ? (
+                  <Badge tone={series.status === 'En emisión' ? 'success' : 'neutral'}>
+                    {series.status}
+                  </Badge>
+                ) : null}
+                {series.publicationStatus === 'DRAFT' ? (
+                  <Badge tone="warning">Borrador</Badge>
+                ) : null}
                 {series.isFeatured ? <Badge tone="warning">Destacado</Badge> : null}
               </div>
               <h1 className="font-display text-3xl leading-tight font-bold tracking-tight text-balance sm:text-5xl">
@@ -87,37 +112,50 @@ export function SeriesDetail({
               </p>
 
               <div className="text-secondary mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
-                <span className="text-warning flex items-center gap-1.5 font-semibold">
-                  <Star className="size-4 fill-current" />
-                  {formatRating(series.rating)}
-                  <span className="text-muted font-normal">
-                    ({formatViews(series.ratingCount)} votos)
+                {series.rating !== undefined ? (
+                  <span className="text-warning flex items-center gap-1.5 font-semibold">
+                    <Star className="size-4 fill-current" />
+                    {formatRating(series.rating)}
+                    {series.ratingCount !== undefined ? (
+                      <span className="text-muted font-normal">
+                        ({formatViews(series.ratingCount)} votos)
+                      </span>
+                    ) : null}
                   </span>
-                </span>
+                ) : null}
+                {series.views !== undefined ? (
+                  <span className="flex items-center gap-1.5">
+                    <Eye className="size-4" /> {formatViews(series.views)}
+                  </span>
+                ) : null}
                 <span className="flex items-center gap-1.5">
-                  <Eye className="size-4" /> {formatViews(series.views)}
+                  <BookOpen className="size-4" /> {chapters.length} capítulos
                 </span>
-                <span className="flex items-center gap-1.5">
-                  <BookOpen className="size-4" /> {series.totalChapters} capítulos
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <CalendarDays className="size-4" /> {formatDate(series.updatedAt)}
-                </span>
+                {series.updatedAt ? (
+                  <span className="flex items-center gap-1.5">
+                    <CalendarDays className="size-4" /> {formatDate(series.updatedAt)}
+                  </span>
+                ) : null}
               </div>
 
               <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-3">
-                <Link
-                  to={`/read/${series.slug}/${progress?.chapterNumber ?? 1}`}
-                  className={buttonStyles({ size: 'lg', className: 'w-full sm:w-auto' })}
-                >
-                  <Play className="size-5 fill-current" />
-                  {progress
-                    ? `Continuar cap. ${progress.chapterNumber}`
-                    : 'Empezar a leer'}
-                </Link>
+                {progress || first ? (
+                  <Link
+                    to={`/read/${series.id}/${progress?.chapterId ?? first?.id}`}
+                    className={buttonStyles({
+                      size: 'lg',
+                      className: 'w-full sm:w-auto',
+                    })}
+                  >
+                    <Play className="size-5 fill-current" />
+                    {progress
+                      ? `Continuar cap. ${formatChapterNumber(progress.chapterNumber)}`
+                      : 'Empezar a leer'}
+                  </Link>
+                ) : null}
                 <button
                   type="button"
-                  onClick={() => toggleFavorite(series.id)}
+                  onClick={() => void toggleFavorite(series)}
                   className={buttonStyles({
                     variant: 'secondary',
                     size: 'lg',
@@ -132,7 +170,7 @@ export function SeriesDetail({
                 </button>
                 {latest ? (
                   <Link
-                    to={`/read/${series.slug}/${latest.number}`}
+                    to={`/read/${series.id}/${latest.id}`}
                     className={buttonStyles({
                       variant: 'ghost',
                       size: 'lg',
@@ -156,22 +194,14 @@ export function SeriesDetail({
               {series.synopsis}
             </p>
             <div className="mt-5 flex flex-wrap gap-2">
-              {series.genres.map((genre) => (
+              {series.genreItems?.map((genre) => (
                 <Link
-                  key={genre}
-                  to={`/series?genre=${encodeURIComponent(genre)}`}
+                  key={genre.id}
+                  to={`/series?genre=${genre.id}`}
                   className="border-line bg-raised text-secondary hover:border-accent/40 hover:text-accent rounded-full border px-3 py-1 text-xs transition-colors"
                 >
-                  {genre}
+                  {genre.name}
                 </Link>
-              ))}
-              {series.tags.map((tag) => (
-                <span
-                  key={tag}
-                  className="border-accent/20 bg-accent/5 text-accent/90 rounded-full border px-3 py-1 text-xs"
-                >
-                  #{tag}
-                </span>
               ))}
             </div>
           </section>
@@ -186,7 +216,7 @@ export function SeriesDetail({
               </div>
               {first ? (
                 <Link
-                  to={`/read/${series.slug}/${first.number}`}
+                  to={`/read/${series.id}/${first.id}`}
                   className="text-accent self-start text-xs font-semibold hover:underline sm:self-auto"
                 >
                   Leer desde el inicio
@@ -194,33 +224,79 @@ export function SeriesDetail({
               ) : null}
             </div>
 
-            <div className="border-line bg-surface overflow-hidden rounded-2xl border">
+            {chaptersError && onRetryChapters ? (
+              <ErrorState message={chaptersError} onRetry={onRetryChapters} />
+            ) : null}
+            {chaptersLoading ? (
+              <div className="space-y-2">
+                {Array.from({ length: 4 }, (_, index) => (
+                  <Skeleton key={index} className="h-14 w-full" />
+                ))}
+              </div>
+            ) : null}
+            {!chaptersLoading && !chaptersError && chapters.length === 0 ? (
+              <p className="border-line bg-surface text-secondary rounded-2xl border p-5 text-sm">
+                Todavía no hay capítulos publicados.
+              </p>
+            ) : null}
+            <div className="border-line bg-surface overflow-hidden rounded-2xl border empty:hidden">
               {visibleChapters.map((chapter, index) => (
-                <Link
+                <div
                   key={chapter.id}
-                  to={`/read/${series.slug}/${chapter.number}`}
                   className={cn(
-                    'group hover:bg-raised flex items-center gap-3 px-4 py-3 transition-colors sm:gap-4 sm:px-5',
+                    'hover:bg-raised flex items-center transition-colors',
                     index !== visibleChapters.length - 1 && 'border-line border-b',
                   )}
                 >
-                  <span className="border-line bg-base font-display text-secondary group-hover:border-accent/40 group-hover:text-accent flex size-9 shrink-0 items-center justify-center rounded-lg border text-sm font-bold transition-colors">
-                    {chapter.number}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="group-hover:text-accent truncate text-sm font-medium transition-colors">
-                      {chapter.title}
-                    </p>
-                    <p className="text-muted mt-0.5 text-[11px]">
-                      {formatDate(chapter.releaseDate)} · {formatViews(chapter.views)}{' '}
-                      vistas
-                    </p>
-                  </div>
-                  <span className="text-muted hidden text-[11px] sm:block">
-                    {chapter.pages.length} páginas
-                  </span>
-                  <Play className="text-muted group-hover:text-accent size-4 shrink-0 transition-colors" />
-                </Link>
+                  <Link
+                    to={`/read/${series.id}/${chapter.id}`}
+                    className="group flex min-w-0 flex-1 items-center gap-3 py-3 pl-4 sm:gap-4 sm:pl-5"
+                  >
+                    <span className="border-line bg-base font-display text-secondary group-hover:border-accent/40 group-hover:text-accent flex size-9 shrink-0 items-center justify-center rounded-lg border text-sm font-bold transition-colors">
+                      {formatChapterNumber(chapter.number)}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="group-hover:text-accent truncate text-sm font-medium transition-colors">
+                        {chapter.title ||
+                          `Capítulo ${formatChapterNumber(chapter.number)}`}
+                      </p>
+                      <p className="text-muted mt-0.5 text-[11px]">
+                        {formatDate(chapter.releaseDate)}
+                        {chapter.kind === 'EXTRA' ? ' · Extra' : ''}
+                        {chapter.kind === 'ANNOUNCEMENT' ? ' · Anuncio' : ''}
+                      </p>
+                    </div>
+                    <span className="text-muted hidden text-[11px] sm:block">
+                      {chapter.pages.length} páginas
+                    </span>
+                    <Play className="text-muted group-hover:text-accent size-4 shrink-0 transition-colors" />
+                  </Link>
+                  {user ? (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        void mine.setRead(chapter.id, !mine.readIds.has(chapter.id))
+                      }
+                      disabled={!mine.data}
+                      aria-pressed={mine.readIds.has(chapter.id)}
+                      aria-label={
+                        mine.readIds.has(chapter.id)
+                          ? `Marcar el capítulo ${formatChapterNumber(chapter.number)} como no leído`
+                          : `Marcar el capítulo ${formatChapterNumber(chapter.number)} como leído`
+                      }
+                      className={cn(
+                        'mx-2 flex size-10 shrink-0 items-center justify-center rounded-lg transition-colors disabled:opacity-40 sm:mx-3',
+                        mine.readIds.has(chapter.id)
+                          ? 'text-success hover:bg-success/10'
+                          : 'text-muted hover:text-primary hover:bg-raised',
+                      )}
+                    >
+                      <Check className="size-4" />
+                    </button>
+                  ) : (
+                    <span className="w-4 shrink-0 sm:w-5" />
+                  )}
+                </div>
               ))}
             </div>
 
@@ -244,48 +320,75 @@ export function SeriesDetail({
             <h2 className="font-display text-base font-bold">Ficha técnica</h2>
             <dl className="mt-4 space-y-3 text-sm">
               <div className="flex items-start justify-between gap-3">
-                <dt className="text-muted">Autor</dt>
-                <dd className="text-right font-medium">{series.author}</dd>
-              </div>
-              <div className="flex items-start justify-between gap-3">
-                <dt className="text-muted">Artista</dt>
-                <dd className="text-right font-medium">{series.artist}</dd>
-              </div>
-              <div className="flex items-start justify-between gap-3">
-                <dt className="text-muted">Scanlation</dt>
-                <dd className="text-right font-medium">{series.scanlationGroup}</dd>
-              </div>
-              <div className="flex items-start justify-between gap-3">
                 <dt className="text-muted">Tipo</dt>
                 <dd className="text-right font-medium">{series.type}</dd>
               </div>
               <div className="flex items-start justify-between gap-3">
                 <dt className="text-muted">Estado</dt>
-                <dd className="text-right font-medium">{series.status}</dd>
+                <dd className="text-right font-medium">{series.status ?? '—'}</dd>
               </div>
-              <div className="flex items-start justify-between gap-3">
-                <dt className="text-muted">Actualizado</dt>
-                <dd className="text-right font-medium">{formatDate(series.updatedAt)}</dd>
-              </div>
+              {series.updatedAt ? (
+                <div className="flex items-start justify-between gap-3">
+                  <dt className="text-muted">Actualizado</dt>
+                  <dd className="text-right font-medium">
+                    {formatDate(series.updatedAt)}
+                  </dd>
+                </div>
+              ) : null}
             </dl>
           </div>
 
-          <div className="surface-card p-5">
-            <h2 className="font-display flex items-center gap-2 text-base font-bold">
-              <Users className="text-accent size-4" /> Comunidad
-            </h2>
-            <p className="text-secondary mt-2 text-xs leading-relaxed">
-              Únete a la conversación, comparte teorías y descubre nuevas lecturas con
-              otros frikis.
-            </p>
-            <Link to="/register" className={buttonStyles({ className: 'mt-4 w-full' })}>
-              <Check className="size-4" /> Crear cuenta
-            </Link>
-          </div>
+          {user ? (
+            <div className="surface-card p-5">
+              <h2 className="font-display flex items-center gap-2 text-base font-bold">
+                <Star className="text-accent size-4" /> Tu lectura
+              </h2>
+              {mine.error ? (
+                <p className="text-danger mt-3 text-xs">{mine.error}</p>
+              ) : (
+                <>
+                  <div className="mt-3">
+                    <RatingControl
+                      value={mine.data?.score ?? null}
+                      onChange={(score) => void mine.setScore(score)}
+                      disabled={!mine.data}
+                    />
+                  </div>
+                  {mine.data ? (
+                    <>
+                      <p className="text-secondary mt-4 text-xs">
+                        {mine.data.readChapters} de {mine.data.totalChapters} capítulos
+                        leídos
+                      </p>
+                      <div className="bg-raised mt-2 h-1.5 overflow-hidden rounded-full">
+                        <div
+                          className="bg-accent h-full rounded-full"
+                          style={{ width: `${mine.data.completionPercentage}%` }}
+                        />
+                      </div>
+                    </>
+                  ) : null}
+                </>
+              )}
+            </div>
+          ) : (
+            <div className="surface-card p-5">
+              <h2 className="font-display flex items-center gap-2 text-base font-bold">
+                <Users className="text-accent size-4" /> Comunidad
+              </h2>
+              <p className="text-secondary mt-2 text-xs leading-relaxed">
+                Crea tu cuenta para valorar, guardar favoritos y llevar la cuenta de lo
+                que lees.
+              </p>
+              <Link to="/register" className={buttonStyles({ className: 'mt-4 w-full' })}>
+                <Check className="size-4" /> Crear cuenta
+              </Link>
+            </div>
+          )}
         </aside>
 
         <div className="order-3 min-w-0 lg:order-none lg:col-start-1 lg:row-start-2">
-          <CommentSection seriesId={series.id} />
+          <CommentSection targetType="WORK" targetId={series.id} />
         </div>
       </div>
     </div>

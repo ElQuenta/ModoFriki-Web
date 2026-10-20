@@ -1,93 +1,81 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useCallback, useMemo, type ReactNode } from 'react'
-import { AUTH_KEY } from '@/lib/constants'
-import { DEMO_USERS } from '@/data/mock'
-import type { User, UserPreferences } from '@/types'
-import { useLocalStorage } from '@/hooks/useLocalStorage'
-
-interface AuthResult {
-  ok: boolean
-  error?: string
-}
+import {
+  createContext,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react'
+import { TOKEN_KEY } from '@/lib/constants'
+import { ApiError, UNAUTHORIZED_EVENT } from '@/lib/api'
+import { readStorage, removeStorage, writeStorage } from '@/lib/storage'
+import * as authService from '@/services/auth'
+import type { AuthSession, User } from '@/types'
 
 interface AuthContextValue {
   user: User | null
   isAuthenticated: boolean
-  login: (email: string, password: string) => AuthResult
-  register: (name: string, email: string, password: string) => AuthResult
+  loading: boolean
+  login: (email: string, password: string) => Promise<void>
+  register: (username: string, email: string, password: string) => Promise<void>
   logout: () => void
-  updatePreferences: (preferences: Partial<UserPreferences>) => void
 }
 
 export const AuthContext = createContext<AuthContextValue | null>(null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useLocalStorage<User | null>(AUTH_KEY, DEMO_USERS[0])
+  const [user, setUser] = useState<User | null>(null)
+  const [loading, setLoading] = useState(() => Boolean(readStorage(TOKEN_KEY, null)))
+
+  const logout = useCallback(() => {
+    removeStorage(TOKEN_KEY)
+    setUser(null)
+  }, [])
+
+  useEffect(() => {
+    if (!readStorage(TOKEN_KEY, null)) return
+    authService
+      .getMe()
+      .then(setUser)
+      .catch((error: unknown) => {
+        if (error instanceof ApiError && error.status === 401) logout()
+      })
+      .finally(() => setLoading(false))
+  }, [logout])
+
+  useEffect(() => {
+    window.addEventListener(UNAUTHORIZED_EVENT, logout)
+    return () => window.removeEventListener(UNAUTHORIZED_EVENT, logout)
+  }, [logout])
+
+  const start = useCallback((session: AuthSession) => {
+    writeStorage(TOKEN_KEY, session.token)
+    setUser(session.user)
+  }, [])
 
   const login = useCallback(
-    (email: string, password: string): AuthResult => {
-      if (!email.trim() || !password.trim()) {
-        return { ok: false, error: 'Completa el correo y la contraseña.' }
-      }
-      const known = DEMO_USERS.find(
-        (candidate) => candidate.email.toLowerCase() === email.toLowerCase(),
-      )
-      const nextUser: User = known ?? {
-        ...DEMO_USERS[0],
-        id: crypto.randomUUID(),
-        name: email.split('@')[0] ?? 'Lector',
-        username: email.split('@')[0] ?? 'lector',
-        email,
-      }
-      setUser(nextUser)
-      return { ok: true }
-    },
-    [setUser],
+    async (email: string, password: string) =>
+      start(await authService.login({ email, password })),
+    [start],
   )
 
   const register = useCallback(
-    (name: string, email: string, password: string): AuthResult => {
-      if (!name.trim() || !email.trim() || password.length < 6) {
-        return {
-          ok: false,
-          error: 'Usa un nombre, un correo válido y una contraseña de 6 caracteres.',
-        }
-      }
-      setUser({
-        ...DEMO_USERS[0],
-        id: crypto.randomUUID(),
-        name: name.trim(),
-        username: email.split('@')[0] ?? 'lector',
-        email,
-      })
-      return { ok: true }
-    },
-    [setUser],
-  )
-
-  const logout = useCallback(() => setUser(null), [setUser])
-
-  const updatePreferences = useCallback(
-    (preferences: Partial<UserPreferences>) => {
-      setUser((current) =>
-        current
-          ? { ...current, preferences: { ...current.preferences, ...preferences } }
-          : current,
-      )
-    },
-    [setUser],
+    async (username: string, email: string, password: string) =>
+      start(
+        await authService.register({
+          username,
+          email,
+          password,
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        }),
+      ),
+    [start],
   )
 
   const value = useMemo(
-    () => ({
-      user,
-      isAuthenticated: Boolean(user),
-      login,
-      register,
-      logout,
-      updatePreferences,
-    }),
-    [user, login, register, logout, updatePreferences],
+    () => ({ user, isAuthenticated: Boolean(user), loading, login, register, logout }),
+    [user, loading, login, register, logout],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

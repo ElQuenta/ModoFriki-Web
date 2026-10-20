@@ -1,4 +1,4 @@
-import type { FavoriteStatus, SeriesStatus, SeriesType } from '@/types'
+import type { SeriesStatus, SeriesType, UserRole } from '@/types'
 
 export const APP_NAME = 'ModoFriki'
 
@@ -13,22 +13,19 @@ export const SERIES_TYPES: SeriesType[] = ['Manhwa', 'Manga', 'Manhua', 'Novela'
 
 export const SERIES_STATUSES: SeriesStatus[] = ['En emisión', 'Finalizado', 'En pausa']
 
-export const FAVORITE_STATUSES: FavoriteStatus[] = [
-  'Leyendo',
-  'Por leer',
-  'Completado',
-  'En pausa',
-]
-
 export const SORT_OPTIONS = [
   { value: 'recent', label: 'Recientes' },
-  { value: 'rating', label: 'Mejor valoradas' },
-  { value: 'views', label: 'Más leídas' },
-  { value: 'title', label: 'A-Z' },
+  { value: 'views', label: 'Más visitadas' },
 ] as const
 
 export const READER_KEY = 'modofriki_reader'
-export const FAVORITES_KEY = 'modofriki_favorites'
 export const PROGRESS_KEY = 'modofriki_progress'
-export const AUTH_KEY = 'modofriki_auth'
+export const TOKEN_KEY = 'modofriki_token'
+export const VOTES_KEY = 'modofriki_votes'
 export const UI_KEY = 'modofriki_ui'
+
+export const ROLE_LABELS: Record<UserRole, string> = {
+  BASIC: 'Lector',
+  EDITOR: 'Editor',
+  ADMIN: 'Admin',
+}

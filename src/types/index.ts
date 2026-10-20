@@ -1,12 +1,16 @@
-export type SeriesType = 'Manhwa' | 'Manga' | 'Manhua' | 'Novela'
+export type SeriesType = string
 
-export type SeriesStatus = 'En emisión' | 'Finalizado' | 'En pausa'
+export type SeriesStatus = 'En emisión' | 'Finalizado' | 'En pausa' | 'Cancelado'
+
+export type ReleaseStatus = 'ONGOING' | 'COMPLETED' | 'HIATUS' | 'CANCELLED'
+
+export type PublicationStatus = 'DRAFT' | 'PUBLISHED'
+
+export type ChapterKind = 'NORMAL' | 'EXTRA' | 'ANNOUNCEMENT'
 
 export type ReadingMode = 'cascade' | 'paginated'
 
-export type FavoriteStatus = 'Leyendo' | 'Por leer' | 'Completado' | 'En pausa'
-
-export type UserRole = 'Lector' | 'Traductor' | 'Traductora' | 'Admin'
+export type UserRole = 'BASIC' | 'EDITOR' | 'ADMIN'
 
 export interface ChapterPage {
   id: string
@@ -19,11 +23,21 @@ export interface ChapterPage {
 export interface Chapter {
   id: string
   seriesId: string
-  number: number
+  /** Decimal serializado por el backend ("12.5"). */
+  number: string
   title: string
+  kind?: ChapterKind
+  status?: PublicationStatus
+  version?: number
   releaseDate: string
-  views: number
+  views?: number
   pages: ChapterPage[]
+}
+
+export interface Taxonomy {
+  id: string
+  name: string
+  slug: string
 }
 
 export interface Series {
@@ -34,41 +48,61 @@ export interface Series {
   coverUrl: string
   bannerUrl: string
   type: SeriesType
-  status: SeriesStatus
-  rating: number
-  ratingCount: number
-  views: number
+  typeId?: string
+  status?: SeriesStatus
+  releaseStatus?: ReleaseStatus
+  publicationStatus?: PublicationStatus
+  rating?: number
+  ratingCount?: number
+  views?: number
   synopsis: string
-  author: string
-  artist: string
-  scanlationGroup: string
   genres: string[]
-  tags: string[]
-  isFeatured: boolean
-  totalChapters: number
-  updatedAt: string
-  accent: string
+  genreItems?: Taxonomy[]
+  updatedAt?: string
+  totalChapters?: number
+  isFeatured?: boolean
+  accent?: string
+  author?: string
+  artist?: string
+  scanlationGroup?: string
+  tags?: string[]
 }
 
-export interface CommentReply {
-  id: string
-  userName: string
-  userAvatar: string
-  content: string
-  createdAt: string
+export interface LatestChapterItem {
+  chapter: Chapter
+  series: Series
 }
 
-export interface UserComment {
+export type CommentTargetType = 'WORK' | 'CHAPTER'
+
+export type ReportReason = 'SPAM' | 'HARASSMENT' | 'HATE' | 'SPOILER' | 'OTHER'
+
+export type ReportStatus = 'OPEN' | 'IN_REVIEW' | 'RESOLVED' | 'DISMISSED'
+
+export interface Comment {
   id: string
-  seriesId: string
-  chapterNumber?: number
-  userName: string
-  userAvatar: string
-  content: string
+  author: { id: string; username: string } | null
+  targetType: CommentTargetType
+  targetId: string
+  parentCommentId: string | null
+  rootCommentId: string
+  bodyMarkdown: string | null
+  status: 'ACTIVE' | 'DELETED'
+  revision: number
   createdAt: string
-  likes: number
-  spoiler: boolean
-  replies: CommentReply[]
+  editedAt: string | null
+  votes: { upvotes: number; downvotes: number; score: number }
+}
+
+export interface Cursor {
+  createdAt: string
+  id: string
+}
+
+export interface CursorPage<T> {
+  items: T[]
+  hasMore: boolean
+  nextCursor: Cursor | null
 }
 
 export interface UserPreferences {
@@ -79,26 +113,28 @@ export interface UserPreferences {
 
 export interface User {
   id: string
-  name: string
   username: string
   email: string
-  avatarUrl: string
   role: UserRole
-  bio: string
-  joinedAt: string
-  preferences: UserPreferences
+  timezone: string
+  createdAt: string
+}
+
+export interface AuthSession {
+  user: User
+  token: string
 }
 
 export interface FavoriteItem {
   seriesId: string
-  status: FavoriteStatus
   addedAt: string
+  series: Series
 }
 
 export interface ReadingProgress {
   seriesId: string
   chapterId: string
-  chapterNumber: number
+  chapterNumber: string
   page: number
   totalPages: number
   percentage: number
@@ -111,4 +147,4 @@ export interface ReaderSettings {
   zoom: number
 }
 
-export type SortOption = 'recent' | 'rating' | 'views' | 'title'
+export type SortOption = 'recent' | 'views'

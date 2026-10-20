@@ -1,14 +1,28 @@
-import { Link } from 'react-router-dom'
-import { Crown, Eye, Medal, Star, Trophy } from 'lucide-react'
-import { SERIES } from '@/data/mock'
-import { formatRating, formatViews } from '@/lib/format'
+import { Link, useSearchParams } from 'react-router-dom'
+import { Crown, Eye, Medal, Trophy } from 'lucide-react'
+import { listPopularWorks } from '@/services/discovery'
+import { cn } from '@/lib/cn'
+import { formatViews } from '@/lib/format'
+import { useAsync } from '@/hooks/useAsync'
 import { useDocumentTitle } from '@/hooks/useDocumentTitle'
 import { CoverImage } from '@/components/ui/cover-image'
-import { Badge } from '@/components/ui/badge'
+import { EmptyState, ErrorState } from '@/components/ui/empty-state'
+import { Skeleton } from '@/components/ui/skeleton'
+
+const PERIODS = [
+  { value: 'all', label: 'Histórico' },
+  { value: 'day', label: 'Últimas 24 h' },
+] as const
 
 export function RankingsPage() {
   useDocumentTitle('Rankings')
-  const ranking = [...SERIES].sort((a, b) => b.rating - a.rating)
+  const [params, setParams] = useSearchParams()
+  const period = params.get('period') === 'day' ? 'day' : 'all'
+  const { data, loading, error, reload } = useAsync(
+    () => listPopularWorks({ period, limit: 50 }),
+    `rankings:${period}`,
+  )
+  const ranking = data?.items ?? []
   const podium = ranking.slice(0, 3)
   const rest = ranking.slice(3)
 
@@ -16,22 +30,60 @@ export function RankingsPage() {
     <div className="container-mf pt-8 pb-4">
       <div className="mb-8 max-w-2xl">
         <p className="text-accent mb-2 flex items-center gap-1.5 text-xs font-bold tracking-[0.2em] uppercase">
-          <Trophy className="size-3.5" /> Lo mejor de la semana
+          <Trophy className="size-3.5" /> Lo más visitado
         </p>
         <h1 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">
           Rankings
         </h1>
         <p className="text-secondary mt-3 text-sm leading-relaxed">
-          Las series mejor valoradas por la comunidad de ModoFriki. El ranking se
-          actualiza con cada voto.
+          Las series más visitadas por la comunidad de ModoFriki. El ranking se actualiza
+          con cada visita.
         </p>
+        <div className="mt-5 flex gap-1.5" role="group" aria-label="Periodo del ranking">
+          {PERIODS.map((item) => (
+            <button
+              key={item.value}
+              type="button"
+              aria-pressed={period === item.value}
+              onClick={() =>
+                setParams(item.value === 'all' ? {} : { period: item.value })
+              }
+              className={cn(
+                'rounded-lg border px-3 py-2 text-xs font-semibold transition-colors',
+                period === item.value
+                  ? 'border-accent/40 bg-accent/10 text-accent'
+                  : 'border-line bg-surface text-secondary hover:text-primary',
+              )}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
       </div>
+
+      {error ? <ErrorState message={error} onRetry={reload} /> : null}
+      {loading && !data ? (
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {Array.from({ length: 3 }, (_, index) => (
+            <Skeleton key={index} className="h-48 w-full rounded-2xl" />
+          ))}
+        </div>
+      ) : null}
+      {!loading && !error && ranking.length === 0 ? (
+        <EmptyState
+          icon={Trophy}
+          title="Todavía no hay ranking"
+          description="Cuando la comunidad empiece a visitar series, aparecerán aquí."
+          actionLabel="Explorar catálogo"
+          actionTo="/series"
+        />
+      ) : null}
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {podium.map((series, index) => (
           <Link
             key={series.id}
-            to={`/series/${series.slug}`}
+            to={`/series/${series.id}`}
             className="group border-line bg-surface hover:border-accent/40 relative overflow-hidden rounded-2xl border p-3.5 transition-all hover:-translate-y-1 sm:p-4"
           >
             <div className="bg-accent/5 absolute -top-12 -right-12 size-40 rounded-full blur-3xl" />
@@ -56,30 +108,22 @@ export function RankingsPage() {
                 <h2 className="font-display group-hover:text-accent mt-1 line-clamp-2 text-base leading-tight font-bold transition-colors sm:text-lg">
                   {series.title}
                 </h2>
-                <p className="text-muted mt-1 text-[11px]">
-                  {series.type} · {series.genres[0]}
-                </p>
-                <div className="text-warning mt-2 flex items-center gap-1.5 text-sm font-semibold">
-                  <Star className="size-4 fill-current" />
-                  {formatRating(series.rating)}
-                </div>
               </div>
             </div>
             <div className="border-line text-muted relative mt-4 flex items-center justify-between border-t pt-3 text-[11px]">
               <span className="flex items-center gap-1">
-                <Eye className="size-3" /> {formatViews(series.views)}
+                <Eye className="size-3" /> {formatViews(series.views ?? 0)} visitas
               </span>
-              <Badge tone="accent">{series.totalChapters} caps.</Badge>
             </div>
           </Link>
         ))}
       </div>
 
-      <div className="border-line bg-surface mt-8 overflow-hidden rounded-2xl border">
+      <div className="border-line bg-surface mt-8 overflow-hidden rounded-2xl border empty:hidden">
         {rest.map((series, index) => (
           <Link
             key={series.id}
-            to={`/series/${series.slug}`}
+            to={`/series/${series.id}`}
             className="group border-line hover:bg-raised flex items-center gap-3 border-b px-4 py-3 transition-colors last:border-b-0 sm:gap-5 sm:px-5"
           >
             <span className="font-display text-muted w-8 shrink-0 text-center text-lg font-bold">
@@ -95,27 +139,10 @@ export function RankingsPage() {
               <p className="group-hover:text-accent truncate text-sm font-semibold transition-colors">
                 {series.title}
               </p>
-              <p className="text-muted mt-0.5 truncate text-[11px]">
-                {series.type} · {series.genres.slice(0, 2).join(', ')}
-              </p>
             </div>
-            <div className="text-muted hidden items-center gap-4 text-[11px] sm:flex">
-              <span className="flex items-center gap-1">
-                <Eye className="size-3" /> {formatViews(series.views)}
-              </span>
-              <span className="text-warning flex items-center gap-1 font-semibold">
-                <Star className="size-3 fill-current" /> {formatRating(series.rating)}
-              </span>
-            </div>
-            <span className="text-warning flex items-center gap-1 text-[11px] font-semibold sm:hidden">
-              <Star className="size-3 fill-current" /> {formatRating(series.rating)}
+            <span className="text-muted flex items-center gap-1 text-[11px]">
+              <Eye className="size-3" /> {formatViews(series.views ?? 0)}
             </span>
-            <Badge
-              tone={series.status === 'En emisión' ? 'success' : 'neutral'}
-              className="hidden shrink-0 sm:inline-flex"
-            >
-              {series.status}
-            </Badge>
           </Link>
         ))}
       </div>

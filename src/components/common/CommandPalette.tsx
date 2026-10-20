@@ -1,7 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { CornerDownLeft, Search, TrendingUp } from 'lucide-react'
-import { CHAPTERS, FEATURED_SERIES, SERIES } from '@/data/mock'
+import { listWorks } from '@/services/catalog'
+import { listPopularWorks } from '@/services/discovery'
+import { useAsync } from '@/hooks/useAsync'
+import { useDebounce } from '@/hooks/useDebounce'
 import { useUI } from '@/hooks/useUI'
 import { Modal } from '@/components/ui/modal'
 import { cn } from '@/lib/cn'
@@ -11,7 +14,7 @@ interface Result {
   title: string
   subtitle: string
   to: string
-  kind: 'Serie' | 'Capítulo'
+  kind: 'Serie'
 }
 
 export function CommandPalette() {
@@ -21,55 +24,26 @@ export function CommandPalette() {
   const [active, setActive] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  const results = useMemo<Result[]>(() => {
-    const term = query.trim().toLowerCase()
-    if (!term) {
-      return FEATURED_SERIES.map((series) => ({
+  const term = useDebounce(query.trim(), 250)
+  const { data, loading, error } = useAsync<Result[]>(
+    async () => {
+      const works = term
+        ? await listWorks({ search: term, limit: 8 })
+        : (await listPopularWorks({ limit: 5 })).items
+      return works.map((series) => ({
         id: series.id,
         title: series.title,
-        subtitle: `${series.type} · ${series.totalChapters} capítulos`,
-        to: `/series/${series.slug}`,
+        subtitle: [series.type, series.genres.slice(0, 2).join(', ')]
+          .filter(Boolean)
+          .join(' · '),
+        to: `/series/${series.id}`,
         kind: 'Serie' as const,
       }))
-    }
-
-    const seriesResults: Result[] = SERIES.filter((series) => {
-      return (
-        series.title.toLowerCase().includes(term) ||
-        series.genres.some((genre) => genre.toLowerCase().includes(term)) ||
-        series.tags.some((tag) => tag.toLowerCase().includes(term))
-      )
-    })
-      .slice(0, 5)
-      .map((series) => ({
-        id: series.id,
-        title: series.title,
-        subtitle: `${series.type} · ${series.genres.slice(0, 2).join(', ')}`,
-        to: `/series/${series.slug}`,
-        kind: 'Serie',
-      }))
-
-    const chapterResults: Result[] = CHAPTERS.filter((chapter) => {
-      const series = SERIES.find((item) => item.id === chapter.seriesId)
-      return (
-        series?.title.toLowerCase().includes(term) ||
-        chapter.title.toLowerCase().includes(term)
-      )
-    })
-      .slice(0, 4)
-      .map((chapter) => {
-        const series = SERIES.find((item) => item.id === chapter.seriesId)
-        return {
-          id: chapter.id,
-          title: `${series?.title ?? 'Serie'} · Cap. ${chapter.number}`,
-          subtitle: chapter.title,
-          to: `/read/${series?.slug ?? ''}/${chapter.number}`,
-          kind: 'Capítulo',
-        }
-      })
-
-    return [...seriesResults, ...chapterResults]
-  }, [query])
+    },
+    `palette:${term}`,
+    commandOpen,
+  )
+  const results = data ?? []
 
   useEffect(() => {
     if (commandOpen) {
@@ -95,12 +69,12 @@ export function CommandPalette() {
       open={commandOpen}
       onClose={close}
       title="Buscar en ModoFriki"
-      description="Series, capítulos, géneros y tags."
+      description="Busca series por título."
       className="max-w-2xl p-0"
     >
-      <div className="border-b border-line px-4">
+      <div className="border-line border-b px-4">
         <div className="flex items-center gap-3">
-          <Search className="size-5 text-accent" />
+          <Search className="text-accent size-5" />
           <input
             ref={inputRef}
             value={query}
@@ -119,23 +93,27 @@ export function CommandPalette() {
               }
               if (event.key === 'Enter') go(results[active])
             }}
-            placeholder="Escribe un título, género o capítulo..."
+            placeholder="Escribe un título..."
             aria-label="Término de búsqueda"
-            className="h-16 w-full bg-transparent text-base text-primary outline-none placeholder:text-muted"
+            className="text-primary placeholder:text-muted h-16 w-full bg-transparent text-base outline-none"
           />
         </div>
       </div>
 
       <div className="max-h-[min(60vh,28rem)] overflow-y-auto p-2">
-        {results.length === 0 ? (
-          <div className="px-4 py-10 text-center text-sm text-secondary">
-            No encontramos resultados para “{query}”.
+        {error ? (
+          <div className="text-danger px-4 py-10 text-center text-sm">{error}</div>
+        ) : loading && results.length === 0 ? (
+          <div className="text-secondary px-4 py-10 text-center text-sm">Buscando…</div>
+        ) : results.length === 0 ? (
+          <div className="text-secondary px-4 py-10 text-center text-sm">
+            {query ? `No encontramos resultados para “${query}”.` : 'Aún no hay series.'}
           </div>
         ) : (
           <>
             {!query ? (
-              <p className="flex items-center gap-2 px-3 py-2 text-xs font-semibold tracking-wider text-muted uppercase">
-                <TrendingUp className="size-3.5 text-accent" /> Destacados
+              <p className="text-muted flex items-center gap-2 px-3 py-2 text-xs font-semibold tracking-wider uppercase">
+                <TrendingUp className="text-accent size-3.5" /> Populares
               </p>
             ) : null}
             {results.map((result, index) => (
@@ -152,17 +130,17 @@ export function CommandPalette() {
                 <span className="min-w-0">
                   <span className="flex items-center gap-2">
                     <span className="truncate text-sm font-semibold">{result.title}</span>
-                    <span className="rounded bg-raised px-1.5 py-0.5 text-[10px] font-semibold text-muted">
+                    <span className="bg-raised text-muted rounded px-1.5 py-0.5 text-[10px] font-semibold">
                       {result.kind}
                     </span>
                   </span>
-                  <span className="mt-0.5 block truncate text-xs text-secondary">
+                  <span className="text-secondary mt-0.5 block truncate text-xs">
                     {result.subtitle}
                   </span>
                 </span>
                 <CornerDownLeft
                   className={cn(
-                    'size-4 shrink-0 text-muted transition-opacity',
+                    'text-muted size-4 shrink-0 transition-opacity',
                     active === index ? 'opacity-100' : 'opacity-0',
                   )}
                 />
@@ -172,16 +150,16 @@ export function CommandPalette() {
         )}
       </div>
 
-      <div className="flex items-center gap-4 border-t border-line px-4 py-2.5 text-[11px] text-muted">
+      <div className="border-line text-muted flex items-center gap-4 border-t px-4 py-2.5 text-[11px]">
         <span>
-          <kbd className="rounded border border-line-strong px-1">↑</kbd>{' '}
-          <kbd className="rounded border border-line-strong px-1">↓</kbd> navegar
+          <kbd className="border-line-strong rounded border px-1">↑</kbd>{' '}
+          <kbd className="border-line-strong rounded border px-1">↓</kbd> navegar
         </span>
         <span>
-          <kbd className="rounded border border-line-strong px-1">Enter</kbd> abrir
+          <kbd className="border-line-strong rounded border px-1">Enter</kbd> abrir
         </span>
         <span>
-          <kbd className="rounded border border-line-strong px-1">Esc</kbd> cerrar
+          <kbd className="border-line-strong rounded border px-1">Esc</kbd> cerrar
         </span>
       </div>
     </Modal>

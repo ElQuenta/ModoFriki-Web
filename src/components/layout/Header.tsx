@@ -8,6 +8,7 @@ import {
   LogOut,
   Settings,
   Library,
+  ShieldCheck,
 } from 'lucide-react'
 import { useState } from 'react'
 import { NAV_LINKS } from '@/lib/constants'
@@ -129,9 +130,9 @@ export function Header() {
                 aria-haspopup="menu"
                 aria-expanded={menuOpen}
               >
-                <Avatar src={user.avatarUrl} alt={user.name} size="sm" />
+                <Avatar alt={user.username} size="sm" />
                 <span className="hidden max-w-24 truncate text-sm font-medium sm:block">
-                  {user.name.split(' ')[0]}
+                  {user.username}
                 </span>
                 <ChevronDown
                   className={cn(
@@ -146,7 +147,7 @@ export function Header() {
                   className="animate-fade-up border-line bg-surface shadow-card absolute right-0 mt-2 w-56 overflow-hidden rounded-xl border p-1.5"
                 >
                   <div className="border-line border-b px-3 py-2.5">
-                    <p className="truncate text-sm font-semibold">{user.name}</p>
+                    <p className="truncate text-sm font-semibold">{user.username}</p>
                     <p className="text-muted truncate text-xs">{user.email}</p>
                   </div>
                   <Link
@@ -165,6 +166,16 @@ export function Header() {
                   >
                     <Library className="size-4" /> Mi biblioteca
                   </Link>
+                  {user.role !== 'BASIC' ? (
+                    <Link
+                      to="/admin"
+                      onClick={() => setMenuOpen(false)}
+                      role="menuitem"
+                      className="text-secondary hover:bg-raised hover:text-primary flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm transition-colors"
+                    >
+                      <ShieldCheck className="size-4" /> Panel
+                    </Link>
+                  ) : null}
                   <Link
                     to="/profile"
                     onClick={() => setMenuOpen(false)}
