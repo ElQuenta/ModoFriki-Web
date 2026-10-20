@@ -17,33 +17,33 @@ export function NovelsSection() {
         actionLabel="Ver novelas"
         actionTo="/series?type=Novela"
       />
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-3 sm:gap-4 md:grid-cols-2">
         {novels.map((novel) => (
           <Link
             key={novel.id}
             to={`/series/${novel.slug}`}
-            className="group flex gap-4 rounded-2xl border border-line bg-surface p-4 transition-all hover:-translate-y-0.5 hover:border-accent/30"
+            className="group border-line bg-surface hover:border-accent/30 flex gap-3 rounded-2xl border p-3 transition-all hover:-translate-y-0.5 sm:gap-4 sm:p-4"
           >
             <CoverImage
               src={novel.coverUrl}
               alt={`Portada de ${novel.title}`}
               title={novel.title}
-              className="h-40 w-27 shrink-0 rounded-xl"
+              className="h-36 w-24 shrink-0 rounded-xl sm:h-40 sm:w-27"
             />
             <div className="flex min-w-0 flex-1 flex-col">
               <div className="flex items-start justify-between gap-2">
                 <Badge tone="info">Novela</Badge>
-                <ArrowUpRight className="size-4 text-muted transition-colors group-hover:text-accent" />
+                <ArrowUpRight className="text-muted group-hover:text-accent size-4 transition-colors" />
               </div>
-              <h3 className="mt-2 font-display text-lg font-bold transition-colors group-hover:text-accent">
+              <h3 className="font-display group-hover:text-accent mt-2 line-clamp-2 text-base font-bold transition-colors sm:text-lg">
                 {novel.title}
               </h3>
-              <p className="mt-1 text-xs text-secondary">{novel.author}</p>
-              <p className="mt-2 line-clamp-3 text-xs leading-relaxed text-muted">
+              <p className="text-secondary mt-1 text-xs">{novel.author}</p>
+              <p className="text-muted mt-2 line-clamp-3 text-xs leading-relaxed">
                 {novel.synopsis}
               </p>
-              <p className="mt-auto flex items-center gap-1.5 pt-3 text-[11px] text-muted">
-                <BookMarked className="size-3.5 text-accent" />
+              <p className="text-muted mt-auto flex items-center gap-1.5 pt-3 text-[11px]">
+                <BookMarked className="text-accent size-3.5" />
                 {novel.genres.join(' · ')}
               </p>
             </div>

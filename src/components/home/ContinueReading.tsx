@@ -11,7 +11,10 @@ export function ContinueReading() {
   const entries = Object.values(progress)
     .sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt))
     .slice(0, 3)
-    .map((item) => ({ item, series: SERIES.find((series) => series.id === item.seriesId) }))
+    .map((item) => ({
+      item,
+      series: SERIES.find((series) => series.id === item.seriesId),
+    }))
     .filter((entry) => entry.series)
 
   if (entries.length === 0) return null
@@ -25,27 +28,27 @@ export function ContinueReading() {
         actionLabel="Ver historial"
         actionTo="/profile"
       />
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3">
         {entries.map(({ item, series }) => {
           if (!series) return null
           return (
             <article
               key={item.seriesId}
-              className="group flex gap-4 rounded-2xl border border-line bg-surface p-3 transition-colors hover:border-accent/30"
+              className="group border-line bg-surface hover:border-accent/30 flex gap-3 rounded-2xl border p-3 transition-colors sm:gap-4"
             >
               <Link to={`/series/${series.slug}`} className="shrink-0">
                 <CoverImage
                   src={series.coverUrl}
                   alt={`Portada de ${series.title}`}
                   title={series.title}
-                  className="h-32 w-22 rounded-xl"
+                  className="h-28 w-20 rounded-xl sm:h-32 sm:w-22"
                 />
               </Link>
               <div className="flex min-w-0 flex-1 flex-col">
                 <div className="flex items-start justify-between gap-2">
                   <Link
                     to={`/series/${series.slug}`}
-                    className="truncate font-display text-base font-bold hover:text-accent"
+                    className="font-display hover:text-accent truncate text-base font-bold"
                   >
                     {series.title}
                   </Link>
@@ -53,17 +56,17 @@ export function ContinueReading() {
                     {item.percentage}%
                   </Badge>
                 </div>
-                <p className="mt-1 truncate text-xs text-secondary">
+                <p className="text-secondary mt-1 truncate text-xs">
                   Cap. {item.chapterNumber} · Página {item.page} de {item.totalPages}
                 </p>
-                <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-raised">
+                <div className="bg-raised mt-3 h-1.5 overflow-hidden rounded-full">
                   <div
-                    className="h-full rounded-full bg-accent"
+                    className="bg-accent h-full rounded-full"
                     style={{ width: `${item.percentage}%` }}
                   />
                 </div>
                 <div className="mt-auto flex items-center justify-between gap-2 pt-3">
-                  <span className="flex items-center gap-1 text-[11px] text-muted">
+                  <span className="text-muted flex items-center gap-1 text-[11px]">
                     <Clock3 className="size-3" />
                     {new Date(item.updatedAt).toLocaleDateString('es', {
                       day: '2-digit',
@@ -72,7 +75,7 @@ export function ContinueReading() {
                   </span>
                   <Link
                     to={`/read/${series.slug}/${item.chapterNumber}`}
-                    className="inline-flex items-center gap-1 text-xs font-semibold text-accent hover:underline"
+                    className="text-accent inline-flex items-center gap-1 text-xs font-semibold hover:underline"
                   >
                     <Play className="size-3 fill-current" /> Continuar
                   </Link>
@@ -89,23 +92,23 @@ export function ContinueReading() {
 export function GenreStrip() {
   const genres = ['Acción', 'Fantasía', 'Romance', 'Sci-Fi', 'Terror', 'Comedia']
   return (
-    <section className="container-mf mt-10">
+    <section className="container-mf mt-12 sm:mt-14">
       <div className="flex flex-wrap items-center gap-2">
-        <span className="mr-1 text-xs font-semibold tracking-wider text-muted uppercase">
+        <span className="text-muted mr-1 text-xs font-semibold tracking-wider uppercase">
           Explorar:
         </span>
         {genres.map((genre) => (
           <Link
             key={genre}
             to={`/series?genre=${encodeURIComponent(genre)}`}
-            className="rounded-full border border-line bg-surface px-3.5 py-1.5 text-xs font-medium text-secondary transition-colors hover:border-accent/40 hover:text-accent"
+            className="border-line bg-surface text-secondary hover:border-accent/40 hover:text-accent rounded-full border px-3.5 py-1.5 text-xs font-medium transition-colors"
           >
             {genre}
           </Link>
         ))}
         <Link
           to="/genres"
-          className="inline-flex items-center gap-1 px-2 py-1.5 text-xs font-semibold text-accent hover:underline"
+          className="text-accent inline-flex items-center gap-1 px-2 py-1.5 text-xs font-semibold hover:underline"
         >
           Ver todos <ArrowRight className="size-3" />
         </Link>

@@ -1,14 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import {
-  ChevronLeft,
-  ChevronRight,
-  Eye,
-  Heart,
-  Play,
-  Star,
-  BookOpen,
-} from 'lucide-react'
+import { ChevronLeft, ChevronRight, Eye, Heart, Play, Star, BookOpen } from 'lucide-react'
 import { FEATURED_SERIES } from '@/data/mock'
 import { cn } from '@/lib/cn'
 import { formatRating, formatViews } from '@/lib/format'
@@ -41,12 +33,12 @@ export function HeroFeatured() {
 
   return (
     <section
-      className="container-mf pt-5 sm:pt-8"
+      className="container-mf pt-4 sm:pt-8"
       aria-label="Series destacadas"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
-      <div className="relative min-h-[520px] overflow-hidden rounded-3xl border border-line bg-surface sm:min-h-[560px]">
+      <div className="border-line bg-surface relative min-h-[440px] overflow-hidden rounded-2xl border sm:min-h-[560px] sm:rounded-3xl">
         {FEATURED_SERIES.map((item, slideIndex) => (
           <div
             key={item.id}
@@ -62,30 +54,32 @@ export function HeroFeatured() {
               className="size-full object-cover"
               loading={slideIndex === 0 ? 'eager' : 'lazy'}
             />
-            <div className="absolute inset-0 bg-gradient-to-r from-base via-base/85 to-base/20" />
-            <div className="absolute inset-0 bg-gradient-to-t from-base via-transparent to-transparent" />
+            <div className="from-base via-base/85 to-base/20 absolute inset-0 bg-gradient-to-r" />
+            <div className="from-base absolute inset-0 bg-gradient-to-t via-transparent to-transparent" />
           </div>
         ))}
 
-        <div className="relative flex min-h-[520px] items-end p-6 sm:min-h-[560px] sm:p-10 lg:max-w-3xl lg:p-14">
+        <div className="relative flex min-h-[440px] items-end p-5 pb-20 sm:min-h-[560px] sm:p-10 sm:pb-10 lg:max-w-3xl lg:p-14">
           <div key={series.id} className="animate-fade-up">
-            <div className="mb-4 flex flex-wrap items-center gap-2">
+            <div className="mb-3 flex flex-wrap items-center gap-1.5 sm:mb-4 sm:gap-2">
               <Badge tone="accent">Destacado</Badge>
               <Badge tone="neutral">{series.type}</Badge>
               <Badge tone="success">{series.status}</Badge>
             </div>
-            <h1 className="font-display text-4xl leading-[1.05] font-bold tracking-tight text-balance sm:text-5xl lg:text-6xl">
+            <h1 className="font-display text-3xl leading-[1.08] font-bold tracking-tight text-balance sm:text-5xl sm:leading-[1.05] lg:text-6xl">
               {series.title}
             </h1>
-            <p className="mt-3 max-w-xl text-sm leading-relaxed text-secondary sm:text-base">
+            <p className="text-secondary mt-2.5 line-clamp-3 max-w-xl text-sm leading-relaxed sm:mt-3 sm:line-clamp-none sm:text-base">
               {series.synopsis}
             </p>
 
-            <div className="mt-5 flex flex-wrap items-center gap-4 text-sm text-secondary">
-              <span className="flex items-center gap-1.5 font-semibold text-warning">
+            <div className="text-secondary mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs sm:mt-5 sm:gap-4 sm:text-sm">
+              <span className="text-warning flex items-center gap-1.5 font-semibold">
                 <Star className="size-4 fill-current" />
                 {formatRating(series.rating)}
-                <span className="font-normal text-muted">({formatViews(series.ratingCount)})</span>
+                <span className="text-muted font-normal">
+                  ({formatViews(series.ratingCount)})
+                </span>
               </span>
               <span className="flex items-center gap-1.5">
                 <Eye className="size-4" />
@@ -97,10 +91,13 @@ export function HeroFeatured() {
               </span>
             </div>
 
-            <div className="mt-6 flex flex-wrap gap-3">
+            <div className="mt-5 flex flex-col gap-2 sm:mt-6 sm:flex-row sm:flex-wrap sm:gap-3">
               <Link
                 to={`/read/${series.slug}/1`}
-                className={buttonStyles({ size: 'lg', className: 'min-w-40' })}
+                className={buttonStyles({
+                  size: 'lg',
+                  className: 'w-full sm:w-auto sm:min-w-40',
+                })}
               >
                 <Play className="size-5 fill-current" />
                 Leer ahora
@@ -111,15 +108,24 @@ export function HeroFeatured() {
                 className={buttonStyles({
                   variant: 'secondary',
                   size: 'lg',
-                  className: cn(isFavorite(series.id) && 'border-accent/40 text-accent'),
+                  className: cn(
+                    'w-full sm:w-auto',
+                    isFavorite(series.id) && 'border-accent/40 text-accent',
+                  ),
                 })}
               >
-                <Heart className={cn('size-5', isFavorite(series.id) && 'fill-current')} />
+                <Heart
+                  className={cn('size-5', isFavorite(series.id) && 'fill-current')}
+                />
                 {isFavorite(series.id) ? 'En favoritos' : 'Favorito'}
               </button>
               <Link
                 to={`/series/${series.slug}`}
-                className={buttonStyles({ variant: 'ghost', size: 'lg' })}
+                className={buttonStyles({
+                  variant: 'ghost',
+                  size: 'lg',
+                  className: 'w-full sm:w-auto',
+                })}
               >
                 Ver ficha
               </Link>
@@ -127,12 +133,12 @@ export function HeroFeatured() {
           </div>
         </div>
 
-        <div className="absolute right-6 bottom-6 flex items-center gap-2 sm:right-10 sm:bottom-10">
+        <div className="absolute right-4 bottom-4 flex items-center gap-2 sm:right-10 sm:bottom-10">
           <button
             type="button"
             onClick={previous}
             aria-label="Serie anterior"
-            className="flex size-10 items-center justify-center rounded-full border border-line-strong bg-black/50 text-primary backdrop-blur transition-colors hover:border-accent hover:text-accent"
+            className="border-line-strong text-primary hover:border-accent hover:text-accent flex size-10 items-center justify-center rounded-full border bg-black/50 backdrop-blur transition-colors"
           >
             <ChevronLeft className="size-5" />
           </button>
@@ -140,13 +146,13 @@ export function HeroFeatured() {
             type="button"
             onClick={next}
             aria-label="Serie siguiente"
-            className="flex size-10 items-center justify-center rounded-full border border-line-strong bg-black/50 text-primary backdrop-blur transition-colors hover:border-accent hover:text-accent"
+            className="border-line-strong text-primary hover:border-accent hover:text-accent flex size-10 items-center justify-center rounded-full border bg-black/50 backdrop-blur transition-colors"
           >
             <ChevronRight className="size-5" />
           </button>
         </div>
 
-        <div className="absolute bottom-8 left-6 flex items-center gap-1.5 sm:left-10 lg:left-14">
+        <div className="absolute bottom-8 left-10 hidden items-center gap-1.5 sm:flex lg:left-14">
           {FEATURED_SERIES.map((item, dotIndex) => (
             <button
               key={item.id}
@@ -155,7 +161,9 @@ export function HeroFeatured() {
               aria-label={`Ver ${item.title}`}
               className={cn(
                 'h-1.5 rounded-full transition-all',
-                dotIndex === index ? 'w-8 bg-accent' : 'w-2 bg-white/30 hover:bg-white/60',
+                dotIndex === index
+                  ? 'bg-accent w-8'
+                  : 'w-2 bg-white/30 hover:bg-white/60',
               )}
             />
           ))}

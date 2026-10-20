@@ -18,19 +18,19 @@ export function RankingSection() {
         actionLabel="Ver ranking completo"
         actionTo="/rankings"
       />
-      <div className="overflow-hidden rounded-2xl border border-line bg-surface">
+      <div className="border-line bg-surface overflow-hidden rounded-2xl border">
         {ranking.map((series, index) => (
           <Link
             key={series.id}
             to={`/series/${series.slug}`}
             className={cn(
-              'group flex items-center gap-4 p-3 transition-colors hover:bg-raised sm:p-4',
-              index !== ranking.length - 1 && 'border-b border-line',
+              'group hover:bg-raised flex items-center gap-4 p-3 transition-colors sm:p-4',
+              index !== ranking.length - 1 && 'border-line border-b',
             )}
           >
             <span
               className={cn(
-                'w-8 shrink-0 text-center font-display text-2xl font-bold',
+                'font-display w-6 shrink-0 text-center text-xl font-bold sm:w-8 sm:text-2xl',
                 index === 0 ? 'text-accent' : 'text-muted',
               )}
             >
@@ -40,24 +40,24 @@ export function RankingSection() {
               src={series.coverUrl}
               alt={`Portada de ${series.title}`}
               title={series.title}
-              className="h-20 w-14 shrink-0 rounded-lg sm:h-24 sm:w-17"
+              className="h-16 w-11 shrink-0 rounded-lg sm:h-24 sm:w-17"
             />
             <div className="min-w-0 flex-1">
-              <p className="truncate font-display font-bold transition-colors group-hover:text-accent">
+              <p className="font-display group-hover:text-accent truncate font-bold transition-colors">
                 {series.title}
               </p>
-              <p className="mt-0.5 truncate text-xs text-secondary">
+              <p className="text-secondary mt-0.5 truncate text-xs">
                 {series.type} · {series.genres.slice(0, 2).join(', ')}
               </p>
-              <p className="mt-1.5 text-[11px] text-muted">
+              <p className="text-muted mt-1.5 text-[11px]">
                 {series.totalChapters} capítulos · {series.status}
               </p>
             </div>
-            <div className="hidden items-center gap-5 text-xs text-secondary sm:flex">
-              <span className="flex items-center gap-1.5">
+            <div className="text-secondary flex shrink-0 items-center gap-3 text-xs sm:gap-5">
+              <span className="hidden items-center gap-1.5 sm:flex">
                 <Eye className="size-3.5" /> {formatViews(series.views)}
               </span>
-              <span className="flex items-center gap-1.5 font-semibold text-warning">
+              <span className="text-warning flex items-center gap-1.5 font-semibold">
                 <Star className="size-3.5 fill-current" /> {formatRating(series.rating)}
               </span>
             </div>
