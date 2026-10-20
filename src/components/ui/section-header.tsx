@@ -21,10 +21,15 @@ export function SectionHeader({
   className?: string
 }) {
   return (
-    <div className={cn('mb-6 flex items-end justify-between gap-4', className)}>
-      <div>
+    <div
+      className={cn(
+        'mb-6 flex flex-col items-start gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4',
+        className,
+      )}
+    >
+      <div className="min-w-0">
         {eyebrow ? (
-          <p className="mb-2 text-xs font-bold tracking-[0.2em] text-accent uppercase">
+          <p className="text-accent mb-2 text-xs font-bold tracking-[0.2em] uppercase">
             {eyebrow}
           </p>
         ) : null}
@@ -32,13 +37,13 @@ export function SectionHeader({
           {title}
         </h2>
         {description ? (
-          <p className="mt-2 max-w-2xl text-sm text-secondary">{description}</p>
+          <p className="text-secondary mt-2 max-w-2xl text-sm">{description}</p>
         ) : null}
       </div>
       {actionLabel && actionTo ? (
         <Link
           to={actionTo}
-          className="group inline-flex shrink-0 items-center gap-1.5 text-sm font-semibold text-secondary transition-colors hover:text-accent"
+          className="group text-secondary hover:text-accent inline-flex shrink-0 items-center gap-1.5 text-sm font-semibold transition-colors"
         >
           {actionLabel}
           <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />

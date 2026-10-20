@@ -33,7 +33,7 @@ export function Modal({
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto bg-black/80 p-4 backdrop-blur-sm sm:items-center"
+      className="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto bg-black/80 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur-sm sm:items-center"
       role="dialog"
       aria-modal="true"
       aria-label={title}
@@ -43,7 +43,7 @@ export function Modal({
     >
       <div
         className={cn(
-          'animate-fade-up my-8 w-full max-w-lg rounded-2xl border border-line bg-surface p-6 shadow-card',
+          'animate-fade-up border-line bg-surface shadow-card my-4 max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-2xl border p-5 sm:my-8 sm:p-6',
           className,
         )}
       >
@@ -51,14 +51,14 @@ export function Modal({
           <div>
             <h2 className="font-display text-xl font-bold">{title}</h2>
             {description ? (
-              <p className="mt-1 text-sm text-secondary">{description}</p>
+              <p className="text-secondary mt-1 text-sm">{description}</p>
             ) : null}
           </div>
           <button
             type="button"
             onClick={onClose}
             aria-label="Cerrar"
-            className="flex size-9 items-center justify-center rounded-lg text-secondary transition-colors hover:bg-raised hover:text-primary"
+            className="text-secondary hover:bg-raised hover:text-primary flex size-10 shrink-0 items-center justify-center rounded-lg transition-colors"
           >
             <X className="size-5" />
           </button>

@@ -21,7 +21,7 @@ export function SeriesCard({
     <article className={cn('group min-w-0', className)}>
       <Link
         to={`/series/${series.slug}`}
-        className="block overflow-hidden rounded-2xl border border-line bg-surface transition-all duration-300 hover:-translate-y-1 hover:border-accent/30 hover:shadow-card"
+        className="border-line bg-surface hover:border-accent/30 hover:shadow-card block overflow-hidden rounded-2xl border transition-all duration-300 hover:-translate-y-1"
       >
         <div className="relative aspect-[2/3] overflow-hidden">
           <CoverImage
@@ -32,19 +32,31 @@ export function SeriesCard({
             imgClassName="transition-transform duration-500 group-hover:scale-105"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/10 to-transparent" />
-          <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
-            <Badge tone="accent">{series.type}</Badge>
-            {series.status === 'En emisión' ? <Badge tone="success">En emisión</Badge> : null}
+          <div className="absolute top-2.5 left-2.5 flex flex-wrap gap-1 sm:top-3 sm:left-3">
+            <Badge
+              tone="accent"
+              className="px-2 py-0.5 text-[10px] sm:px-2.5 sm:py-1 sm:text-[11px]"
+            >
+              {series.type}
+            </Badge>
+            {series.status === 'En emisión' ? (
+              <Badge
+                tone="success"
+                className="hidden px-2 py-0.5 text-[10px] sm:inline-flex sm:px-2.5 sm:py-1 sm:text-[11px]"
+              >
+                En emisión
+              </Badge>
+            ) : null}
           </div>
-          <div className="absolute top-3 right-3 flex items-center gap-1 rounded-full bg-black/70 px-2 py-1 text-xs font-semibold text-warning backdrop-blur">
+          <div className="text-warning absolute top-2.5 right-2.5 flex items-center gap-1 rounded-full bg-black/70 px-1.5 py-0.5 text-[10px] font-semibold backdrop-blur sm:top-3 sm:right-3 sm:px-2 sm:py-1 sm:text-xs">
             <Star className="size-3 fill-current" />
             {formatRating(series.rating)}
           </div>
-          <div className="absolute right-0 bottom-0 left-0 p-4">
-            <h3 className="font-display text-lg leading-tight font-bold text-white">
+          <div className="absolute right-0 bottom-0 left-0 p-3 sm:p-4">
+            <h3 className="font-display line-clamp-2 text-base leading-tight font-bold text-white sm:text-lg">
               {series.title}
             </h3>
-            <div className="mt-1.5 flex items-center gap-3 text-[11px] text-zinc-300">
+            <div className="mt-1.5 flex items-center gap-2.5 text-[10px] text-zinc-300 sm:gap-3 sm:text-[11px]">
               <span className="flex items-center gap-1">
                 <BookOpen className="size-3" />
                 {series.totalChapters} caps.
@@ -60,16 +72,16 @@ export function SeriesCard({
 
       {!compact ? (
         <div className="mt-3 px-0.5">
-          <p className="truncate text-xs text-muted">{series.genres.join(' · ')}</p>
+          <p className="text-muted truncate text-xs">{series.genres.join(' · ')}</p>
           {latestChapter ? (
             <Link
               to={`/read/${series.slug}/${latestChapter.number}`}
-              className="mt-1.5 flex items-center justify-between gap-2 text-xs text-secondary transition-colors hover:text-accent"
+              className="text-secondary hover:text-accent mt-1.5 flex items-center justify-between gap-2 text-xs transition-colors"
             >
               <span className="truncate">
                 Cap. {latestChapter.number} · {latestChapter.title}
               </span>
-              <span className="shrink-0 text-[10px] text-muted">Nuevo</span>
+              <span className="text-muted shrink-0 text-[10px]">Nuevo</span>
             </Link>
           ) : null}
         </div>
