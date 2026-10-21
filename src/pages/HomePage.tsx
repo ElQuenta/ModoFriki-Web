@@ -12,7 +12,7 @@ export function HomePage() {
   useDocumentTitle('Inicio')
 
   return (
-    <div className="pb-10">
+    <div className="home-accent pb-10">
       <HeroFeatured />
       <GenreStrip />
       <ContinueReading />
