@@ -1,5 +1,5 @@
 ---
-name: ModoFriki Reader
+name: modofriki-reader
 description: Reglas de experiencia para el lector de cómics de ModoFriki. Úsalo al implementar o modificar la vista de lectura, sus controles, atajos o progreso.
 ---
 
@@ -25,18 +25,19 @@ oculta header, footer y anuncios.
 
 ## Atajos
 
-| Tecla | Acción |
-| --- | --- |
-| `←` / `A` | Página o capítulo anterior |
-| `→` / `D` | Página o capítulo siguiente |
-| `F` | Pantalla completa |
-| `Escape` | Salir de pantalla completa o cerrar ajustes |
-| `M` | Cambiar modo de lectura |
+| Tecla     | Acción                                      |
+| --------- | ------------------------------------------- |
+| `←` / `A` | Página o capítulo anterior                  |
+| `→` / `D` | Página o capítulo siguiente                 |
+| `F`       | Pantalla completa                           |
+| `Escape`  | Salir de pantalla completa o cerrar ajustes |
+| `M`       | Cambiar modo de lectura                     |
 
 ## Persistencia
 
 - Guarda el progreso en `localStorage` con la clave `modofriki_progress`.
 - El progreso se guarda por serie: capítulo, página y porcentaje.
+- La página exacta vive en `localStorage`; el backend registra los capítulos leídos.
 - Muestra "Continuar leyendo" en la home cuando exista progreso.
 
 ## Accesibilidad

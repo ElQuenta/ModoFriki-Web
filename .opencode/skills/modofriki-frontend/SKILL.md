@@ -1,5 +1,5 @@
 ---
-name: ModoFriki Frontend
+name: modofriki-frontend
 description: Convenciones de arquitectura, diseño y componentes para la interfaz de ModoFriki-Web (React 19, Vite, TypeScript, Tailwind v4). Úsalo al crear o modificar cualquier pantalla, componente, hook o estilo del frontend.
 ---
 
@@ -7,9 +7,9 @@ description: Convenciones de arquitectura, diseño y componentes para la interfa
 
 ## Contexto
 
-ModoFriki-Web es un lector de cómics, manhwas y novelas en español. En esta fase es
-**solo frontend**: no hay llamadas al backend, no hay panel de administración y los
-datos viven en mocks locales.
+ModoFriki-Web es un lector de cómics, manhwas, mangas y novelas en español.
+Consume la API real configurada en `VITE_API_URL`; no usa mocks. La autenticación
+con roles y el panel `/admin` forman parte de la aplicación.
 
 ## Stack
 
@@ -18,7 +18,10 @@ datos viven en mocks locales.
 - Tailwind CSS v4 mediante `@tailwindcss/vite`.
 - `lucide-react` para iconos.
 - `motion` para animaciones discretas.
+- `sonner` para notificaciones.
+- `react-hook-form` + `zod` para formularios.
 - `clsx` + `tailwind-merge` mediante `cn()`.
+- Vitest + Testing Library para pruebas.
 - React Compiler está activo: evita patrones que rompan las reglas de hooks.
 
 ## Identidad visual
@@ -33,30 +36,32 @@ datos viven en mocks locales.
 
 Tokens principales:
 
-| Token | Valor |
-| --- | --- |
-| `--color-base` | `#080808` |
-| `--color-surface` | `#111111` |
-| `--color-raised` | `#191919` |
-| `--color-line` | `#262626` |
-| `--color-accent` | `#ff7a00` |
+| Token                  | Valor     |
+| ---------------------- | --------- |
+| `--color-base`         | `#080808` |
+| `--color-surface`      | `#111111` |
+| `--color-raised`       | `#191919` |
+| `--color-line`         | `#262626` |
+| `--color-accent`       | `#ff7a00` |
 | `--color-accent-hover` | `#ff9130` |
-| `--color-primary` | `#f5f5f5` |
-| `--color-secondary` | `#a3a3a3` |
-| `--color-muted` | `#6f6f6f` |
+| `--color-primary`      | `#f5f5f5` |
+| `--color-secondary`    | `#a3a3a3` |
+| `--color-muted`        | `#6f6f6f` |
 
 ## Estructura
 
 ```txt
 src/
-  app/          # App, router, providers
-  components/   # ui, layout, home, catalog, detail, reader, auth, favorites, profile, common
-  context/      # Auth, Library, UI
+  app/          # App, router y providers
+  components/   # ui, layout, home, catalog, detail, reader, auth, favorites, profile, common, admin
+  context/      # Auth, Library y UI
   hooks/        # hooks reutilizables y de dominio
-  data/         # mocks tipados
-  types/        # contratos del dominio
-  lib/          # cn, format, storage
+  lib/          # api, storage, constants, format, cn, zod-resolver
+  pages/        # pantallas de cada ruta
+  services/     # catalog, auth, reading, community, discovery, admin
   styles/       # tokens y estilos globales
+  test/         # setup de pruebas
+  types/        # contratos del dominio
 ```
 
 ## Reglas de componentes
@@ -73,15 +78,32 @@ src/
 
 ## Datos
 
-- Los mocks viven en `src/data/` y están tipados.
-- No crees clientes HTTP ni servicios de API en esta fase.
+- Toda llamada HTTP pasa por `src/services/*` y `src/lib/api.ts`. No uses `fetch`
+  directo en componentes.
+- Las consultas usan `useAsync` o los hooks de dominio `useCatalog` y `useReading`.
+- Las mutaciones actualizan la UI de forma optimista y revierten si la API falla;
+  muestra el error con `errorMessage()`.
+- `API_URL` viene de `VITE_API_URL`. El token se guarda en `modofriki_token`; un
+  401 con token dispara el evento `modofriki:unauthorized`.
 - La persistencia local usa `useLocalStorage` con claves que empiezan por `modofriki_`.
+- Respeta los roles: `/favorites` y `/profile` requieren sesión; `/admin` requiere
+  rol `ADMIN` o `EDITOR`.
 
 ## Rutas
 
-- `/`, `/series`, `/series/:slug`, `/read/:slug/:chapter`.
-- `/genres`, `/rankings`, `/favorites`, `/profile`, `/login`, `/register`.
-- Cualquier otra ruta muestra la página 404.
+| Ruta                       | Pantalla                                         |
+| -------------------------- | ------------------------------------------------ |
+| `/`                        | Home pública.                                    |
+| `/series`                  | Catálogo con búsqueda y filtros.                 |
+| `/series/:id/:slug?`       | Detalle de la obra, capítulos y comentarios.     |
+| `/read/:workId/:chapterId` | Lector en cascada o paginado.                    |
+| `/genres`                  | Géneros y tags.                                  |
+| `/rankings`                | Obras mejor valoradas.                           |
+| `/favorites`               | Favoritos, requiere sesión.                      |
+| `/profile`                 | Perfil e historial, requiere sesión.             |
+| `/admin`                   | Administración, requiere rol `ADMIN` o `EDITOR`. |
+| `/login`, `/register`      | Autenticación.                                   |
+| `*`                        | Página 404.                                      |
 
 ## Verificación
 
@@ -90,6 +112,7 @@ Antes de cerrar cualquier cambio:
 ```bash
 npm run build
 npm run lint
+npm run test:run
 ```
 
 Si falla algo, corrige antes de continuar. No hagas commit con errores.
