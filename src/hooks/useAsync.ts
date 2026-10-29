@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { errorMessage } from '@/lib/api'
+import { ApiError, errorMessage } from '@/lib/api'
 
 interface Result<T> {
   key: string
   data?: T
   error?: string
+  errorStatus?: number
 }
 
 /**
@@ -32,6 +33,7 @@ export function useAsync<T>(load: () => Promise<T>, key: string, enabled = true)
           key: current,
           data: previous.data,
           error: errorMessage(error, 'No pudimos cargar los datos.'),
+          errorStatus: error instanceof ApiError ? error.status : undefined,
         })),
     )
     return () => {
@@ -52,6 +54,7 @@ export function useAsync<T>(load: () => Promise<T>, key: string, enabled = true)
     staleData: result.data,
     loading: enabled && !fresh,
     error: fresh ? result.error : undefined,
+    errorStatus: fresh ? result.errorStatus : undefined,
     reload,
     setData,
   }

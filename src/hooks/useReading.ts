@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { errorMessage, withRetry } from '@/lib/api'
+import { createId } from '@/lib/id'
 import * as reading from '@/services/reading'
 import { useAsync } from './useAsync'
 import { useAuth } from './useAuth'
@@ -8,7 +9,7 @@ import { useAuth } from './useAuth'
 /** Estadísticas públicas de la obra; registra la visita después de leerlas. */
 export function useWorkStats(workId: string) {
   // Una clave por apertura de ficha: los reintentos no cuentan doble.
-  const [visitKey] = useState(() => crypto.randomUUID())
+  const [visitKey] = useState(() => createId())
   return useAsync(async () => {
     const stats = await reading.getWorkStats(workId)
     withRetry(() => reading.recordVisit(workId, visitKey)).catch(() => undefined)
@@ -29,8 +30,13 @@ export function useWorkProgress(workId: string, onRatingChange?: () => void) {
   const readIds = new Set(
     data?.chapters.items.filter((item) => item.isRead).map((item) => item.chapterId),
   )
+  const pendingReads = useRef(new Set<string>())
 
   const setRead = async (chapterId: string, isRead: boolean) => {
+    // Evita que dos clics rápidos manden marcar y desmarcar a la vez.
+    if (pendingReads.current.has(chapterId)) return
+    pendingReads.current.add(chapterId)
+
     const apply = (value: boolean) =>
       setData((current) => {
         if (!current) return current
@@ -60,6 +66,8 @@ export function useWorkProgress(workId: string, onRatingChange?: () => void) {
     } catch (error) {
       apply(!isRead)
       toast.error(errorMessage(error, 'No pudimos actualizar el capítulo.'))
+    } finally {
+      pendingReads.current.delete(chapterId)
     }
   }
 
