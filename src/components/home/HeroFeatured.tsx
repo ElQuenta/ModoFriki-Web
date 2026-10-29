@@ -73,8 +73,8 @@ export function HeroFeatured() {
               className="size-full object-cover"
               loading={slideIndex === 0 ? 'eager' : 'lazy'}
             />
-            <div className="from-base via-base/85 to-base/20 absolute inset-0 bg-gradient-to-r" />
-            <div className="from-base absolute inset-0 bg-gradient-to-t via-transparent to-transparent" />
+            <div className="from-canvas via-canvas/85 to-canvas/20 absolute inset-0 bg-gradient-to-r" />
+            <div className="from-canvas absolute inset-0 bg-gradient-to-t via-transparent to-transparent" />
           </div>
         ))}
 

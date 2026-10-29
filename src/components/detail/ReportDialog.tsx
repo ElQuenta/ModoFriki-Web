@@ -67,7 +67,7 @@ export function ReportDialog({
         aria-label="Detalles del reporte"
         maxLength={2000}
         rows={3}
-        className="border-line bg-base focus:border-accent/60 mt-4 w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none"
+        className="border-line bg-canvas focus:border-accent/60 mt-4 w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none"
       />
       <div className="mt-4 flex justify-end gap-2">
         <Button variant="secondary" onClick={onClose} disabled={busy}>

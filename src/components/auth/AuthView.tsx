@@ -94,7 +94,7 @@ export function AuthView({ mode }: { mode: 'login' | 'register' }) {
             alt=""
             className="size-full object-cover"
           />
-          <div className="from-base via-base/70 to-base/20 absolute inset-0 bg-gradient-to-t" />
+          <div className="from-canvas via-canvas/70 to-canvas/20 absolute inset-0 bg-gradient-to-t" />
           <div className="absolute inset-0 flex flex-col justify-between p-10">
             <Link to="/" className="font-display text-2xl font-bold">
               MODO<span className="text-accent">FRIKI</span>
@@ -147,7 +147,7 @@ export function AuthView({ mode }: { mode: 'login' | 'register' }) {
                     autoComplete="username"
                     maxLength={32}
                     placeholder="Tu usuario friki"
-                    className="border-line bg-base placeholder:text-muted focus:border-accent/60 h-11 w-full rounded-xl border pr-3 pl-10 text-sm transition-colors outline-none"
+                    className="border-line bg-canvas placeholder:text-muted focus:border-accent/60 h-11 w-full rounded-xl border pr-3 pl-10 text-sm transition-colors outline-none"
                   />
                 </span>
               </label>
@@ -165,7 +165,7 @@ export function AuthView({ mode }: { mode: 'login' | 'register' }) {
                   onChange={(event) => setEmail(event.target.value)}
                   autoComplete="email"
                   placeholder="tu@correo.com"
-                  className="border-line bg-base placeholder:text-muted focus:border-accent/60 h-11 w-full rounded-xl border pr-3 pl-10 text-sm transition-colors outline-none"
+                  className="border-line bg-canvas placeholder:text-muted focus:border-accent/60 h-11 w-full rounded-xl border pr-3 pl-10 text-sm transition-colors outline-none"
                 />
               </span>
             </label>
@@ -182,7 +182,7 @@ export function AuthView({ mode }: { mode: 'login' | 'register' }) {
                   autoComplete={isLogin ? 'current-password' : 'new-password'}
                   placeholder="Mínimo 8 caracteres"
                   maxLength={72}
-                  className="border-line bg-base placeholder:text-muted focus:border-accent/60 h-11 w-full rounded-xl border pr-11 pl-3.5 text-sm transition-colors outline-none"
+                  className="border-line bg-canvas placeholder:text-muted focus:border-accent/60 h-11 w-full rounded-xl border pr-11 pl-3.5 text-sm transition-colors outline-none"
                 />
                 <button
                   type="button"

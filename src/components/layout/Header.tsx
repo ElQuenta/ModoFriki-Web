@@ -34,8 +34,8 @@ export function Header() {
       className={cn(
         'sticky top-0 z-40 border-b transition-all duration-300',
         scrolled
-          ? 'border-line bg-base/90 shadow-[0_10px_30px_rgba(0,0,0,0.35)] backdrop-blur-xl'
-          : 'bg-base/70 border-transparent backdrop-blur-md',
+          ? 'border-line bg-canvas/90 shadow-card backdrop-blur-xl'
+          : 'bg-canvas/70 border-transparent backdrop-blur-md',
       )}
     >
       <div className="container-mf flex h-16 items-center gap-2 sm:h-18 sm:gap-3">
@@ -115,7 +115,7 @@ export function Header() {
           >
             <Heart className="size-5" />
             {favoriteCount > 0 ? (
-              <span className="bg-accent absolute -top-0.5 -right-0.5 flex min-w-5 items-center justify-center rounded-full px-1 text-base text-[10px] font-bold">
+              <span className="bg-accent text-canvas absolute -top-0.5 -right-0.5 flex min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-bold">
                 {favoriteCount}
               </span>
             ) : null}

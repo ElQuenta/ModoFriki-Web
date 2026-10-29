@@ -94,7 +94,7 @@ function TaxonomyColumn({
           : items?.map((item) => (
               <span
                 key={item.id}
-                className="border-line bg-base text-secondary rounded-full border px-3 py-1 text-xs"
+                className="border-line bg-canvas text-secondary rounded-full border px-3 py-1 text-xs"
                 title={item.slug}
               >
                 {item.name}

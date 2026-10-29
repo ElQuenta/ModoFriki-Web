@@ -20,7 +20,7 @@ export function CoverImage({
   return (
     <div
       className={cn(
-        'from-raised via-surface to-base relative overflow-hidden rounded-xl bg-gradient-to-br',
+        'from-raised via-surface to-canvas relative overflow-hidden rounded-xl bg-gradient-to-br',
         className,
       )}
     >

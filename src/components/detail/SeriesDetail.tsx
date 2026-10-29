@@ -64,8 +64,8 @@ export function SeriesDetail({
             alt=""
             className="size-full object-cover object-center"
           />
-          <div className="from-base via-base/80 to-base/30 absolute inset-0 bg-gradient-to-t" />
-          <div className="from-base/80 absolute inset-0 bg-gradient-to-r to-transparent" />
+          <div className="from-canvas via-canvas/80 to-canvas/30 absolute inset-0 bg-gradient-to-t" />
+          <div className="from-canvas/80 absolute inset-0 bg-gradient-to-r to-transparent" />
         </div>
 
         <div className="container-mf relative pt-6 pb-8 sm:pt-8 sm:pb-10">
@@ -252,7 +252,7 @@ export function SeriesDetail({
                     to={`/read/${series.id}/${chapter.id}`}
                     className="group flex min-w-0 flex-1 items-center gap-3 py-3 pl-4 sm:gap-4 sm:pl-5"
                   >
-                    <span className="border-line bg-base font-display text-secondary group-hover:border-accent/40 group-hover:text-accent flex size-9 shrink-0 items-center justify-center rounded-lg border text-sm font-bold transition-colors">
+                    <span className="border-line bg-canvas font-display text-secondary group-hover:border-accent/40 group-hover:text-accent flex size-9 shrink-0 items-center justify-center rounded-lg border text-sm font-bold transition-colors">
                       {formatChapterNumber(chapter.number)}
                     </span>
                     <div className="min-w-0 flex-1">
