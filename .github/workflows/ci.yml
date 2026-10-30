@@ -1,0 +1,29 @@
+name: CI
+
+# Vercel ya compila al desplegar; este workflow agrega lint y tests, y corre en
+# cada pull request (no solo al llegar a main).
+on:
+  pull_request:
+    branches: [dev, qa, main]
+  push:
+    branches: [dev]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Lint, tests y build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run test:run
+      - run: npm run build
