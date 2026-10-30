@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   ChevronDown,
   Flag,
@@ -9,9 +9,10 @@ import {
   Trash2,
 } from 'lucide-react'
 import { toast } from 'sonner'
-import type { Comment, Cursor } from '@/types'
+import type { Comment, CommentTargetType, Cursor } from '@/types'
 import { cn } from '@/lib/cn'
 import { ApiError, errorMessage } from '@/lib/api'
+import { COMMENT_SOURCE_MAX_LENGTH, validateCommentSource } from '@/lib/comments'
 import { formatRelativeDate } from '@/lib/format'
 import { VOTES_KEY } from '@/lib/constants'
 import { readStorage, writeStorage } from '@/lib/storage'
@@ -20,6 +21,8 @@ import { useAuth } from '@/hooks/useAuth'
 import { Avatar } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { CommentEditor } from './CommentEditor'
+import { CommentMarkdown } from './CommentMarkdown'
 import { ReportDialog } from './ReportDialog'
 
 const MAX_INDENT = 3
@@ -28,13 +31,23 @@ export function CommentItem({
   comment,
   onChange,
   depth = 0,
+  targetType,
+  targetId,
+  onRefreshComment,
+  contextKey,
 }: {
   comment: Comment
   onChange: (comment: Comment) => void
   depth?: number
+  targetType: CommentTargetType
+  targetId: string
+  onRefreshComment: (
+    commentId: string,
+    parentCommentId: string | null,
+  ) => Promise<Comment | null>
+  contextKey?: string
 }) {
   const { user } = useAuth()
-  // El backend no devuelve el voto propio: se recuerda por usuario en este dispositivo.
   const [votes, setVotes] = useState<Record<string, 1 | -1>>(
     () => readStorage<Record<string, 1 | -1>>(VOTES_KEY, {}),
   )
@@ -42,119 +55,229 @@ export function CommentItem({
   const myVote = voteKey ? votes[voteKey] : undefined
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState('')
+  const [baseRevision, setBaseRevision] = useState(comment.revision)
+  const [revisionStale, setRevisionStale] = useState(false)
+  const [currentVersion, setCurrentVersion] = useState<Comment>()
+  const [refreshingRevision, setRefreshingRevision] = useState(false)
   const [replying, setReplying] = useState(false)
   const [reply, setReply] = useState('')
+  const [replyError, setReplyError] = useState<string>()
   const [busy, setBusy] = useState(false)
+  const [editError, setEditError] = useState<string>()
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [reportOpen, setReportOpen] = useState(false)
   const [replies, setReplies] = useState<Comment[]>()
   const [repliesCursor, setRepliesCursor] = useState<Cursor | null>(null)
   const [repliesOpen, setRepliesOpen] = useState(false)
   const [loadingReplies, setLoadingReplies] = useState(false)
+  const [repliesError, setRepliesError] = useState<string>()
+  const repliesLock = useRef<string | null>(null)
+  const repliesController = useRef<AbortController | undefined>(undefined)
+  const mutationLock = useRef(false)
+  const context = contextKey ?? `${user?.id ?? 'guest'}:${targetType}:${targetId}:${comment.id}`
+  const activeContext = useRef(context)
+
+  useEffect(() => {
+    activeContext.current = context
+    return () => {
+      repliesController.current?.abort()
+      if (activeContext.current === context) activeContext.current = ''
+    }
+  }, [context])
 
   const deleted = comment.status === 'DELETED'
   const mine = Boolean(user && comment.author?.id === user.id)
-  const name = comment.author?.username ?? 'Usuario eliminado'
+  const name = comment.author?.username ?? 'Autor no disponible'
+
+  const merge = (items: Comment[], incoming: Comment[]) => {
+    const byId = new Map(items.map((item) => [item.id, item]))
+    incoming.forEach((item) => byId.set(item.id, item))
+    return [...byId.values()]
+  }
+
+  const rememberVote = (value: 1 | -1 | undefined) => {
+    if (!user || !voteKey) return
+    const all = readStorage<Record<string, 1 | -1>>(VOTES_KEY, {})
+    if (value) all[voteKey] = value
+    else delete all[voteKey]
+    writeStorage(VOTES_KEY, all)
+    setVotes(all)
+  }
+
+  const refreshThisComment = async () => {
+    const requestContext = activeContext.current
+    const latest = await onRefreshComment(comment.id, comment.parentCommentId)
+    if (activeContext.current !== requestContext) return null
+    if (latest) {
+      onChange(latest)
+      setRevisionStale(false)
+      setCurrentVersion(undefined)
+    }
+    return latest
+  }
 
   const vote = async (value: 1 | -1) => {
     if (!user) {
       toast('Inicia sesión para votar')
       return
     }
+    if (mutationLock.current) return
+    mutationLock.current = true
     const previous = myVote
     const next = previous === value ? undefined : value
-    const delta = (next ?? 0) - (previous ?? 0)
-    const optimistic = {
-      upvotes: comment.votes.upvotes + (next === 1 ? 1 : 0) - (previous === 1 ? 1 : 0),
-      downvotes:
-        comment.votes.downvotes + (next === -1 ? 1 : 0) - (previous === -1 ? 1 : 0),
-      score: comment.votes.score + delta,
-    }
-    const remember = (v: 1 | -1 | undefined) => {
-      const all = readStorage<Record<string, 1 | -1>>(VOTES_KEY, {})
-      if (v) all[`${user.id}:${comment.id}`] = v
-      else delete all[`${user.id}:${comment.id}`]
-      writeStorage(VOTES_KEY, all)
-      setVotes(all)
-    }
-    // Votar, responder y reportar suben la revisión del comentario en el backend.
-    const revision = comment.revision + 1
-    remember(next)
-    onChange({ ...comment, votes: optimistic, revision })
+    setBusy(true)
+    rememberVote(next)
     try {
-      if (next)
-        onChange({
-          ...comment,
-          votes: await community.voteComment(comment.id, next),
-          revision,
-        })
-      else await community.removeVote(comment.id)
+      if (next) {
+        const votesAfter = await community.voteComment(comment.id, next)
+        if (activeContext.current !== context) return
+        onChange({ ...comment, votes: votesAfter })
+      } else {
+        await community.removeVote(comment.id)
+        if (activeContext.current !== context) return
+        const latest = await refreshThisComment()
+        if (!latest) setRevisionStale(true)
+      }
+      setRevisionStale(true)
     } catch (error) {
-      remember(previous)
-      onChange(comment)
+      if (activeContext.current !== context) return
+      rememberVote(previous)
       toast.error(errorMessage(error, 'No pudimos registrar tu voto.'))
+    } finally {
+      mutationLock.current = false
+      setBusy(false)
     }
   }
 
-  const saveEdit = async () => {
-    const body = draft.trim()
-    if (!body) return
-    setBusy(true)
+  const openEdit = async () => {
+    setDraft(comment.bodyMarkdown ?? '')
+    setEditError(undefined)
+    setCurrentVersion(undefined)
+    setEditing(true)
+    if (!revisionStale) {
+      setBaseRevision(comment.revision)
+      return
+    }
+    setRefreshingRevision(true)
     try {
-      onChange(await community.editComment(comment.id, body, comment.revision))
+      const latest = await refreshThisComment()
+      if (!latest) {
+        setEditError('No encontramos la versión vigente. Recarga los comentarios e inténtalo otra vez.')
+        setEditing(false)
+        return
+      }
+      setDraft(latest.bodyMarkdown ?? '')
+      setBaseRevision(latest.revision)
+    } catch (error) {
+      setEditError(errorMessage(error, 'No pudimos actualizar la versión antes de editar.'))
+      setEditing(false)
+    } finally {
+      setRefreshingRevision(false)
+    }
+  }
+
+  const saveEdit = async (source: string, expectedRevision = baseRevision) => {
+    const validationError = validateCommentSource(source)
+    if (validationError) {
+      setEditError(validationError)
+      return
+    }
+    if (mutationLock.current || refreshingRevision) return
+    mutationLock.current = true
+    setBusy(true)
+    setEditError(undefined)
+    try {
+      const updated = await community.editComment(comment.id, source, expectedRevision)
+      if (activeContext.current !== context) return
+      onChange(updated)
+      setBaseRevision(updated.revision)
+      setRevisionStale(false)
+      setCurrentVersion(undefined)
       setEditing(false)
       toast.success('Comentario editado')
     } catch (error) {
-      toast.error(
-        error instanceof ApiError && error.status === 409
-          ? 'El comentario cambió mientras lo editabas. Recarga la página e inténtalo otra vez.'
-          : errorMessage(error, 'No pudimos editar el comentario.'),
-      )
+      if (activeContext.current !== context) return
+      if (error instanceof ApiError && error.status === 409) {
+        setEditError('El comentario cambió en el servidor. Tu borrador se conserva; revisa la versión vigente antes de continuar.')
+        try {
+          const latest = await refreshThisComment()
+          if (latest) setCurrentVersion(latest)
+          else setEditError('El comentario cambió y no encontramos su versión vigente. Tu borrador se conserva; recarga y compara antes de reintentar.')
+        } catch {
+          setEditError('El comentario cambió. Tu borrador se conserva, pero no pudimos cargar la versión vigente. Reintenta la consulta antes de editar.')
+        }
+      } else {
+        setEditError(errorMessage(error, 'No pudimos editar el comentario. Tu borrador se conserva.'))
+      }
     } finally {
+      mutationLock.current = false
       setBusy(false)
     }
   }
 
   const remove = async () => {
+    const requestContext = activeContext.current
     try {
       await community.deleteComment(comment.id)
+      if (activeContext.current !== requestContext) return
       onChange({ ...comment, status: 'DELETED', bodyMarkdown: null })
       toast.success('Comentario eliminado')
     } catch (error) {
+      if (activeContext.current !== requestContext) return
       toast.error(errorMessage(error, 'No pudimos eliminar el comentario.'))
     }
   }
 
   const loadReplies = async (cursor?: Cursor | null) => {
+    if (repliesLock.current === activeContext.current) return
     setLoadingReplies(true)
+    setRepliesError(undefined)
+    const requestContext = activeContext.current
+    repliesLock.current = requestContext
+    const controller = new AbortController()
+    repliesController.current = controller
     try {
-      const page = await community.listReplies(comment.id, cursor)
-      setReplies((current) => [...(cursor ? (current ?? []) : []), ...page.items])
+      const page = await community.listReplies(comment.id, cursor, 20, controller.signal)
+      if (activeContext.current !== requestContext) return
+      setReplies((current) => merge(cursor ? current ?? [] : [], page.items))
       setRepliesCursor(page.hasMore ? page.nextCursor : null)
       setRepliesOpen(true)
     } catch (error) {
-      toast.error(errorMessage(error, 'No pudimos cargar las respuestas.'))
+      if (error instanceof DOMException && error.name === 'AbortError') return
+      if (activeContext.current === requestContext)
+        setRepliesError(errorMessage(error, 'No pudimos cargar las respuestas.'))
     } finally {
-      setLoadingReplies(false)
+      if (repliesLock.current === requestContext) repliesLock.current = null
+      if (activeContext.current === requestContext) setLoadingReplies(false)
     }
   }
 
-  const sendReply = async () => {
-    const body = reply.trim()
-    if (!body) return
+  const sendReply = async (source: string) => {
+    const validationError = validateCommentSource(source)
+    if (validationError) {
+      setReplyError(validationError)
+      return
+    }
+    if (mutationLock.current) return
+    mutationLock.current = true
     setBusy(true)
+    setReplyError(undefined)
+    const requestContext = activeContext.current
     try {
-      const created = await community.createComment({ parentCommentId: comment.id }, body)
-      setReplies((current) => [...(current ?? []), created])
-      onChange({ ...comment, revision: comment.revision + 1 })
+      const created = await community.createComment({ parentCommentId: comment.id }, source)
+      if (activeContext.current !== requestContext) return
+      setReplies((current) => merge(current ?? [], [created]))
+      setRevisionStale(true)
       setRepliesOpen(true)
       setReply('')
       setReplying(false)
       toast.success('Respuesta publicada')
     } catch (error) {
-      toast.error(errorMessage(error, 'No pudimos publicar tu respuesta.'))
+      if (activeContext.current === requestContext)
+        setReplyError(errorMessage(error, 'No pudimos publicar tu respuesta. Tu borrador sigue aquí.'))
     } finally {
-      setBusy(false)
+      mutationLock.current = false
+      if (activeContext.current === requestContext) setBusy(false)
     }
   }
 
@@ -178,36 +301,71 @@ export function CommentItem({
 
           {editing ? (
             <div className="mt-2">
-              <textarea
-                value={draft}
-                onChange={(event) => setDraft(event.target.value)}
-                aria-label="Editar comentario"
-                maxLength={10000}
-                rows={3}
-                className="border-line bg-canvas focus:border-accent/60 w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none"
+              <CommentEditor
+                key={`${comment.id}:${baseRevision}`}
+                source={draft}
+                onSourceChange={(source) => {
+                  setDraft(source)
+                  setEditError(undefined)
+                }}
+                onSubmit={(source) => saveEdit(source)}
+                onCancel={() => setEditing(false)}
+                mode="edit"
+                pending={busy || refreshingRevision}
+                error={editError}
+                previewKey={`${comment.id}:${baseRevision}`}
+                label="Editar comentario"
               />
-              <div className="mt-2 flex gap-2">
-                <Button
-                  size="sm"
-                  onClick={() => void saveEdit()}
-                  disabled={busy || !draft.trim()}
-                >
-                  Guardar
-                </Button>
-                <Button size="sm" variant="ghost" onClick={() => setEditing(false)}>
-                  Cancelar
-                </Button>
-              </div>
+              {refreshingRevision ? <p className="text-muted mt-2 text-xs">Actualizando versión…</p> : null}
+              {currentVersion ? (
+                <div className="border-line bg-raised mt-3 rounded-xl border p-3 text-sm" role="status">
+                  <p className="text-primary font-semibold">Versión vigente en el servidor</p>
+                  <div className="text-secondary mt-2">
+                    <CommentMarkdown source={currentVersion.bodyMarkdown ?? ''} resetKey={`${currentVersion.id}:${currentVersion.revision}`} />
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => {
+                        setDraft(currentVersion.bodyMarkdown ?? '')
+                        setBaseRevision(currentVersion.revision)
+                        setCurrentVersion(undefined)
+                        setEditError(undefined)
+                      }}
+                    >
+                      Usar versión vigente
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        setBaseRevision(currentVersion.revision)
+                        setCurrentVersion(undefined)
+                        void saveEdit(draft, currentVersion.revision)
+                      }}
+                    >
+                      Reintentar con mi borrador
+                    </Button>
+                  </div>
+                </div>
+              ) : null}
             </div>
           ) : (
-            <p
+            <div
               className={cn(
-                'mt-1.5 text-sm leading-relaxed break-words whitespace-pre-wrap',
+                'mt-1.5 text-sm leading-relaxed break-words',
                 deleted ? 'text-muted italic' : 'text-secondary',
               )}
             >
-              {deleted ? 'Este comentario fue eliminado.' : comment.bodyMarkdown}
-            </p>
+              {deleted ? (
+                <p>Este comentario fue eliminado.</p>
+              ) : (
+                <CommentMarkdown
+                  source={comment.bodyMarkdown ?? ''}
+                  resetKey={`${comment.id}:${comment.revision}:${targetType}:${targetId}`}
+                />
+              )}
+            </div>
           )}
 
           {!deleted && !editing ? (
@@ -217,6 +375,7 @@ export function CommentItem({
                 onClick={() => void vote(1)}
                 aria-pressed={myVote === 1}
                 aria-label="Votar a favor"
+                disabled={busy}
                 className={cn(
                   'hover:bg-raised flex h-8 items-center gap-1 rounded-lg px-2 transition-colors',
                   myVote === 1 && 'text-accent',
@@ -229,6 +388,7 @@ export function CommentItem({
                 onClick={() => void vote(-1)}
                 aria-pressed={myVote === -1}
                 aria-label="Votar en contra"
+                disabled={busy}
                 className={cn(
                   'hover:bg-raised flex h-8 items-center gap-1 rounded-lg px-2 transition-colors',
                   myVote === -1 && 'text-danger',
@@ -239,7 +399,10 @@ export function CommentItem({
               {user ? (
                 <button
                   type="button"
-                  onClick={() => setReplying((value) => !value)}
+                  onClick={() => {
+                    setReplying((value) => !value)
+                    setReplyError(undefined)
+                  }}
                   className="hover:bg-raised flex h-8 items-center gap-1 rounded-lg px-2 transition-colors"
                 >
                   <MessageSquareReply className="size-3.5" /> Responder
@@ -248,10 +411,7 @@ export function CommentItem({
               {mine ? (
                 <button
                   type="button"
-                  onClick={() => {
-                    setDraft(comment.bodyMarkdown ?? '')
-                    setEditing(true)
-                  }}
+                  onClick={() => void openEdit()}
                   className="hover:bg-raised flex h-8 items-center gap-1 rounded-lg px-2 transition-colors"
                 >
                   <Pencil className="size-3.5" /> Editar
@@ -280,27 +440,19 @@ export function CommentItem({
 
           {replying ? (
             <div className="mt-2">
-              <textarea
-                value={reply}
-                onChange={(event) => setReply(event.target.value)}
-                aria-label={`Responder a ${name}`}
-                placeholder={`Responde a ${name}...`}
-                maxLength={10000}
-                rows={2}
-                className="border-line bg-canvas focus:border-accent/60 w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none"
+              <CommentEditor
+                source={reply}
+                onSourceChange={(source) => {
+                  setReply(source)
+                  setReplyError(undefined)
+                }}
+                onSubmit={(source) => sendReply(source)}
+                onCancel={() => setReplying(false)}
+                mode="reply"
+                pending={busy}
+                error={replyError}
+                label={`Responder a ${name}`}
               />
-              <div className="mt-2 flex gap-2">
-                <Button
-                  size="sm"
-                  onClick={() => void sendReply()}
-                  disabled={busy || !reply.trim()}
-                >
-                  Responder
-                </Button>
-                <Button size="sm" variant="ghost" onClick={() => setReplying(false)}>
-                  Cancelar
-                </Button>
-              </div>
             </div>
           ) : null}
 
@@ -326,6 +478,19 @@ export function CommentItem({
                 : 'Ver respuestas'}
           </button>
 
+          {repliesError ? (
+            <div className="mt-2 flex items-center justify-between gap-3 text-sm" role="status">
+              <p className="text-danger">{repliesError}</p>
+              <button
+                type="button"
+                onClick={() => void loadReplies(repliesCursor)}
+                className="text-accent font-semibold"
+              >
+                Reintentar
+              </button>
+            </div>
+          ) : null}
+
           {repliesOpen && replies ? (
             <div
               className={cn(
@@ -338,10 +503,14 @@ export function CommentItem({
               ) : (
                 replies.map((item) => (
                   <CommentItem
-                    key={item.id}
+                    key={`${user?.id ?? 'guest'}:${targetType}:${targetId}:${item.id}`}
                     comment={item}
                     onChange={updateReply}
                     depth={depth + 1}
+                    targetType={targetType}
+                    targetId={targetId}
+                    onRefreshComment={onRefreshComment}
+                    contextKey={`${context}:${item.id}`}
                   />
                 ))
               )}
@@ -371,7 +540,9 @@ export function CommentItem({
         open={reportOpen}
         commentId={comment.id}
         onClose={() => setReportOpen(false)}
+        onSuccess={() => setRevisionStale(true)}
       />
+      <span className="sr-only">Máximo {COMMENT_SOURCE_MAX_LENGTH} caracteres de texto fuente.</span>
     </article>
   )
 }
