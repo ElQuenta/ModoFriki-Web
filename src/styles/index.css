@@ -13,12 +13,12 @@
   }
 
   body {
-    @apply bg-base text-primary font-sans antialiased;
+    @apply bg-canvas text-primary font-sans antialiased;
     min-height: 100dvh;
     overflow-x: clip;
     background-image:
-      radial-gradient(circle at 15% -10%, rgba(255, 122, 0, 0.08), transparent 32rem),
-      radial-gradient(circle at 90% 0%, rgba(255, 122, 0, 0.04), transparent 28rem);
+      radial-gradient(circle at 15% -10%, color-mix(in oklab, var(--color-accent) 8%, transparent), transparent 32rem),
+      radial-gradient(circle at 90% 0%, color-mix(in oklab, var(--color-accent) 4%, transparent), transparent 28rem);
   }
 
   @media (min-width: 768px) {
@@ -29,7 +29,7 @@
 
   ::selection {
     background: var(--color-accent);
-    color: var(--color-base);
+    color: var(--color-canvas);
   }
 
   :focus-visible {
@@ -52,12 +52,12 @@
   }
 
   ::-webkit-scrollbar-track {
-    background: var(--color-base);
+    background: var(--color-canvas);
   }
 
   ::-webkit-scrollbar-thumb {
     background: var(--color-line-strong);
-    border: 2px solid var(--color-base);
+    border: 2px solid var(--color-canvas);
     border-radius: 999px;
   }
 

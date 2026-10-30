@@ -1,42 +1,29 @@
 import { request } from '@/lib/api'
-import type { ChapterKind, LatestChapterItem, Series } from '@/types'
+import type { LatestChapterItem, Series } from '@/types'
+import type { components } from '@/types/api.generated'
 
-interface WorkRefDto {
-  id: string
-  slug: string
-  title: string
-  coverUrl: string | null
-}
+// Generados desde openapi.yaml del backend (npm run gen:api).
+type WorkRefDto = components['schemas']['WorkRef']
+type LatestChapterPage = components['schemas']['LatestChapterPage']
+type PopularWorkPage = components['schemas']['PopularWorkPage']
+type PopularWorkDto = components['schemas']['PopularWork']
+type RecommendedWorks = components['schemas']['RecommendedWorks']
 
-interface Paginated<T> {
-  items: T[]
-  total: number
-  page: number
-  limit: number
-}
-
-interface LatestChapterDto {
-  id: string
-  workId: string
-  number: string
-  title: string | null
-  kind: ChapterKind
-  publishedAt: string
-  work: WorkRefDto
-}
-
-interface PopularWorkDto {
-  work: WorkRefDto
-  visits: number
-}
-
-export function refToSeries(ref: WorkRefDto, views?: number): Series {
+/** Acepta WorkRef y el resumen de obra de la biblioteca (misma forma, thumbUrl opcional). */
+export function refToSeries(
+  ref: Omit<WorkRefDto, 'thumbUrl'> & Partial<Pick<WorkRefDto, 'thumbUrl'>>,
+  views?: number,
+): Series {
   return {
     id: ref.id,
     slug: ref.slug,
     title: ref.title,
     alternativeTitles: [],
     coverUrl: ref.coverUrl ?? '',
+    thumbUrl: ref.thumbUrl ?? undefined,
+    detailBannerUrl: null,
+    chapterBannerUrl: null,
+    // WorkRef solo contiene portada; este alias es fallback visual, no medio persistido.
     bannerUrl: ref.coverUrl ?? '',
     type: '',
     synopsis: '',
@@ -51,12 +38,12 @@ interface PageQuery {
   page?: number
   limit?: number
   typeId?: string
+  signal?: AbortSignal
 }
 
 export async function listLatestChapters(query: PageQuery = {}) {
-  const data = await request<Paginated<LatestChapterDto>>('/chapters/latest', {
-    query: { ...query },
-  })
+  const { signal, ...params } = query
+  const data = await request<LatestChapterPage>('/chapters/latest', { query: params, signal })
   return {
     ...data,
     items: data.items.map<LatestChapterItem>((item) => ({
@@ -77,16 +64,12 @@ export async function listLatestChapters(query: PageQuery = {}) {
 export async function listPopularWorks(
   query: PageQuery & { period?: 'all' | 'day' } = {},
 ) {
-  const data = await request<Paginated<PopularWorkDto>>('/works/popular', {
-    query: { ...query },
-  })
+  const { signal, ...params } = query
+  const data = await request<PopularWorkPage>('/works/popular', { query: params, signal })
   return { ...data, items: data.items.map(toPopular) }
 }
 
 export async function listRecommendedWorks(limit = 12) {
-  const data = await request<{ basis: 'genres' | 'popular'; items: PopularWorkDto[] }>(
-    '/works/recommended',
-    { query: { limit } },
-  )
+  const data = await request<RecommendedWorks>('/works/recommended', { query: { limit } })
   return { basis: data.basis, items: data.items.map(toPopular) }
 }

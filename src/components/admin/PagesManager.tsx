@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { ArrowDown, ArrowUp } from 'lucide-react'
 import { toast } from 'sonner'
 import type { Chapter } from '@/types'
-import { errorMessage } from '@/lib/api'
+import { ApiError, errorMessage } from '@/lib/api'
+import { getChapter } from '@/services/catalog'
 import { insertPages, reorderPages, replacePages, validateImages } from '@/services/admin'
 import { Button } from '@/components/ui/button'
 import { Field } from './Field'
@@ -21,18 +22,31 @@ export function PagesManager({
   const [files, setFiles] = useState<File[]>([])
   const [position, setPosition] = useState(chapter.pages.length + 1)
   const [busy, setBusy] = useState(false)
+  const [conflictMessage, setConflictMessage] = useState<string>()
+  const [confirmReplace, setConfirmReplace] = useState(false)
   const dirty = order.some((page, index) => page.id !== chapter.pages[index]?.id)
 
   const run = async (action: () => Promise<Chapter>, success: string) => {
     setBusy(true)
     try {
       const updated = await action()
+      setConflictMessage(undefined)
       onChange(updated)
       setOrder(updated.pages)
       setFiles([])
       setPosition(updated.pages.length + 1)
       toast.success(success)
     } catch (error) {
+      if (error instanceof ApiError && error.status === 409) {
+        try {
+          const fresh = await getChapter(workId, chapter.id)
+          onChange(fresh)
+          setConflictMessage(`${error.message} Actualizamos la versión del capítulo y conservamos tus cambios; vuelve a guardar para aplicar el orden o las imágenes.`)
+        } catch {
+          setConflictMessage(`${error.message} No pudimos actualizar la versión. Tus cambios siguen aquí; vuelve a intentarlo.`)
+        }
+        return
+      }
       toast.error(errorMessage(error, 'No pudimos actualizar las páginas.'))
     } finally {
       setBusy(false)
@@ -52,6 +66,13 @@ export function PagesManager({
     const invalid = validateImages(files)
     if (!files.length) return toast.error('Elige al menos una imagen.')
     if (invalid) return toast.error(invalid)
+    if (mode === 'insert' && (!Number.isInteger(position) || position < 1 || position > order.length + 1)) {
+      return toast.error(`La posición debe estar entre 1 y ${order.length + 1}.`)
+    }
+    if (mode === 'insert' && chapter.pages.length + files.length > 1000) {
+      return toast.error('Un capítulo no puede superar las 1000 páginas.')
+    }
+    setConfirmReplace(false)
     void run(
       () =>
         mode === 'replace'
@@ -63,6 +84,7 @@ export function PagesManager({
 
   return (
     <div className="space-y-5">
+      {conflictMessage ? <p role="alert" className="border-warning/30 bg-warning/5 text-warning rounded-xl border p-3 text-sm">{conflictMessage}</p> : null}
       <div>
         <div className="mb-2 flex items-center justify-between">
           <p className="text-secondary text-xs font-semibold">
@@ -92,7 +114,7 @@ export function PagesManager({
         ) : (
           <ol className="grid max-h-80 grid-cols-3 gap-2 overflow-y-auto sm:grid-cols-5">
             {order.map((page, index) => (
-              <li key={page.id} className="border-line bg-base rounded-lg border p-1">
+              <li key={page.id} className="border-line bg-canvas rounded-lg border p-1">
                 <img
                   src={page.imageUrl}
                   alt={`Página ${index + 1}`}
@@ -155,10 +177,19 @@ export function PagesManager({
           <Button variant="secondary" disabled={busy} onClick={() => upload('insert')}>
             Insertar
           </Button>
-          <Button variant="danger" disabled={busy} onClick={() => upload('replace')}>
+          <Button variant="danger" disabled={busy} onClick={() => setConfirmReplace(true)}>
             Reemplazar todas
           </Button>
         </div>
+        {confirmReplace ? (
+          <div className="border-warning/30 bg-warning/5 rounded-xl border p-3" role="group" aria-label="Confirmar reemplazo de páginas">
+            <p className="text-primary text-sm">Se reemplazarán las {order.length} páginas actuales por {files.length} archivos seleccionados.</p>
+            <div className="mt-2 flex gap-2">
+              <Button size="sm" variant="danger" disabled={busy} onClick={() => upload('replace')}>Confirmar reemplazo</Button>
+              <Button size="sm" variant="secondary" disabled={busy} onClick={() => setConfirmReplace(false)}>Cancelar</Button>
+            </div>
+          </div>
+        ) : null}
       </div>
     </div>
   )

@@ -6,6 +6,7 @@ interface WorkSummaryDto {
   slug: string
   title: string
   coverUrl: string | null
+  thumbUrl?: string | null
 }
 
 interface Paginated<T> {
@@ -95,6 +96,9 @@ export function getWorkStats(workId: string) {
 }
 
 export function setRating(workId: string, score: number) {
+  if (!Number.isFinite(score) || score < 0 || score > 5 || score * 2 !== Math.round(score * 2)) {
+    return Promise.reject(new Error('La valoración debe estar entre 0 y 5 en pasos de 0,5.'))
+  }
   return request<{ workId: string; score: number | null }>(`/works/${workId}/rating`, {
     method: 'PUT',
     body: { score },
@@ -122,21 +126,38 @@ export function unmarkChapterRead(chapterId: string) {
 
 const MAX_LIMIT = 100
 
-export async function listAllFavorites() {
-  const all: { series: ReturnType<typeof summary>; addedAt: string }[] = []
-  for (let page = 1; ; page += 1) {
-    const data = await request<Paginated<{ work: WorkSummaryDto; createdAt: string }>>(
-      '/me/favorites',
-      { query: { page, limit: MAX_LIMIT } },
-    )
-    all.push(
-      ...data.items.map((item) => ({
-        series: summary(item.work),
-        addedAt: item.createdAt,
-      })),
-    )
-    if (data.items.length < MAX_LIMIT || all.length >= data.total) return all
+export async function listFavorites(page = 1, limit = 20, signal?: AbortSignal) {
+  const data = await request<Paginated<{ work: WorkSummaryDto; createdAt: string }>>(
+    '/me/favorites',
+    { query: { page, limit: Math.min(limit, MAX_LIMIT) }, signal },
+  )
+  return {
+    ...data,
+    items: data.items.map((item) => ({
+      series: summary(item.work),
+      addedAt: item.createdAt,
+    })),
   }
+}
+
+/** Compatibility helper for consumers that explicitly need the entire collection. */
+export async function listAllFavorites(signal?: AbortSignal) {
+  const first = await listFavorites(1, MAX_LIMIT, signal)
+  const items = [...first.items]
+  const seen = new Set(items.map((item) => item.series.id))
+  for (let page = 2; items.length < first.total; page += 1) {
+    const next = await listFavorites(page, MAX_LIMIT, signal)
+    if (!next.items.length) break
+    const before = items.length
+    for (const item of next.items) {
+      if (!seen.has(item.series.id)) {
+        seen.add(item.series.id)
+        items.push(item)
+      }
+    }
+    if (items.length === before) break
+  }
+  return items
 }
 
 export function addFavorite(workId: string) {
@@ -149,9 +170,10 @@ export function removeFavorite(workId: string) {
   return request<void>(`/me/favorites/${workId}`, { method: 'DELETE' })
 }
 
-export async function listReadingHistory(page = 1, limit = 20) {
+export async function listReadingHistory(page = 1, limit = 20, signal?: AbortSignal) {
   const data = await request<Paginated<HistoryItemDto>>('/me/reading-history', {
-    query: { page, limit },
+    query: { page, limit: Math.min(limit, MAX_LIMIT) },
+    signal,
   })
   return {
     ...data,
@@ -172,22 +194,53 @@ export function getReadingStats() {
   return request<ReadingStats>('/me/reading-stats')
 }
 
-export function getReadingCalendar(from?: string, to?: string) {
-  return request<ReadingCalendar>('/me/reading-calendar', { query: { from, to } })
+export function validateCalendarRange(from: string, to: string) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to)) {
+    return 'Usa fechas con formato AAAA-MM-DD.'
+  }
+  const start = new Date(`${from}T00:00:00Z`)
+  const end = new Date(`${to}T00:00:00Z`)
+  if (Number.isNaN(start.valueOf()) || Number.isNaN(end.valueOf()) || start.toISOString().slice(0, 10) !== from || end.toISOString().slice(0, 10) !== to) {
+    return 'El rango contiene una fecha no válida.'
+  }
+  const days = Math.floor((end.valueOf() - start.valueOf()) / 86_400_000) + 1
+  if (days < 1) return 'La fecha inicial debe ser anterior o igual a la fecha final.'
+  if (days > 366) return 'El rango no puede superar 366 días.'
+  return undefined
+}
+
+export function getReadingCalendar(from?: string, to?: string, signal?: AbortSignal) {
+  if (from && to) {
+    const error = validateCalendarRange(from, to)
+    if (error) return Promise.reject(new Error(error))
+  } else if (from || to) {
+    return Promise.reject(new Error('Indica ambas fechas para consultar un rango.'))
+  }
+  return request<ReadingCalendar>('/me/reading-calendar', { query: { from, to }, signal })
 }
 
 /** Progreso de la obra con el estado de todos sus capítulos (paginado de a 100). */
-export async function getWorkProgress(workId: string) {
+export async function getWorkProgress(workId: string, signal?: AbortSignal) {
   const first = await request<WorkProgress>(`/me/works/${workId}/progress`, {
     query: { page: 1, limit: MAX_LIMIT },
+    signal,
   })
   const items = [...first.chapters.items]
+  const seen = new Set(items.map((item) => item.chapterId))
   for (let page = 2; items.length < first.chapters.total; page += 1) {
     const next = await request<WorkProgress>(`/me/works/${workId}/progress`, {
       query: { page, limit: MAX_LIMIT },
+      signal,
     })
     if (next.chapters.items.length === 0) break
-    items.push(...next.chapters.items)
+    const before = items.length
+    for (const item of next.chapters.items) {
+      if (!seen.has(item.chapterId)) {
+        seen.add(item.chapterId)
+        items.push(item)
+      }
+    }
+    if (items.length === before) break
   }
   return { ...first, chapters: { ...first.chapters, items } }
 }

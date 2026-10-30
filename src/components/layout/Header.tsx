@@ -9,6 +9,7 @@ import {
   Settings,
   Library,
   ShieldCheck,
+  RotateCw,
 } from 'lucide-react'
 import { useState } from 'react'
 import { NAV_LINKS } from '@/lib/constants'
@@ -23,7 +24,7 @@ import { buttonStyles } from '@/components/ui/button'
 
 export function Header() {
   const { openCommand, openMobileNav } = useUI()
-  const { user, logout } = useAuth()
+  const { user, logout, sessionError, retrySession } = useAuth()
   const { favoriteCount } = useLibrary()
   const { scrolled } = useScrollDirection()
   const [menuOpen, setMenuOpen] = useState(false)
@@ -34,8 +35,8 @@ export function Header() {
       className={cn(
         'sticky top-0 z-40 border-b transition-all duration-300',
         scrolled
-          ? 'border-line bg-base/90 shadow-[0_10px_30px_rgba(0,0,0,0.35)] backdrop-blur-xl'
-          : 'bg-base/70 border-transparent backdrop-blur-md',
+          ? 'border-line bg-canvas/90 shadow-card backdrop-blur-xl'
+          : 'bg-canvas/70 border-transparent backdrop-blur-md',
       )}
     >
       <div className="container-mf flex h-16 items-center gap-2 sm:h-18 sm:gap-3">
@@ -115,7 +116,7 @@ export function Header() {
           >
             <Heart className="size-5" />
             {favoriteCount > 0 ? (
-              <span className="bg-accent absolute -top-0.5 -right-0.5 flex min-w-5 items-center justify-center rounded-full px-1 text-base text-[10px] font-bold">
+              <span className="bg-accent text-canvas absolute -top-0.5 -right-0.5 flex min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-bold">
                 {favoriteCount}
               </span>
             ) : null}
@@ -200,6 +201,23 @@ export function Header() {
             </div>
           ) : (
             <>
+              {sessionError ? (
+                <>
+                  <span role="status" className="sr-only">
+                    {sessionError}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => void retrySession()}
+                    aria-label="Reintentar validación de sesión"
+                    title={sessionError}
+                    className="text-secondary hover:bg-raised hover:text-primary flex h-10 items-center justify-center gap-1.5 rounded-xl px-2 transition-colors"
+                  >
+                    <RotateCw className="size-4" />
+                    <span className="hidden text-xs sm:inline">Reintentar</span>
+                  </button>
+                </>
+              ) : null}
               <Link
                 to="/login"
                 aria-label="Iniciar sesión"

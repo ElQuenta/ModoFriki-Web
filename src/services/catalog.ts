@@ -1,48 +1,11 @@
 import { request } from '@/lib/api'
-import type {
-  Chapter,
-  ChapterKind,
-  PublicationStatus,
-  ReleaseStatus,
-  Series,
-  SeriesStatus,
-  Taxonomy,
-} from '@/types'
+import type { Chapter, ReleaseStatus, Series, SeriesStatus, Taxonomy } from '@/types'
+import type { components } from '@/types/api.generated'
 
-interface AssetDto {
-  id: string
-  url: string
-}
-
-export interface WorkDto {
-  id: string
-  slug: string
-  title: string
-  synopsis: string
-  typeId: string
-  publicationStatus: PublicationStatus
-  releaseStatus: ReleaseStatus
-  updatedAt: string
-  visitsCount?: number
-  type: Taxonomy
-  coverAsset: AssetDto | null
-  incapBannerAsset: AssetDto | null
-  alternativeTitles: { id: string; title: string }[]
-  genres: { genre: Taxonomy }[]
-}
-
-export interface ChapterDto {
-  id: string
-  workId: string
-  number: string
-  title: string | null
-  kind: ChapterKind
-  status: PublicationStatus
-  version: number
-  publishedAt: string | null
-  createdAt: string
-  pages?: { id: string; position: number; asset: AssetDto }[]
-}
+// Generados desde openapi.yaml del backend (npm run gen:api): si el contrato cambia,
+// el build falla aquí en vez de fallar en producción.
+export type WorkDto = components['schemas']['CatalogWork']
+export type ChapterDto = components['schemas']['CatalogChapter']
 
 export const RELEASE_STATUS_LABELS: Record<ReleaseStatus, SeriesStatus> = {
   ONGOING: 'En emisión',
@@ -53,13 +16,23 @@ export const RELEASE_STATUS_LABELS: Record<ReleaseStatus, SeriesStatus> = {
 
 export function toSeries(work: WorkDto): Series {
   const cover = work.coverAsset?.url ?? ''
+  const chapterBanner = work.incapBannerAsset?.url ?? null
   return {
     id: work.id,
     slug: work.slug,
     title: work.title,
     alternativeTitles: work.alternativeTitles.map((item) => item.title),
     coverUrl: cover,
-    bannerUrl: work.incapBannerAsset?.url ?? cover,
+    thumbUrl: work.coverThumbAsset?.url,
+    detailBannerUrl: null,
+    chapterBannerUrl: chapterBanner,
+    coverMedia: work.coverAsset ? { id: work.coverAsset.id, url: work.coverAsset.url } : null,
+    detailBannerMedia: null,
+    chapterBannerMedia: work.incapBannerAsset
+      ? { id: work.incapBannerAsset.id, url: work.incapBannerAsset.url }
+      : null,
+    // Alias temporal para vistas antiguas; no constituye un banner de ficha persistido.
+    bannerUrl: chapterBanner ?? cover,
     type: work.type.name,
     typeId: work.typeId,
     status: RELEASE_STATUS_LABELS[work.releaseStatus],
@@ -100,25 +73,28 @@ export interface WorkFilters {
   typeId?: string
   genreId?: string
   includeDrafts?: boolean
+  signal?: AbortSignal
 }
 
 export async function listWorks(filters: WorkFilters = {}) {
-  const works = await request<WorkDto[]>('/works', { query: { ...filters } })
+  const { signal, ...query } = filters
+  const works = await request<WorkDto[]>('/works', { query, signal })
   return works.map(toSeries)
 }
 
-export async function getWork(workId: string) {
-  return toSeries(await request<WorkDto>(`/works/${workId}`))
+export async function getWork(workId: string, signal?: AbortSignal) {
+  return toSeries(await request<WorkDto>(`/works/${workId}`, { signal }))
 }
 
 const CHAPTER_PAGE = 100
 
 /** Trae todos los capítulos (el backend pagina de a 100 como máximo), en orden ascendente. */
-export async function listChapters(workId: string, includeDrafts = false) {
+export async function listChapters(workId: string, includeDrafts = false, signal?: AbortSignal) {
   const all: Chapter[] = []
   for (let page = 1; ; page += 1) {
     const batch = await request<ChapterDto[]>(`/works/${workId}/chapters`, {
       query: { page, limit: CHAPTER_PAGE, includeDrafts: includeDrafts || undefined },
+      signal,
     })
     all.push(...batch.map(toChapter))
     if (batch.length < CHAPTER_PAGE) return all

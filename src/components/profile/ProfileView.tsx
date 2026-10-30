@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   BookOpen,
@@ -15,6 +15,7 @@ import {
   getReadingCalendar,
   getReadingStats,
   listReadingHistory,
+  validateCalendarRange,
   type HistoryEntry,
 } from '@/services/reading'
 import { useAsync } from '@/hooks/useAsync'
@@ -37,25 +38,31 @@ import { SectionHeader } from '@/components/ui/section-header'
 export function ProfileView() {
   const { user, logout } = useAuth()
   const { getProgress } = useLibrary()
-  const [historyPages, setHistoryPages] = useState(1)
+  const [historyState, setHistoryState] = useState<{ userId?: string; items: HistoryEntry[]; total: number; page: number; loading: boolean; error?: string }>({ items: [], total: 0, page: 0, loading: false })
+  const [calendarRange, setCalendarRange] = useState({ from: '', to: '' })
+  const [calendarFilter, setCalendarFilter] = useState<{ from: string; to: string }>()
+  const [calendarError, setCalendarError] = useState<string>()
+  const userId = user?.id
   const stats = useAsync(getReadingStats, `reading-stats:${user?.id}`, Boolean(user))
   const calendar = useAsync(
-    () => getReadingCalendar(),
-    `calendar:${user?.id}`,
+    () => getReadingCalendar(calendarFilter?.from, calendarFilter?.to),
+    `calendar:${user?.id}:${calendarFilter?.from ?? ''}:${calendarFilter?.to ?? ''}`,
     Boolean(user),
   )
-  const historyQuery = useAsync(
-    async () => {
-      const pages = await Promise.all(
-        Array.from({ length: historyPages }, (_, index) =>
-          listReadingHistory(index + 1, 20),
-        ),
-      )
-      return { items: pages.flatMap((page) => page.items), total: pages[0]?.total ?? 0 }
-    },
-    `history:${user?.id}:${historyPages}`,
-    Boolean(user),
-  )
+  useEffect(() => {
+    if (!userId) return
+    const controller = new AbortController()
+    setHistoryState({ userId, items: [], total: 0, page: 0, loading: true })
+    listReadingHistory(1, 20, controller.signal).then(
+      (result) => setHistoryState((current) => current.userId === userId
+        ? { userId, items: result.items, total: result.total, page: 1, loading: false }
+        : current),
+      (error: unknown) => setHistoryState((current) => current.userId === userId
+        ? { ...current, loading: false, error: error instanceof Error ? error.message : 'No pudimos cargar el historial.' }
+        : current),
+    )
+    return () => controller.abort()
+  }, [userId])
   const { settings, setMode } = useReaderSettings()
 
   if (!user) {
@@ -72,9 +79,46 @@ export function ProfileView() {
     )
   }
 
-  const history: HistoryEntry[] =
-    historyQuery.data?.items ?? historyQuery.staleData?.items ?? []
-  const hasMoreHistory = history.length < (historyQuery.data?.total ?? 0)
+  const history = historyState.userId === user.id ? historyState.items : []
+  const historyError = historyState.userId === user.id ? historyState.error : undefined
+  const historyLoading = historyState.userId !== user.id || historyState.loading
+  const hasMoreHistory = history.length < (historyState.userId === user.id ? historyState.total : 0)
+  const loadMoreHistory = async () => {
+    if (historyState.loading || !hasMoreHistory) return
+    const userId = user.id
+    const page = historyState.page + 1
+    setHistoryState((current) => ({ ...current, loading: true, error: undefined }))
+    try {
+      const result = await listReadingHistory(page, 20)
+      setHistoryState((current) => current.userId === userId
+        ? { ...current, items: [...current.items, ...result.items.filter((item) => !current.items.some((old) => old.chapterId === item.chapterId))], total: result.total, page, loading: false }
+        : current)
+    } catch (error) {
+      setHistoryState((current) => current.userId === userId
+        ? { ...current, loading: false, error: error instanceof Error ? error.message : 'No pudimos cargar más historial.' }
+        : current)
+    }
+  }
+  const retryHistory = async () => {
+    const currentUserId = user.id
+    setHistoryState({ userId: currentUserId, items: [], total: 0, page: 0, loading: true })
+    try {
+      const result = await listReadingHistory(1, 20)
+      setHistoryState((current) => current.userId === currentUserId
+        ? { userId: currentUserId, items: result.items, total: result.total, page: 1, loading: false }
+        : current)
+    } catch (error) {
+      setHistoryState((current) => current.userId === currentUserId
+        ? { ...current, loading: false, error: error instanceof Error ? error.message : 'No pudimos cargar el historial.' }
+        : current)
+    }
+  }
+  const applyCalendarRange = () => {
+    const error = validateCalendarRange(calendarRange.from, calendarRange.to)
+    if (error) { setCalendarError(error); return }
+    setCalendarError(undefined)
+    setCalendarFilter(calendarRange)
+  }
   const maxDay = Math.max(
     1,
     ...(calendar.data?.days.map((day) => day.chaptersRead) ?? []),
@@ -172,6 +216,13 @@ export function ProfileView() {
         <h2 className="font-display flex items-center gap-2 text-base font-bold">
           <CalendarDays className="text-accent size-4" /> Calendario de lectura
         </h2>
+        <div className="mt-3 flex flex-wrap items-end gap-2">
+          <label className="text-muted grid gap-1 text-xs">Desde<input type="date" value={calendarRange.from} onChange={(event) => setCalendarRange((range) => ({ ...range, from: event.target.value }))} className="border-line bg-canvas text-primary rounded-lg border px-2 py-1.5" /></label>
+          <label className="text-muted grid gap-1 text-xs">Hasta<input type="date" value={calendarRange.to} onChange={(event) => setCalendarRange((range) => ({ ...range, to: event.target.value }))} className="border-line bg-canvas text-primary rounded-lg border px-2 py-1.5" /></label>
+          <Button size="sm" variant="secondary" onClick={applyCalendarRange}>Consultar rango</Button>
+          {calendarFilter ? <Button size="sm" variant="ghost" onClick={() => { setCalendarFilter(undefined); setCalendarRange({ from: '', to: '' }); setCalendarError(undefined) }}>Año actual</Button> : null}
+        </div>
+        {calendarError ? <p role="alert" className="text-danger mt-2 text-xs">{calendarError}</p> : null}
         {calendar.error ? (
           <p className="text-danger mt-3 text-xs">{calendar.error}</p>
         ) : !calendar.data ? (
@@ -211,9 +262,9 @@ export function ProfileView() {
             title="Historial de lectura"
             description="Retoma cualquiera de tus lecturas recientes."
           />
-          {historyQuery.error && history.length === 0 ? (
-            <ErrorState message={historyQuery.error} onRetry={historyQuery.reload} />
-          ) : historyQuery.loading && history.length === 0 ? (
+          {historyError && history.length === 0 ? (
+            <ErrorState message={historyError} onRetry={() => void retryHistory()} />
+          ) : historyLoading && history.length === 0 ? (
             <div className="space-y-2">
               {Array.from({ length: 3 }, (_, index) => (
                 <Skeleton key={index} className="h-24 w-full" />
@@ -243,7 +294,7 @@ export function ProfileView() {
                     )}
                   >
                     <CoverImage
-                      src={series.coverUrl}
+                      src={series.thumbUrl || series.coverUrl}
                       alt={`Portada de ${series.title}`}
                       title={series.title}
                       className="h-20 w-14 shrink-0 rounded-lg"
@@ -271,14 +322,19 @@ export function ProfileView() {
               })}
             </div>
           )}
+          {historyError && history.length > 0 ? (
+            <p role="alert" className="text-danger mt-3 text-xs">
+              {historyError}
+            </p>
+          ) : null}
           {hasMoreHistory ? (
             <Button
               variant="secondary"
-              onClick={() => setHistoryPages((value) => value + 1)}
-              disabled={historyQuery.loading}
+              onClick={() => void loadMoreHistory()}
+              disabled={historyLoading}
               className="mt-3 w-full"
             >
-              {historyQuery.loading ? 'Cargando…' : 'Cargar más'}
+              {historyLoading ? 'Cargando…' : 'Cargar más'}
             </Button>
           ) : null}
         </section>

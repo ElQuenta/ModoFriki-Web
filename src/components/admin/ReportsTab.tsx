@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Flag } from 'lucide-react'
 import { toast } from 'sonner'
 import type { Cursor, ReportStatus } from '@/types'
@@ -122,6 +122,8 @@ export function ReportsTab() {
     cursor: Cursor | null
   }>()
   const [loadingMore, setLoadingMore] = useState(false)
+  const [moreError, setMoreError] = useState<{ key: string; message: string }>()
+  const pageLock = useRef<string | null>(null)
   const extra = more?.key === key ? more.items : []
   const cursor =
     more?.key === key ? more.cursor : first.data?.hasMore ? first.data.nextCursor : null
@@ -135,18 +137,21 @@ export function ReportsTab() {
   }
 
   const loadMore = async () => {
-    if (!cursor) return
+    if (!cursor || pageLock.current === key) return
+    pageLock.current = key
     setLoadingMore(true)
+    setMoreError(undefined)
     try {
       const page = await listReports(status || undefined, cursor)
       setMore({
         key,
-        items: [...extra, ...page.items],
+        items: [...new Map([...extra, ...page.items].map((item) => [item.id, item])).values()],
         cursor: page.hasMore ? page.nextCursor : null,
       })
     } catch (error) {
-      toast.error(errorMessage(error, 'No pudimos cargar más reportes.'))
+      setMoreError({ key, message: errorMessage(error, 'No pudimos cargar más reportes.') })
     } finally {
+      if (pageLock.current === key) pageLock.current = null
       setLoadingMore(false)
     }
   }
@@ -163,7 +168,12 @@ export function ReportsTab() {
             key={filter.value || 'all'}
             type="button"
             aria-pressed={status === filter.value}
-            onClick={() => setStatus(filter.value)}
+            onClick={() => {
+              pageLock.current = null
+              setLoadingMore(false)
+              setMoreError(undefined)
+              setStatus(filter.value)
+            }}
             className={cn(
               'shrink-0 rounded-lg border px-3 py-2 text-xs font-semibold transition-colors',
               status === filter.value
@@ -205,9 +215,10 @@ export function ReportsTab() {
           disabled={loadingMore}
           className="mt-3 w-full"
         >
-          {loadingMore ? 'Cargando…' : 'Cargar más'}
+          {loadingMore ? 'Cargando…' : moreError?.key === key ? 'Reintentar carga' : 'Cargar más'}
         </Button>
       ) : null}
+      {moreError?.key === key ? <p role="alert" className="text-danger mt-2 text-sm">{moreError.message} Las páginas ya cargadas se conservaron.</p> : null}
     </div>
   )
 }

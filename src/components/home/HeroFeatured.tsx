@@ -1,3 +1,4 @@
+import { PUBLIC_CACHE_MS } from '@/lib/constants'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ChevronLeft, ChevronRight, Eye, Heart, Play } from 'lucide-react'
@@ -15,21 +16,28 @@ import { buttonStyles } from '@/components/ui/button'
 export function HeroFeatured() {
   const [index, setIndex] = useState(0)
   const [paused, setPaused] = useState(false)
-  const { isFavorite, toggleFavorite } = useLibrary()
+  const { favoriteStatus, toggleFavorite } = useLibrary()
   const reduceMotion = usePrefersReducedMotion()
   // Destacadas = las más visitadas; la ficha completa trae banner, tipo y sinopsis.
-  const { data, loading } = useAsync(async () => {
-    const popular = await listPopularWorks({ period: 'all', limit: 3 })
-    const works = await Promise.all(popular.items.map((item) => getWork(item.id)))
-    return works.map((work, position) => ({
-      ...work,
-      views: popular.items[position]?.views,
-      isFeatured: position === 0,
-    }))
-  }, 'hero-featured')
+  const { data, loading } = useAsync(
+    async () => {
+      const popular = await listPopularWorks({ period: 'all', limit: 3 })
+      const works = await Promise.all(popular.items.map((item) => getWork(item.id)))
+      return works.map((work, position) => ({
+        ...work,
+        views: popular.items[position]?.views,
+        isFeatured: position === 0,
+      }))
+    },
+    'hero-featured',
+    true,
+    undefined,
+    PUBLIC_CACHE_MS,
+  )
   const featured = data ?? []
   const count = featured.length
   const series = featured[index % Math.max(count, 1)]
+  const currentFavoriteStatus = series ? favoriteStatus(series.id) : 'unknown'
 
   useEffect(() => {
     if (paused || reduceMotion || count < 2) return
@@ -67,14 +75,16 @@ export function HeroFeatured() {
               item.id === series.id ? 'opacity-100' : 'pointer-events-none opacity-0',
             )}
           >
-            <img
-              src={item.bannerUrl}
-              alt=""
-              className="size-full object-cover"
-              loading={slideIndex === 0 ? 'eager' : 'lazy'}
-            />
-            <div className="from-base via-base/85 to-base/20 absolute inset-0 bg-gradient-to-r" />
-            <div className="from-base absolute inset-0 bg-gradient-to-t via-transparent to-transparent" />
+            {(item.detailBannerUrl || item.bannerUrl) && (
+              <img
+                src={item.detailBannerUrl || item.bannerUrl}
+                alt=""
+                className="size-full object-cover"
+                loading={slideIndex === 0 ? 'eager' : 'lazy'}
+              />
+            )}
+            <div className="from-canvas via-canvas/85 to-canvas/20 absolute inset-0 bg-gradient-to-r" />
+            <div className="from-canvas absolute inset-0 bg-gradient-to-t via-transparent to-transparent" />
           </div>
         ))}
 
@@ -121,14 +131,14 @@ export function HeroFeatured() {
                   size: 'lg',
                   className: cn(
                     'w-full sm:w-auto',
-                    isFavorite(series.id) && 'border-accent/40 text-accent',
+                    currentFavoriteStatus === 'favorite' && 'border-accent/40 text-accent',
                   ),
                 })}
               >
                 <Heart
-                  className={cn('size-5', isFavorite(series.id) && 'fill-current')}
+                  className={cn('size-5', currentFavoriteStatus === 'favorite' && 'fill-current')}
                 />
-                {isFavorite(series.id) ? 'En favoritos' : 'Favorito'}
+                {currentFavoriteStatus === 'favorite' ? 'En favoritos' : currentFavoriteStatus === 'unknown' ? 'Guardar favorito' : 'Favorito'}
               </button>
               <Link
                 to={`/series/${series.id}`}

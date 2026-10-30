@@ -10,10 +10,12 @@ export function ReportDialog({
   open,
   commentId,
   onClose,
+  onSuccess,
 }: {
   open: boolean
   commentId: string
   onClose: () => void
+  onSuccess?: () => void
 }) {
   const [reason, setReason] = useState<ReportReason>('SPAM')
   const [details, setDetails] = useState('')
@@ -23,6 +25,7 @@ export function ReportDialog({
     setBusy(true)
     try {
       await reportComment(commentId, reason, details.trim() || undefined)
+      onSuccess?.()
       toast.success('Gracias, revisaremos el reporte')
       setDetails('')
       onClose()
@@ -67,7 +70,7 @@ export function ReportDialog({
         aria-label="Detalles del reporte"
         maxLength={2000}
         rows={3}
-        className="border-line bg-base focus:border-accent/60 mt-4 w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none"
+        className="border-line bg-canvas focus:border-accent/60 mt-4 w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none"
       />
       <div className="mt-4 flex justify-end gap-2">
         <Button variant="secondary" onClick={onClose} disabled={busy}>

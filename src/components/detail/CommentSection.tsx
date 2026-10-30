@@ -1,19 +1,20 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { MessageCircle, Send } from 'lucide-react'
+import { MessageCircle } from 'lucide-react'
 import { toast } from 'sonner'
 import type { Comment, CommentTargetType, Cursor } from '@/types'
 import { errorMessage } from '@/lib/api'
-import { createComment, listComments } from '@/services/community'
+import { COMMENT_SOURCE_MAX_LENGTH, validateCommentSource } from '@/lib/comments'
+import { createComment, listComments, listReplies } from '@/services/community'
 import { useAsync } from '@/hooks/useAsync'
 import { useAuth } from '@/hooks/useAuth'
+import { useCommentRestriction } from '@/hooks/useCommentRestriction'
 import { Avatar } from '@/components/ui/avatar'
-import { Button, buttonStyles } from '@/components/ui/button'
+import { buttonStyles } from '@/components/ui/button'
 import { ErrorState } from '@/components/ui/empty-state'
 import { Skeleton } from '@/components/ui/skeleton'
+import { CommentEditor } from './CommentEditor'
 import { CommentItem } from './CommentItem'
-
-const COMMENT_MAX = 10000
 
 export function CommentSection({
   targetType,
@@ -25,63 +26,160 @@ export function CommentSection({
   title?: string
 }) {
   const { user } = useAuth()
-  const [text, setText] = useState('')
-  const [sending, setSending] = useState(false)
-  const key = `comments:${targetType}:${targetId}`
+  const restriction = useCommentRestriction()
+  const ownerScope = user?.id ?? 'guest'
+  const key = `comments:${ownerScope}:${targetType}:${targetId}`
+  const [draft, setDraft] = useState({ key, source: '' })
+  const text = draft.key === key ? draft.source : ''
+  const [submission, setSubmission] = useState<{ key: string; pending: boolean; error?: string }>({
+    key,
+    pending: false,
+  })
+  const sending = submission.key === key && submission.pending
+  const submitError = submission.key === key ? submission.error : undefined
   const [more, setMore] = useState<{
     key: string
     items: Comment[]
     cursor: Cursor | null
   }>()
-  const [loadingMore, setLoadingMore] = useState(false)
+  const [moreStatus, setMoreStatus] = useState<{ key: string; pending: boolean; error?: string }>({
+    key,
+    pending: false,
+  })
+  const loadingMore = moreStatus.key === key && moreStatus.pending
+  const moreError = moreStatus.key === key ? moreStatus.error : undefined
+  const currentKey = useRef(key)
+  const pageLock = useRef<string | null>(null)
+  const submitLock = useRef<string | null>(null)
+  const pageController = useRef<AbortController | undefined>(undefined)
 
   const first = useAsync(() => listComments(targetType, targetId), key)
   const firstPage = first.data
   const extra = more?.key === key ? more.items : []
   const cursor =
     more?.key === key ? more.cursor : firstPage?.hasMore ? firstPage.nextCursor : null
-  const comments = [...(firstPage?.items ?? []), ...extra]
+  const comments = [
+    ...new Map([...(firstPage?.items ?? []), ...extra].map((item) => [item.id, item])).values(),
+  ]
 
-  const replace = (items: Comment[], comment: Comment) =>
-    items.map((item) => (item.id === comment.id ? comment : item))
+  useEffect(() => {
+    currentKey.current = key
+    return () => {
+      pageController.current?.abort()
+      if (currentKey.current === key) currentKey.current = ''
+    }
+  }, [key])
+
+  const mergeComment = (items: Comment[], incoming: Comment[]) => {
+    const byId = new Map(items.map((item) => [item.id, item]))
+    for (const item of incoming) byId.set(item.id, item)
+    return [...byId.values()]
+  }
 
   const update = (comment: Comment) => {
-    first.setData((page) => page && { ...page, items: replace(page.items, comment) })
-    setMore(
-      (current) => current && { ...current, items: replace(current.items, comment) },
+    first.setData((page) =>
+      page && {
+        ...page,
+        items: page.items.map((item) => (item.id === comment.id ? comment : item)),
+      },
+    )
+    setMore((current) =>
+      current && {
+        ...current,
+        items: current.items.map((item) => (item.id === comment.id ? comment : item)),
+      },
     )
   }
 
+  const refreshComment = async (commentId: string, parentCommentId: string | null) => {
+    if (parentCommentId) {
+      let next: Cursor | null = null
+      do {
+        const page = await listReplies(parentCommentId, next)
+        const match = page.items.find((item) => item.id === commentId)
+        if (match) return match
+        next = page.hasMore ? page.nextCursor : null
+      } while (next)
+      return null
+    }
+
+    let next: Cursor | null = null
+    do {
+      const page = await listComments(targetType, targetId, next)
+      const match = page.items.find((item) => item.id === commentId)
+      if (match) return match
+      next = page.hasMore ? page.nextCursor : null
+    } while (next)
+    return null
+  }
+
   const loadMore = async () => {
-    if (!cursor) return
-    setLoadingMore(true)
+    if (!cursor || pageLock.current === key) return
+    pageLock.current = key
+    setMoreStatus({ key, pending: true })
+    const requestKey = key
+    const controller = new AbortController()
+    pageController.current = controller
     try {
-      const page = await listComments(targetType, targetId, cursor)
+      const page = await listComments(targetType, targetId, cursor, 20, controller.signal)
+      if (currentKey.current !== requestKey) return
       setMore({
-        key,
-        items: [...extra, ...page.items],
+        key: requestKey,
+        items: mergeComment(extra, page.items),
         cursor: page.hasMore ? page.nextCursor : null,
       })
     } catch (error) {
-      toast.error(errorMessage(error, 'No pudimos cargar más comentarios.'))
+      if (error instanceof DOMException && error.name === 'AbortError') return
+      if (currentKey.current === requestKey)
+        setMoreStatus({
+          key: requestKey,
+          pending: true,
+          error: errorMessage(error, 'No pudimos cargar más comentarios.'),
+        })
     } finally {
-      setLoadingMore(false)
+      if (currentKey.current === requestKey)
+        setMoreStatus((current) =>
+          current.key === requestKey ? { ...current, pending: false } : current,
+        )
+      if (pageLock.current === requestKey) pageLock.current = null
     }
   }
 
-  const submit = async () => {
-    const body = text.trim()
-    if (!body) return
-    setSending(true)
+  const submit = async (source: string) => {
+    if (restriction.blocked) return
+    const validationError = validateCommentSource(source)
+    if (validationError) {
+      setSubmission({ key, pending: false, error: validationError })
+      return
+    }
+    if (submitLock.current === key) return
+    submitLock.current = key
+    setSubmission({ key, pending: true })
+    const requestKey = key
     try {
-      const created = await createComment({ targetType, targetId }, body)
-      first.setData((page) => page && { ...page, items: [created, ...page.items] })
-      setText('')
+      const created = await createComment({ targetType, targetId }, source)
+      if (currentKey.current !== requestKey) return
+      first.setData((page) =>
+        page && {
+          ...page,
+          items: [created, ...page.items.filter((item) => item.id !== created.id)],
+        },
+      )
+      setDraft({ key: requestKey, source: '' })
       toast.success('Comentario publicado')
     } catch (error) {
-      toast.error(errorMessage(error, 'No pudimos publicar tu comentario.'))
+      if (currentKey.current === requestKey)
+        setSubmission({
+          key: requestKey,
+          pending: false,
+          error: errorMessage(error, 'No pudimos publicar tu comentario. Tu borrador sigue aquí.'),
+        })
     } finally {
-      setSending(false)
+      if (submitLock.current === requestKey) submitLock.current = null
+      if (currentKey.current === requestKey)
+        setSubmission((current) =>
+          current.key === requestKey ? { ...current, pending: false } : current,
+        )
     }
   }
 
@@ -102,31 +200,28 @@ export function CommentSection({
 
       {user ? (
         <div className="surface-card p-3 sm:p-4">
+          {restriction.message ? (
+            <p className="text-warning mb-3 text-sm" role="status">{restriction.message}</p>
+          ) : null}
           <div className="flex gap-2.5 sm:gap-3">
             <Avatar alt={user.username} size="sm" className="mt-1" />
             <div className="min-w-0 flex-1">
-              <textarea
-                value={text}
-                onChange={(event) => setText(event.target.value)}
-                placeholder="Comparte tu teoría..."
-                aria-label="Escribe un comentario"
-                maxLength={COMMENT_MAX}
-                rows={3}
-                className="border-line bg-base text-primary placeholder:text-muted focus:border-accent/60 w-full resize-none rounded-xl border px-3 py-2.5 text-sm transition-colors outline-none"
+              <CommentEditor
+                source={text}
+                onSourceChange={(source) => {
+                  setDraft({ key, source })
+                  setSubmission({ key, pending: false })
+                }}
+                onSubmit={submit}
+                mode="create"
+                pending={sending}
+                submitDisabled={restriction.blocked}
+                error={submitError}
+                label="Escribe un comentario"
               />
-              <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-muted text-[11px]">
-                  Sé respetuoso. Puedes reportar lo que incumpla las normas.
-                </p>
-                <Button
-                  size="sm"
-                  onClick={() => void submit()}
-                  disabled={!text.trim() || sending}
-                  className="w-full sm:w-auto"
-                >
-                  <Send className="size-3.5" /> {sending ? 'Publicando…' : 'Publicar'}
-                </Button>
-              </div>
+              <p className="text-muted mt-2 text-[11px]">
+                Sé respetuoso. Puedes reportar lo que incumpla las normas.
+              </p>
             </div>
           </div>
         </div>
@@ -152,21 +247,39 @@ export function CommentSection({
           </p>
         ) : (
           comments.map((comment) => (
-            <CommentItem key={comment.id} comment={comment} onChange={update} />
+            <CommentItem
+              key={`${ownerScope}:${targetType}:${targetId}:${comment.id}`}
+              comment={comment}
+              onChange={update}
+              targetType={targetType}
+              targetId={targetId}
+              onRefreshComment={refreshComment}
+              commentRestricted={restriction.blocked}
+              restrictionMessage={restriction.message}
+            />
           ))
         )}
       </div>
 
+      {moreError ? (
+        <div className="mt-3 flex items-center justify-between gap-3 text-sm" role="status">
+          <p className="text-danger">{moreError}</p>
+          <button type="button" onClick={() => void loadMore()} className="text-accent font-semibold">
+            Reintentar
+          </button>
+        </div>
+      ) : null}
       {cursor ? (
-        <Button
-          variant="secondary"
+        <button
+          type="button"
           onClick={() => void loadMore()}
           disabled={loadingMore}
-          className="mt-3 w-full"
+          className={buttonStyles({ variant: 'secondary', className: 'mt-3 w-full' })}
         >
           {loadingMore ? 'Cargando…' : 'Cargar más comentarios'}
-        </Button>
+        </button>
       ) : null}
+      <span className="sr-only">Límite de comentario: {COMMENT_SOURCE_MAX_LENGTH} caracteres.</span>
     </section>
   )
 }

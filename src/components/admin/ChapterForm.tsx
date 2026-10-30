@@ -41,7 +41,7 @@ export function ChapterForm({
   } = useForm<Values>({
     resolver: zodResolver(schema),
     defaultValues: {
-      number: chapter ? String(Number(chapter.number)) : '',
+      number: chapter?.number ?? '',
       title: chapter?.title ?? '',
       kind: chapter?.kind ?? 'NORMAL',
       status: chapter?.status ?? 'DRAFT',

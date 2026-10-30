@@ -1,0 +1,40 @@
+{
+  "description": "Hooks locales de calidad y politica para ModoFriki-Web.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .codex/hooks/session-start.mjs",
+            "statusMessage": "Cargando contexto de ModoFriki-Web"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .codex/hooks/frontend-quality-reminder.mjs",
+            "statusMessage": "Revisando cambios del frontend"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .codex/hooks/block-git-push.mjs",
+            "statusMessage": "Comprobando la politica de Git"
+          }
+        ]
+      }
+    ]
+  }
+}

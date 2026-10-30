@@ -1,16 +1,18 @@
 import { useSearchParams } from 'react-router-dom'
-import { BookOpen, Flag, Shapes, ShieldCheck } from 'lucide-react'
+import { BookOpen, Flag, Shapes, ShieldCheck, Users } from 'lucide-react'
 import { cn } from '@/lib/cn'
 import { useAuth } from '@/hooks/useAuth'
 import { useDocumentTitle } from '@/hooks/useDocumentTitle'
 import { WorksTab } from '@/components/admin/WorksTab'
 import { TaxonomyTab } from '@/components/admin/TaxonomyTab'
 import { ReportsTab } from '@/components/admin/ReportsTab'
+import { UsersTab } from '@/components/admin/UsersTab'
 
 const TABS = [
   { value: 'works', label: 'Obras', icon: BookOpen, adminOnly: false },
   { value: 'taxonomy', label: 'Taxonomía', icon: Shapes, adminOnly: true },
   { value: 'reports', label: 'Reportes', icon: Flag, adminOnly: true },
+  { value: 'users', label: 'Usuarios', icon: Users, adminOnly: true },
 ] as const
 
 export function AdminPage() {
@@ -60,6 +62,7 @@ export function AdminPage() {
         {active === 'works' ? <WorksTab /> : null}
         {active === 'taxonomy' ? <TaxonomyTab /> : null}
         {active === 'reports' ? <ReportsTab /> : null}
+        {active === 'users' ? <UsersTab /> : null}
       </div>
     </div>
   )

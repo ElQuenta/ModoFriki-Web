@@ -1,3 +1,4 @@
+import { PUBLIC_CACHE_MS } from '@/lib/constants'
 import { listLatestChapters } from '@/services/discovery'
 import { useAsync } from '@/hooks/useAsync'
 import { SeriesCard } from '@/components/catalog/SeriesCard'
@@ -9,6 +10,9 @@ export function LatestChapters() {
   const { data, loading, error, reload } = useAsync(
     () => listLatestChapters({ limit: 8 }),
     'latest-chapters',
+    true,
+    undefined,
+    PUBLIC_CACHE_MS,
   )
   const items = data?.items ?? []
 
@@ -20,8 +24,8 @@ export function LatestChapters() {
         eyebrow="Recién salido del horno"
         title="Últimos capítulos"
         description="Las actualizaciones más recientes de la biblioteca."
-        actionLabel="Ver catálogo"
-        actionTo="/series"
+        actionLabel="Ver todos"
+        actionTo="/chapters/latest"
       />
       {error ? (
         <ErrorState message={error} onRetry={reload} />

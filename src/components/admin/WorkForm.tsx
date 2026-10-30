@@ -1,13 +1,16 @@
-import { useState } from 'react'
-import { useForm, useWatch } from 'react-hook-form'
+import { useEffect, useRef, useState } from 'react'
+import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import type { Series } from '@/types'
 import { zodResolver } from '@/lib/zod-resolver'
 import { RELEASE_STATUS_LABELS } from '@/services/catalog'
-import { validateImages, type WorkFiles, type WorkInput } from '@/services/admin'
+import { assertWorkMediaTransportAvailable, type WorkFiles, type WorkInput } from '@/services/admin'
+import { clearWorkMediaSelection, createWorkMediaSlot, disposeWorkMediaSlot, selectWorkMedia, validateWorkMediaSlots } from '@/services/work-media'
+import type { WorkMediaSlotName, WorkMediaSlots } from '@/types/work-media'
 import { useGenres, useWorkTypes } from '@/hooks/useCatalog'
 import { Button } from '@/components/ui/button'
 import { Field } from './Field'
+import { WorkImageField } from './WorkImageField'
 import { inputClass, textareaClass } from './styles'
 
 const schema = z.object({
@@ -32,7 +35,6 @@ type Values = z.infer<typeof schema>
 
 export function WorkForm({
   work,
-  onSubmit,
   onCancel,
 }: {
   work?: Series
@@ -41,13 +43,17 @@ export function WorkForm({
 }) {
   const { data: types } = useWorkTypes()
   const { data: genres } = useGenres()
-  const [cover, setCover] = useState<File>()
-  const [banner, setBanner] = useState<File>()
+  const [media, setMedia] = useState<WorkMediaSlots>(() => ({
+    cover: createWorkMediaSlot(work?.coverMedia ?? null),
+    detailBanner: createWorkMediaSlot(work?.detailBannerMedia ?? null),
+    chapterBanner: createWorkMediaSlot(work?.chapterBannerMedia ?? null),
+  }))
+  const mediaRef = useRef(media)
   const [fileError, setFileError] = useState<string>()
+  const [replacementConfirmation, setReplacementConfirmation] = useState<{ labels: string[] }>()
   const {
     register,
     handleSubmit,
-    control,
     formState: { errors, isSubmitting },
   } = useForm<Values>({
     resolver: zodResolver(schema),
@@ -61,25 +67,39 @@ export function WorkForm({
       genreIds: work?.genreItems?.map((genre) => genre.id) ?? [],
     },
   })
-  const publishing = useWatch({ control, name: 'publicationStatus' }) === 'PUBLISHED'
+  useEffect(() => { mediaRef.current = media }, [media])
+  useEffect(() => () => Object.values(mediaRef.current).forEach(disposeWorkMediaSlot), [])
 
-  const submit = handleSubmit(async (values) => {
-    const files = [cover, banner].filter((file): file is File => Boolean(file))
-    const invalid = validateImages(files)
-    if (invalid) return setFileError(invalid)
-    if (publishing && !cover && !work?.coverUrl) {
-      return setFileError('Para publicar la obra necesitas subir una portada.')
-    }
+  const updateMedia = (name: WorkMediaSlotName, file: File | null) => {
+    setMedia((current) => ({
+      ...current,
+      [name]: file
+        ? selectWorkMedia(current[name], file)
+        : clearWorkMediaSelection(current[name]),
+    }))
     setFileError(undefined)
-    const alternativeTitles = [
-      ...new Set(
-        values.alternativeTitles
-          .split('\n')
-          .map((title) => title.trim())
-          .filter(Boolean),
-      ),
-    ]
-    await onSubmit({ ...values, alternativeTitles }, { cover, inpagecover: banner })
+  }
+
+  const persist = async () => {
+    try {
+      assertWorkMediaTransportAvailable()
+    } catch (error) {
+      setFileError(error instanceof Error ? error.message : 'El guardado de medios no está disponible (DEP-004).')
+    }
+  }
+
+  const submit = handleSubmit(async () => {
+    const invalid = validateWorkMediaSlots(media)
+    if (invalid) return setFileError(invalid)
+    setFileError(undefined)
+    const replacements = (Object.entries(media) as [WorkMediaSlotName, WorkMediaSlots[WorkMediaSlotName]][])
+      .filter(([, slot]) => slot.selected && slot.persisted)
+      .map(([name]) => name === 'cover' ? 'Portada' : name === 'detailBanner' ? 'Banner de ficha' : 'Banner de capítulo')
+    if (replacements.length) {
+      setReplacementConfirmation({ labels: replacements })
+      return
+    }
+    await persist()
   })
 
   return (
@@ -126,7 +146,7 @@ export function WorkForm({
           {genres?.map((genre) => (
             <label
               key={genre.id}
-              className="border-line bg-base has-checked:border-accent/50 has-checked:text-accent flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs"
+              className="border-line bg-canvas has-checked:border-accent/50 has-checked:text-accent flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs"
             >
               <input
                 type="checkbox"
@@ -143,34 +163,27 @@ export function WorkForm({
         ) : null}
       </fieldset>
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field
-          label="Portada"
-          hint={
-            work?.coverUrl
-              ? 'Deja vacío para conservar la actual.'
-              : 'JPEG, PNG o WebP (≤ 10 MiB).'
-          }
-        >
-          <input
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            onChange={(event) => setCover(event.target.files?.[0])}
-            className="text-secondary text-xs"
-          />
-        </Field>
-        <Field label="Banner" hint="Opcional. Se usa en la ficha.">
-          <input
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            onChange={(event) => setBanner(event.target.files?.[0])}
-            className="text-secondary text-xs"
-          />
-        </Field>
+        <WorkImageField label="Portada" slot={media.cover} onSelect={(file) => updateMedia('cover', file)} />
+        <WorkImageField label="Banner de ficha" slot={media.detailBanner} hint="Obligatorio; se muestra en la ficha, no en tarjetas." onSelect={(file) => updateMedia('detailBanner', file)} />
+        <WorkImageField label="Banner de capítulo" slot={media.chapterBanner} hint="Obligatorio; se muestra antes de las páginas del lector." onSelect={(file) => updateMedia('chapterBanner', file)} />
       </div>
+      <p className="text-warning rounded-lg border border-warning/30 bg-warning/10 p-3 text-xs" role="status">
+        El servidor todavía no admite los tres medios independientes (DEP-004). Puedes preparar las selecciones, pero no se enviará ningún guardado, incluso para borradores.
+      </p>
       {fileError ? (
-        <p className="border-danger/30 bg-danger/10 text-danger rounded-lg border px-3 py-2 text-xs">
+        <p className="border-danger/30 bg-danger/10 text-danger rounded-lg border px-3 py-2 text-xs" role="alert">
           {fileError}
         </p>
+      ) : null}
+      {replacementConfirmation ? (
+        <div className="border-line bg-raised rounded-xl border p-3" role="group" aria-label="Confirmar reemplazo de medios">
+          <p className="text-primary text-sm font-semibold">Vas a reemplazar: {replacementConfirmation.labels.join(', ')}.</p>
+          <p className="text-muted mt-1 text-xs">Las demás selecciones se conservarán. La confirmación no elimina medios del servidor.</p>
+          <div className="mt-3 flex gap-2">
+            <Button type="button" size="sm" onClick={() => void persist()}>Confirmar reemplazos</Button>
+            <Button type="button" size="sm" variant="secondary" onClick={() => setReplacementConfirmation(undefined)}>Seguir editando</Button>
+          </div>
+        </div>
       ) : null}
       <div className="flex justify-end gap-2">
         <Button
@@ -182,7 +195,7 @@ export function WorkForm({
           Cancelar
         </Button>
         <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? 'Guardando…' : work ? 'Guardar cambios' : 'Crear obra'}
+          {isSubmitting ? 'Validando…' : work ? 'Guardar cambios' : 'Crear obra'}
         </Button>
       </div>
     </form>

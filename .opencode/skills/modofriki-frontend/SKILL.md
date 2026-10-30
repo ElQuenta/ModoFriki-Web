@@ -8,8 +8,9 @@ description: Convenciones de arquitectura, diseño y componentes para la interfa
 ## Contexto
 
 ModoFriki-Web es un lector de cómics, manhwas, mangas y novelas en español.
-Consume la API real configurada en `VITE_API_URL`; no usa mocks. La autenticación
-con roles y el panel `/admin` forman parte de la aplicación.
+Consume la API configurada en `VITE_API_URL`; los fixtures se usan solo en pruebas.
+El contrato vive en ModoFriki-Backend (`docs/API.md` y `openapi.yaml`). La
+autenticación con roles y el panel `/admin` forman parte de la aplicación.
 
 ## Stack
 
@@ -38,6 +39,8 @@ Tokens principales:
 
 | Token                  | Valor     |
 | ---------------------- | --------- |
+| `--color-base`         | `#080808` |
+| `--color-canvas`       | `#080808` |
 | `--color-base`         | `#080808` |
 | `--color-surface`      | `#111111` |
 | `--color-raised`       | `#191919` |
@@ -83,6 +86,8 @@ src/
 - Las consultas usan `useAsync` o los hooks de dominio `useCatalog` y `useReading`.
 - Las mutaciones actualizan la UI de forma optimista y revierten si la API falla;
   muestra el error con `errorMessage()`.
+- Los DTO de catálogo y descubrimiento se generan desde el OpenAPI del backend
+  con `npm run gen:api`; no edites `src/types/api.generated.ts` a mano.
 - `API_URL` viene de `VITE_API_URL`. El token se guarda en `modofriki_token`; un
   401 con token dispara el evento `modofriki:unauthorized`.
 - La persistencia local usa `useLocalStorage` con claves que empiezan por `modofriki_`.
