@@ -21,6 +21,9 @@ export function refToSeries(
     alternativeTitles: [],
     coverUrl: ref.coverUrl ?? '',
     thumbUrl: ref.thumbUrl ?? undefined,
+    detailBannerUrl: null,
+    chapterBannerUrl: null,
+    // WorkRef solo contiene portada; este alias es fallback visual, no medio persistido.
     bannerUrl: ref.coverUrl ?? '',
     type: '',
     synopsis: '',

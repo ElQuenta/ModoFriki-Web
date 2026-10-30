@@ -90,6 +90,11 @@ export function WorksTab() {
   }
   const selectedId = params.get('work')
   const selected = works.find((work) => work.id === selectedId)
+  // Si una escritura choca, useAsync recarga la versión autoritativa. Mantener
+  // el formulario montado conserva texto y selecciones mientras cambia el CAS.
+  const latestDialogWork = dialog?.kind === 'edit'
+    ? works.find((work) => work.id === dialog.work.id) ?? dialog.work
+    : undefined
   const close = () => setDialog(undefined)
 
   const select = (work?: Series) => {
@@ -111,13 +116,13 @@ export function WorksTab() {
 
   const save = async (input: WorkInput, files: WorkFiles) => {
     try {
-      if (dialog?.kind === 'edit') {
+      if (dialog?.kind === 'edit' && latestDialogWork) {
         // Siempre con el updatedAt más reciente que conocemos.
         const updated = await updateWork(
-          dialog.work.id,
+          latestDialogWork.id,
           input,
           files,
-          dialog.work.updatedAt ?? '',
+          latestDialogWork.updatedAt ?? '',
         )
         setData((items) =>
           items?.map((item) => (item.id === updated.id ? updated : item)),
@@ -272,10 +277,8 @@ export function WorksTab() {
         className="max-w-2xl"
       >
         <WorkForm
-          key={
-            dialog?.kind === 'edit' ? `${dialog.work.id}:${dialog.work.updatedAt}` : 'new'
-          }
-          work={dialog?.kind === 'edit' ? dialog.work : undefined}
+          key={dialog?.kind === 'edit' ? dialog.work.id : 'new'}
+          work={latestDialogWork}
           onSubmit={save}
           onCancel={close}
         />

@@ -75,9 +75,9 @@ export function HeroFeatured() {
               item.id === series.id ? 'opacity-100' : 'pointer-events-none opacity-0',
             )}
           >
-            {item.bannerUrl && (
+            {(item.detailBannerUrl || item.bannerUrl) && (
               <img
-                src={item.bannerUrl}
+                src={item.detailBannerUrl || item.bannerUrl}
                 alt=""
                 className="size-full object-cover"
                 loading={slideIndex === 0 ? 'eager' : 'lazy'}

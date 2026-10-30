@@ -1,10 +1,18 @@
 import { request } from '@/lib/api'
+import { IntegrationUnavailableError } from '@/lib/integration'
 import { toChapter, toSeries, type ChapterDto, type WorkDto } from '@/services/catalog'
 import type { ChapterKind, PublicationStatus, ReleaseStatus, Taxonomy } from '@/types'
 
 export const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 export const MAX_FILE_BYTES = 10 * 1024 * 1024
 export const MAX_TOTAL_BYTES = 100 * 1024 * 1024
+
+/** El endpoint remoto aún solo acepta dos medios; no hay guardado parcial seguro. */
+export const WORK_MEDIA_TRANSPORT_AVAILABLE = false
+
+export function assertWorkMediaTransportAvailable(): never {
+  throw new IntegrationUnavailableError('DEP-004', 'El guardado de obras no está disponible (DEP-004) hasta que el servidor admita los tres medios independientes.')
+}
 
 /** Devuelve un mensaje de error si los archivos no cumplen los límites del backend. */
 export function validateImages(files: File[]): string | undefined {
@@ -52,6 +60,7 @@ export interface WorkFiles {
 }
 
 export async function createWork(input: WorkInput, files: WorkFiles) {
+  assertWorkMediaTransportAvailable()
   const dto = await request<WorkDto>('/works', {
     method: 'POST',
     body: toForm({ ...input }, { ...files }),
@@ -65,6 +74,7 @@ export async function updateWork(
   files: WorkFiles,
   expectedUpdatedAt: string,
 ) {
+  assertWorkMediaTransportAvailable()
   const dto = await request<WorkDto>(`/works/${workId}`, {
     method: 'PATCH',
     body: toForm({ ...input, expectedUpdatedAt }, { ...files }),

@@ -132,3 +132,12 @@ La revisión cubrió INT001–INT048 contra los servicios y consumidores de esta
 | INT042–INT048 | `LibraryContext`, `FavoritesView`, `ProfileView`, `SeriesDetail`, `ContinueReading`; total autoritativo, favoritos parciales `unknown`, continuación de historial/progreso, calendario validado y página exacta local con clave userId/guest | Fixtures cubren 41 favoritos/historial y 101 registros de progreso; persistencia y zona autoritativa requieren T065 |
 
 Las variantes PUT/PATCH se mantienen como equivalentes contractuales registrados arriba: las pruebas de adaptador no afirman haber ejecutado ambas variantes. DEP-005 no se activa. INT018 queda pendiente de verificación directa hasta que DEP-006 corrija la autorización del servidor.
+
+### Preparación de medios US4 — 2026-10-30
+
+| Operación | DTO/transporte confirmado | Preparación frontend | Evidencia / límite |
+| --- | --- | --- | --- |
+| INT008/INT011 crear/editar obra | DTO devuelve `coverAsset` y `incapBannerAsset`; multipart solo conoce `cover` e `inpagecover`. No existe tercer campo persistido para banner de ficha. | Modelo de tres slots, preview y validación local; el mapeo conserva portada y banner de capítulo. `detailBanner` permanece `null`; el alias `bannerUrl` es solo fallback visual legado. | Crear/editar se rechazan antes de HTTP con DEP-004; no se prueba persistencia ni se asume el nombre futuro del campo. Ver T067–T076 y `validation.md`. |
+| INT009 consulta de obra | El DTO actual sigue sin `detailBannerAsset`; `incapBannerAsset` es banner de capítulo. | `Series` expone referencias/URLs separadas; ficha prioriza detail banner y usa el legado solo como fallback visual; el lector muestra chapter banner antes de páginas. | Adaptador probado con DTO fixture; banner de capítulo no cambia contador, página ni evento de apertura. |
+
+T077 sigue pendiente hasta que backend publique nombre multipart/DTO y reglas del tercer medio. Las pruebas locales y el fallback visual no representan un medio persistido ni verificación real.

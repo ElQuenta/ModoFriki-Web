@@ -16,6 +16,7 @@ export const RELEASE_STATUS_LABELS: Record<ReleaseStatus, SeriesStatus> = {
 
 export function toSeries(work: WorkDto): Series {
   const cover = work.coverAsset?.url ?? ''
+  const chapterBanner = work.incapBannerAsset?.url ?? null
   return {
     id: work.id,
     slug: work.slug,
@@ -23,7 +24,15 @@ export function toSeries(work: WorkDto): Series {
     alternativeTitles: work.alternativeTitles.map((item) => item.title),
     coverUrl: cover,
     thumbUrl: work.coverThumbAsset?.url,
-    bannerUrl: work.incapBannerAsset?.url ?? cover,
+    detailBannerUrl: null,
+    chapterBannerUrl: chapterBanner,
+    coverMedia: work.coverAsset ? { id: work.coverAsset.id, url: work.coverAsset.url } : null,
+    detailBannerMedia: null,
+    chapterBannerMedia: work.incapBannerAsset
+      ? { id: work.incapBannerAsset.id, url: work.incapBannerAsset.url }
+      : null,
+    // Alias temporal para vistas antiguas; no constituye un banner de ficha persistido.
+    bannerUrl: chapterBanner ?? cover,
     type: work.type.name,
     typeId: work.typeId,
     status: RELEASE_STATUS_LABELS[work.releaseStatus],
