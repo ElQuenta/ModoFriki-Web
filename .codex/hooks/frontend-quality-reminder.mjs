@@ -11,7 +11,7 @@ async function readInput() {
 
 const input = await readInput()
 const command = typeof input.tool_input?.command === "string" ? input.tool_input.command : ""
-const touchesFrontendSource = /(?:^|[\\/])src[\\/][^\r\n]*\.(?:ts|tsx)\b/i.test(command)
+const touchesFrontendSource = /(?:^|[\\/\s])src[\\/][^\r\n]*\.(?:ts|tsx)\b/i.test(command)
 
 if (touchesFrontendSource) {
   console.log(

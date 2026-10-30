@@ -15,8 +15,8 @@ await readInput()
 
 const additionalContext = [
   "ModoFriki-Web: React 19, Vite 8 y TypeScript 6.",
-  "Alcance actual: solo frontend con mocks locales; no agregues llamadas HTTP o backend sin una solicitud explicita.",
-  "Rutas clave: /, /series, /series/:slug, /read/:slug/:chapter, /genres, /rankings, /favorites, /profile, /login y /register.",
+  "El frontend consume la API real configurada en VITE_API_URL; conserva contratos y servicios existentes.",
+  "Rutas clave: /, /series, /series/:id/:slug?, /read/:workId/:chapterId, /favorites, /profile, /admin, /login y /register.",
   "Antes de cerrar cambios relevantes, ejecuta npm run build, npm run lint y las pruebas pertinentes.",
   "Perfiles disponibles: modofriki-ui-ux (interfaz), modofriki-integration (datos y estado) y modofriki-frontend-qa (calidad).",
   "La unica accion bloqueada por politica local es git push."

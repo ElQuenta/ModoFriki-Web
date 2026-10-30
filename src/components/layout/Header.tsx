@@ -9,6 +9,7 @@ import {
   Settings,
   Library,
   ShieldCheck,
+  RotateCw,
 } from 'lucide-react'
 import { useState } from 'react'
 import { NAV_LINKS } from '@/lib/constants'
@@ -23,7 +24,7 @@ import { buttonStyles } from '@/components/ui/button'
 
 export function Header() {
   const { openCommand, openMobileNav } = useUI()
-  const { user, logout } = useAuth()
+  const { user, logout, sessionError, retrySession } = useAuth()
   const { favoriteCount } = useLibrary()
   const { scrolled } = useScrollDirection()
   const [menuOpen, setMenuOpen] = useState(false)
@@ -200,6 +201,23 @@ export function Header() {
             </div>
           ) : (
             <>
+              {sessionError ? (
+                <>
+                  <span role="status" className="sr-only">
+                    {sessionError}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => void retrySession()}
+                    aria-label="Reintentar validación de sesión"
+                    title={sessionError}
+                    className="text-secondary hover:bg-raised hover:text-primary flex h-10 items-center justify-center gap-1.5 rounded-xl px-2 transition-colors"
+                  >
+                    <RotateCw className="size-4" />
+                    <span className="hidden text-xs sm:inline">Reintentar</span>
+                  </button>
+                </>
+              ) : null}
               <Link
                 to="/login"
                 aria-label="Iniciar sesión"

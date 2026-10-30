@@ -4,7 +4,7 @@ import { ShieldX } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import type { UserRole } from '@/types'
 import { Skeleton } from '@/components/ui/skeleton'
-import { EmptyState } from '@/components/ui/empty-state'
+import { EmptyState, ErrorState } from '@/components/ui/empty-state'
 
 export function ProtectedRoute({
   children,
@@ -13,7 +13,7 @@ export function ProtectedRoute({
   children: ReactNode
   roles?: UserRole[]
 }) {
-  const { user, loading } = useAuth()
+  const { user, loading, sessionError, retrySession } = useAuth()
   const location = useLocation()
 
   if (loading) {
@@ -26,6 +26,13 @@ export function ProtectedRoute({
   }
 
   if (!user) {
+    if (sessionError) {
+      return (
+        <div className="container-mf pt-10 pb-16">
+          <ErrorState message={sessionError} onRetry={retrySession} />
+        </div>
+      )
+    }
     const next = encodeURIComponent(location.pathname + location.search)
     return <Navigate to={`/login?next=${next}`} replace />
   }
