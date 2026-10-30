@@ -246,7 +246,7 @@ export function ProfileView() {
                     )}
                   >
                     <CoverImage
-                      src={series.coverUrl}
+                      src={series.thumbUrl || series.coverUrl}
                       alt={`Portada de ${series.title}`}
                       title={series.title}
                       className="h-20 w-14 shrink-0 rounded-lg"

@@ -158,7 +158,7 @@ export function WorksTab() {
           {works.map((work) => (
             <li key={work.id} className="flex items-center gap-3 p-3">
               <CoverImage
-                src={work.coverUrl}
+                src={work.thumbUrl || work.coverUrl}
                 alt={`Portada de ${work.title}`}
                 title={work.title}
                 className="h-16 w-11 shrink-0 rounded-md"

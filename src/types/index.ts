@@ -46,6 +46,8 @@ export interface Series {
   title: string
   alternativeTitles: string[]
   coverUrl: string
+  /** Miniatura WebP (300 px) para tarjetas y listas; si falta, usar coverUrl. */
+  thumbUrl?: string
   bannerUrl: string
   type: SeriesType
   typeId?: string

@@ -48,7 +48,7 @@ export function ContinueReading() {
             >
               <Link to={`/series/${series.id}`} className="shrink-0">
                 <CoverImage
-                  src={series.coverUrl}
+                  src={series.thumbUrl || series.coverUrl}
                   alt={`Portada de ${series.title}`}
                   title={series.title}
                   className="h-28 w-20 rounded-xl sm:h-32 sm:w-22"
