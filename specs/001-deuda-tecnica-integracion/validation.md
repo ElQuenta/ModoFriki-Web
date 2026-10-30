@@ -6,7 +6,11 @@
 
 ### T078 — Accesibilidad y responsive
 
-La revisión estática encontró pruebas jsdom de foco inicial, confinamiento/retorno y cierre seguro en `src/components/ui/modal.test.tsx`, asociación de etiqueta/ayuda/error en `src/components/admin/Field.test.tsx`, `:focus-visible` y reduced motion en estilos globales, además de tests de interacciones del editor. No hay herramientas de navegador/Playwright MCP conectadas a esta sesión (aunque `.mcp.json` documente su configuración), así que no fue posible recorrer teclado en navegador ni comprobar layout, scroll local y reduced motion a 360/1280 px. T078 permanece pendiente de esa comprobación manual; no se afirma cumplimiento visual completo.
+La revisión estática encontró pruebas jsdom de foco inicial, confinamiento/retorno y cierre seguro en `src/components/ui/modal.test.tsx`, asociación de etiqueta/ayuda/error en `src/components/admin/Field.test.tsx`, `:focus-visible` y reduced motion en estilos globales, además de tests de interacciones del editor. En esta sesión Playwright MCP está disponible, pero su servidor no pudo iniciar porque falta Chrome en `C:\Users\fredd\AppData\Local\Google\Chrome\Application\chrome.exe` (mensaje del navegador: ejecutar `npx playwright install chrome`). Por tanto no se pudo hacer recorrido visual/teclado en navegador ni medir layout, scroll local o reduced motion a 360/1280 px. La evidencia previa de jsdom y CSS no sustituye esa revisión; T078 permanece pendiente.
+
+### T024 — Rendimiento de la vista previa
+
+Pendiente de medición conforme al protocolo: build de producción, Chromium estable, CPU 4x, cinco calentamientos, 30 muestras de fuente de 10 000 unidades tras pausa de 150 ms. No se ejecutó una medición alternativa como si fuera equivalente, porque el Chromium requerido no está instalado y el navegador de Playwright no inició. T024 sigue sin marcarse; no hay p95 válido ni base para ajustar el parser.
 
 ### T079 — Privacidad y aislamiento
 
