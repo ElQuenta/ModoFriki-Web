@@ -36,9 +36,9 @@ La aplicación queda disponible en `http://localhost:5173`.
 | `npm run test` | Tests en modo watch. |
 | `npm run test:run` | Tests una sola vez. |
 
-## Pruebas E2E con Claude Code
+## Pruebas E2E
 
-`/probar-frontend` ejecuta los casos de `e2e/flows.md` en un navegador real (MCP de Playwright), y `/corregir-frontend` además corrige los bugs que encuentre. Requisitos y uso en [`e2e/README.md`](e2e/README.md).
+Los flujos y requisitos para pruebas asistidas con navegador están descritos en [`e2e/README.md`](e2e/README.md) y [`e2e/flows.md`](e2e/flows.md). La configuración de Playwright MCP está en `.mcp.json`; su disponibilidad depende de que el cliente local conecte ese servidor y de que el backend de pruebas esté levantado. La configuración por sí sola no significa que se hayan ejecutado o aprobado pruebas E2E. La suite automatizada disponible en este repositorio es Vitest (`npm run test:run`).
 
 ## Rutas
 
@@ -94,6 +94,7 @@ controla con `--color-accent`.
 
 ## Alcance
 
-- Catálogo, ficha, lector, biblioteca, valoraciones y comentarios contra la API real.
-- Panel de administración para ADMIN y EDITOR.
-- Pruebas unitarias (Vitest) y E2E (Playwright MCP, `e2e/`).
+- Catálogo, ficha, lector, biblioteca, valoraciones y comentarios consumen servicios de API; la integración real requiere backend conectado.
+- Panel editorial con gestión de obras/capítulos y reportes según las capacidades disponibles. Capacidades administrativas pendientes se muestran como no disponibles; el tercer medio por obra permanece bloqueado por DEP-004.
+- Preparación de comentarios Markdown seguros con spoilers, paginación de recorridos existentes y aislamiento de datos por cuenta.
+- Pruebas unitarias automatizadas con Vitest. La documentación/configuración E2E no constituye evidencia de ejecución real.

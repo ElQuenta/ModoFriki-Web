@@ -1,5 +1,47 @@
 # Evidencia de validación
 
+## Phase 7 — Polish y preocupaciones transversales (2026-10-30)
+
+**Rama:** `phase7-polish-cross-cutting-concerns`, descendiente de `phase6-tres-imagenes-por-obra`; Phase 6 parte de `dev` en `5829537`. **Alcance:** revisión documental, pruebas frontend locales y clasificación de dependencias. No se conectó backend de prueba ni navegador E2E en este entorno.
+
+### T078 — Accesibilidad y responsive
+
+La revisión estática encontró pruebas jsdom de foco inicial, confinamiento/retorno y cierre seguro en `src/components/ui/modal.test.tsx`, asociación de etiqueta/ayuda/error en `src/components/admin/Field.test.tsx`, `:focus-visible` y reduced motion en estilos globales, además de tests de interacciones del editor. No hay herramientas de navegador/Playwright MCP conectadas a esta sesión (aunque `.mcp.json` documente su configuración), así que no fue posible recorrer teclado en navegador ni comprobar layout, scroll local y reduced motion a 360/1280 px. T078 permanece pendiente de esa comprobación manual; no se afirma cumplimiento visual completo.
+
+### T079 — Privacidad y aislamiento
+
+La búsqueda estática de producción en `src/` no encontró llamadas `console.*` ni logger que registren credenciales, correos, motivos privados o identidad del reportero. Los servicios de reportes envían y muestran campos de reporte en la vista ADMIN según autorización del servidor; no los persisten en almacenamiento local. No se encontró autoridad local para roles, sanciones ni asignaciones: la sesión se revalida con `/auth/me`, el gateway no convierte `unknown` en permiso y las mutaciones dependen del servidor.
+
+Excepción existente: `TOKEN_KEY` guarda el token de sesión en `localStorage`; `PROGRESS_KEY` conserva la página exacta local por ámbito `userId`/`guest` y obra, y `READER_KEY` guarda preferencias de lectura. `VOTES_KEY`/`UI_KEY` son claves declaradas; no se encontró uso de persistencia local para rol, sanción o asignación. El progreso remoto y favoritos se consultan al servicio; favoritos están en memoria y se asocian a la identidad cargada. La auditoría es estática de frontend y no certifica XSS, almacenamiento del navegador, dependencias ni bitácora/autorización del backend. No se creó una bitácora local como sustituto.
+
+### T081 — Verificación local
+
+| Comprobación | Resultado | Evidencia |
+| --- | --- | --- |
+| `npm.cmd run build` | Correcto | TypeScript y Vite producción |
+| `npm.cmd run lint` | Correcto | ESLint sin salida de errores |
+| `npm.cmd run test:run` | 168/168 correctas, 38 archivos | Vitest en la rama Phase 7 |
+| `git diff --check` | Pendiente al preparar commit | Se ejecutará tras cerrar documentos |
+
+Las comprobaciones corresponden al árbol de trabajo de Phase 7. No se observaron fallos de tests en esta ejecución. La evidencia previa de Phase 5 no se usa para reemplazar esta suite.
+
+### T082 — Trazabilidad consolidada
+
+La matriz contiene las 48 operaciones INT001–INT048 y sus consumidores. Su sección de cobertura Phase 7 agrupa cada operación y la vincula a requisitos FR y criterios SC, especifica pruebas de preparación frontend donde existen, marca explícitamente verificaciones reales pendientes y conserva los huecos frontend como pendientes. No hay operación E2E real verificada en esta revisión. T065, T066 y T077 siguen pendientes; también están pendientes verificaciones administrativas T042/T044/T046/T048 y dependencias DEP-003/004/006/007 según sus contratos.
+
+| Cobertura | Clasificación en esta rama |
+| --- | --- |
+| FR-001–FR-030 / SC-001–SC-010 | Trazabilidad documental a tareas, consumidores y evidencia local en la matriz; no equivale a que todos los criterios de aceptación reales estén verificados |
+| INT001–INT048 | 48 filas de operación; preparación frontend probada donde se indica, sin verificación E2E real acreditada |
+| Huecos de implementación | Permanecen identificados en las filas INT004/005/018/019/047 y tareas pertinentes; no se reclasifican como dependencias externas para cerrarlos |
+| Contratos/entorno externos | DEP-001/002/003/004/006/007 y servidor de pruebas impiden cerrar tareas reales condicionales |
+
+### T083 — Aceptación final
+
+No procede: dependen de verificación real T042/T044/T046/T048/T065/T066/T077, y T078 no se completó sin navegador. T083 permanece sin marcar y no se declara integración completa.
+
+El checklist UX/datos sigue con sus 52 casillas sin evaluar; actualizar estas guías no aprueba decisiones del revisor.
+
 ## Phase 6 — User Story 4: tres imágenes por obra (2026-10-30)
 
 **Rama:** `phase5-tres-imagenes-por-obra`, creada desde `dev` en `58295371`. **Alcance:** preparación frontend y fixtures; no se conectó a un backend compatible con DEP-004. Estos resultados no acreditan persistencia ni existencia de tres medios en el servidor.

@@ -1,6 +1,6 @@
 # Guía de validación de la integración
 
-**Alcance**: Guía para ejecutar después de implementar las tareas. Los archivos de esta fase son diseño; no prueban que las pantallas nuevas, dependencias o adaptadores estén implementados. Referencias: [plan](plan.md), [modelo](data-model.md), [interfaz](contracts/frontend-ui.md), [matriz de operaciones](contracts/integration-matrix.md).
+**Alcance**: Guía de verificación de la implementación frontend actual. Las pruebas con fixtures verifican comportamiento local; no prueban permisos, persistencia ni integración real. Referencias: [plan](plan.md), [modelo](data-model.md), [interfaz](contracts/frontend-ui.md), [matriz de operaciones](contracts/integration-matrix.md) y [evidencia](validation.md).
 
 ## Preparación
 
@@ -10,7 +10,7 @@
    npm ci
    ```
 
-2. Confirmar en la implementación que `package.json` y lockfile contienen las dependencias Markdown aprobadas y los tipos directos que use el plugin. No es necesario instalar otro cliente HTTP, formulario, tabla o framework de tests. Esta fase de plan no las instala.
+2. La implementación fija estas dependencias de ejecución en `package.json`: `react-markdown@10.1.0`, `rehype-sanitize@6.0.0`, `micromark-extension-gfm-strikethrough@2.1.0` y `mdast-util-gfm-strikethrough@2.0.1`. El lockfile determina el árbol resuelto. Los plugins de spoilers son locales; no se incorporó un editor pesado ni otro cliente HTTP/formulario/framework de tests.
 3. Configurar localmente `VITE_API_URL` según `.env.example`, sin versionar `.env` ni exponer secretos. El valor de referencia es `http://localhost:3000/api`.
 4. Para integración real, disponer del backend de pruebas y sus almacenes configurados por su responsable. El backend tiene `npm run dev`; ejecutarlo en su propio repositorio solo con su configuración de entorno preparada. No hace falta correr migraciones, seeds o limpieza para validar el frontend y esta guía no los autoriza ni inventa comandos de aprovisionamiento.
 5. Disponer de cuentas de prueba ADMIN, BASIC, EDITOR asignado y EDITOR no asignado. No incluir sus credenciales en documentos o logs. Las acciones con datos usan exclusivamente el entorno y contenido de prueba previstos.
@@ -35,7 +35,7 @@ npm run lint
 npm run test:run
 ```
 
-Los scripts existen hoy; la cobertura nueva se añadirá durante implementación. No interpretar que el único test actual de formato cubre estos recorridos.
+La implementación ya incluye tests de parser/sanitización, comentarios y spoilers, administración y políticas, paginación y biblioteca, lector, medios editoriales, modales, formularios y manejo de errores. Consultar `tasks.md` y `validation.md` para el resultado actual; un fixture simulado no acredita servidor real.
 
 La suite pertinente debe incluir parser y sanitización con fixtures de fuente máxima; fuente vacía y Unicode suplementario; formulario de fechas en zona de cuenta/DST; adaptadores, políticas y error de respuesta; spoiler oculto para tecnologías de asistencia y teclado; foco de modal; doble envío; cambios de identidad/destino durante solicitudes; conflicto con borrador conservado; no HTTP en capacidades pendientes. Inyectar el proveedor administrativo solo en tests. Una prueba con transporte simulado se registra como tal y no valida permisos reales.
 
