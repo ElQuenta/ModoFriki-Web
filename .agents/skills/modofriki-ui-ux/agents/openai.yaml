@@ -1,0 +1,6 @@
+interface:
+  display_name: "ModoFriki UI/UX"
+  short_description: "Pantallas accesibles y responsive de ModoFriki"
+  default_prompt: "Use $modofriki-ui-ux to implement an accessible, responsive ModoFriki interface change."
+policy:
+  allow_implicit_invocation: true

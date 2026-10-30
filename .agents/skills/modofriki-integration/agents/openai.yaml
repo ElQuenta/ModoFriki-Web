@@ -1,0 +1,6 @@
+interface:
+  display_name: "ModoFriki Integración"
+  short_description: "Contratos y flujos de datos del frontend"
+  default_prompt: "Use $modofriki-integration to implement a typed ModoFriki frontend data flow."
+policy:
+  allow_implicit_invocation: true
