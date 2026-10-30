@@ -4,7 +4,7 @@ import { formatChapterNumber } from '@/lib/format'
 import { useDocumentTitle } from '@/hooks/useDocumentTitle'
 import { useChapter, useChapters, useWork } from '@/hooks/useCatalog'
 import { ReaderView } from '@/components/reader/ReaderView'
-import { EmptyState } from '@/components/ui/empty-state'
+import { EmptyState, ErrorState } from '@/components/ui/empty-state'
 import { Skeleton } from '@/components/ui/skeleton'
 
 export function ReaderPage() {
@@ -20,12 +20,42 @@ export function ReaderPage() {
       : 'Lector',
   )
 
-  if ((work.loading && !series) || chapter.loading) {
+  if ((work.loading && !series) || (chapter.loading && !current)) {
     return (
       <div className="mx-auto max-w-3xl space-y-3 px-4 pt-20">
         {Array.from({ length: 3 }, (_, index) => (
           <Skeleton key={index} className="aspect-[2/3] w-full" />
         ))}
+      </div>
+    )
+  }
+
+  // Un 404 es "no existe"; un fallo de red o 5xx merece reintento.
+  if (work.errorStatus === 404 || chapter.errorStatus === 404) {
+    return (
+      <div className="container-mf py-16">
+        <EmptyState
+          icon={BookOpen}
+          title="No encontramos este capítulo"
+          description="El capítulo no existe o todavía no está disponible. Vuelve a la ficha de la serie para ver los capítulos publicados."
+          actionLabel={series ? 'Volver a la serie' : 'Volver al catálogo'}
+          actionTo={series ? `/series/${series.id}` : '/series'}
+        />
+      </div>
+    )
+  }
+
+  const loadError = chapter.error ?? work.error
+  if (loadError) {
+    return (
+      <div className="container-mf py-16">
+        <ErrorState
+          message={loadError}
+          onRetry={() => {
+            chapter.reload()
+            work.reload()
+          }}
+        />
       </div>
     )
   }
@@ -50,6 +80,9 @@ export function ReaderPage() {
       series={series}
       chapter={current}
       chapters={chapters.data ?? [current]}
+      chaptersLoading={chapters.loading}
+      chaptersError={Boolean(chapters.error)}
+      onRetryChapters={chapters.reload}
     />
   )
 }
