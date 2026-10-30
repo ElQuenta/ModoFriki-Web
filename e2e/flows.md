@@ -32,8 +32,8 @@ Casos que ejecuta el subagente `tester-e2e` con el MCP de Playwright (`/probar-f
 
 ### E2E-02 · Enlaces del encabezado y del anuncio
 1. Desde `/`, haz clic en cada link de "Navegación principal": Inicio, Catálogo, Rankings, Géneros.
-2. Vuelve a `/` y haz clic en el link del anuncio superior ("Leer ahora").
-3. **Esperado:** cada link lleva a una página que carga su contenido (sin "Algo salió mal" ni 404). El anuncio lleva a una ficha que existe.
+2. Vuelve a `/`. El anuncio superior debe decir "Nuevo capítulo de Obra de Prueba: Cap. 2". Haz clic en "Leer ahora".
+3. **Esperado:** cada link lleva a una página que carga su contenido (sin "Algo salió mal" ni 404). El anuncio abre el lector del capítulo 2 ("Página 1 del capítulo 2").
 
 ### E2E-03 · Catálogo: búsqueda
 1. Abre `/series`. **Esperado:** texto "1 resultado" y artículo "Obra de Prueba".
@@ -47,14 +47,14 @@ Casos que ejecuta el subagente `tester-e2e` con el MCP de Playwright (`/probar-f
 
 ### E2E-05 · Ficha de obra
 1. Abre `/series/66666666-6666-4666-8666-666666666666`.
-2. **Esperado:** heading nivel 1 "Obra de Prueba"; "Sinopsis" con su texto; "Capítulos" con "2 capítulos disponibles"; links "Empezar a leer" y "Último capítulo"; "Ficha técnica" con Tipo "Manhwa"; heading "Comentarios (N)".
+2. **Esperado:** heading nivel 1 "Obra de Prueba"; "Sinopsis" con su texto; "Capítulos" con "2 capítulos disponibles"; link "Empezar a leer" (o "Continuar cap. N" si ya se leyó algo en esta sesión), link "Último capítulo"; "Ficha técnica" con Tipo "Manhwa"; heading "Comentarios (N)".
 
 ### E2E-06 · Obra en borrador no es pública
 1. Abre `/series/66666666-6666-4666-8666-666666666667`.
 2. **Esperado:** heading "No encontramos esta serie" y link "Volver al catálogo". (404 de `/api/works/...` esperado.)
 
 ### E2E-07 · Lector
-1. Desde la ficha, pulsa "Empezar a leer".
+1. Desde la ficha, pulsa "Leer desde el inicio".
 2. **Esperado:** URL `/read/.../77777777-7777-4777-8777-777777777771`; imágenes "Página 1 del capítulo 1" y "Página 2 del capítulo 1" visibles y cargadas (`naturalWidth > 0`).
 3. Comprueba que existen los controles "Volver a la serie", "Cambiar modo de lectura", "Página anterior" y "Página siguiente".
 4. Pulsa el link "Capítulo siguiente: 2". **Esperado:** se muestra "Página 1 del capítulo 2".

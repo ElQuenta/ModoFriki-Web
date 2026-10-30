@@ -1,8 +1,8 @@
 # ModoFriki Web
 
 Interfaz de **ModoFriki**, una biblioteca de cómics, manhwas, mangas y novelas en
-español. Esta fase es exclusivamente frontend: usa datos de demostración y no se
-conecta al backend.
+español. Consume la API de [ModoFriki-Backend](https://github.com/ElQuenta/ModoFriki-Backend)
+(`VITE_API_URL`, por defecto `http://localhost:3000/api`).
 
 ## Stack
 
@@ -45,20 +45,23 @@ La aplicación queda disponible en `http://localhost:5173`.
 | --- | --- |
 | `/` | Home con destacados, novedades y rankings. |
 | `/series` | Catálogo con búsqueda y filtros. |
-| `/series/:slug` | Ficha de serie, capítulos y comentarios. |
-| `/read/:slug/:chapter` | Lector en cascada o paginado. |
+| `/series/:id/:slug?` | Ficha de serie, capítulos, valoración y comentarios. |
+| `/read/:workId/:chapterId` | Lector en cascada o paginado. |
 | `/genres` | Géneros y tags. |
 | `/rankings` | Obras mejor valoradas. |
 | `/favorites` | Biblioteca personal. |
 | `/profile` | Perfil, historial y preferencias. |
-| `/login` y `/register` | Autenticación de demostración. |
+| `/admin` | Panel de obras, taxonomía y reportes (ADMIN y EDITOR). |
+| `/login` y `/register` | Inicio de sesión y registro contra la API. |
 
-## Cuenta demo
+## Cuentas de prueba
 
-- Correo: `alex@modofriki.dev`
-- Contraseña: `modofriki`
+Con el entorno de pruebas del backend (`npm run test:env:up` en ModoFriki-Backend):
 
-La autenticación es local y solo sirve para demostrar los flujos de interfaz.
+- Lector: `lector.test@modofriki.local` / `ModoFriki-Test-2026`
+- Admin: `admin.test@modofriki.local` / `ModoFriki-Test-2026`
+
+Solo existen en esa base desechable. Detalles en [`e2e/README.md`](e2e/README.md).
 
 ## Estructura
 
@@ -68,7 +71,7 @@ src/
   components/   # ui, layout, home, catalog, detail, reader, auth...
   context/      # Auth, Library y UI
   hooks/        # hooks reutilizables
-  data/         # mocks tipados
+  services/     # llamadas a la API por dominio
   types/        # contratos del dominio
   lib/          # utilidades
   styles/       # tokens y estilos globales
@@ -82,7 +85,6 @@ controla con `--color-accent`.
 
 ## Alcance
 
-- Solo frontend.
-- Sin panel de administración.
-- Sin llamadas al backend ni base de datos.
-- Datos e imágenes de demostración.
+- Catálogo, ficha, lector, biblioteca, valoraciones y comentarios contra la API real.
+- Panel de administración para ADMIN y EDITOR.
+- Pruebas unitarias (Vitest) y E2E (Playwright MCP, `e2e/`).

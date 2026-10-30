@@ -67,12 +67,14 @@ export function HeroFeatured() {
               item.id === series.id ? 'opacity-100' : 'pointer-events-none opacity-0',
             )}
           >
-            <img
-              src={item.bannerUrl}
-              alt=""
-              className="size-full object-cover"
-              loading={slideIndex === 0 ? 'eager' : 'lazy'}
-            />
+            {item.bannerUrl && (
+              <img
+                src={item.bannerUrl}
+                alt=""
+                className="size-full object-cover"
+                loading={slideIndex === 0 ? 'eager' : 'lazy'}
+              />
+            )}
             <div className="from-canvas via-canvas/85 to-canvas/20 absolute inset-0 bg-gradient-to-r" />
             <div className="from-canvas absolute inset-0 bg-gradient-to-t via-transparent to-transparent" />
           </div>
