@@ -34,10 +34,12 @@ export function CommentItem({
   depth?: number
 }) {
   const { user } = useAuth()
-  // El backend no devuelve el voto propio: se recuerda en este dispositivo.
-  const [myVote, setMyVote] = useState<1 | -1 | undefined>(
-    () => readStorage<Record<string, 1 | -1>>(VOTES_KEY, {})[comment.id],
+  // El backend no devuelve el voto propio: se recuerda por usuario en este dispositivo.
+  const [votes, setVotes] = useState<Record<string, 1 | -1>>(
+    () => readStorage<Record<string, 1 | -1>>(VOTES_KEY, {}),
   )
+  const voteKey = user ? `${user.id}:${comment.id}` : undefined
+  const myVote = voteKey ? votes[voteKey] : undefined
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState('')
   const [replying, setReplying] = useState(false)
@@ -69,11 +71,11 @@ export function CommentItem({
       score: comment.votes.score + delta,
     }
     const remember = (v: 1 | -1 | undefined) => {
-      setMyVote(v)
       const all = readStorage<Record<string, 1 | -1>>(VOTES_KEY, {})
-      if (v) all[comment.id] = v
-      else delete all[comment.id]
+      if (v) all[`${user.id}:${comment.id}`] = v
+      else delete all[`${user.id}:${comment.id}`]
       writeStorage(VOTES_KEY, all)
+      setVotes(all)
     }
     // Votar, responder y reportar suben la revisión del comentario en el backend.
     const revision = comment.revision + 1

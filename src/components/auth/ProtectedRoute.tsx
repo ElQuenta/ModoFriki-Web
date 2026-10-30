@@ -1,8 +1,10 @@
 import type { ReactNode } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
+import { ShieldX } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import type { UserRole } from '@/types'
 import { Skeleton } from '@/components/ui/skeleton'
+import { EmptyState } from '@/components/ui/empty-state'
 
 export function ProtectedRoute({
   children,
@@ -28,7 +30,19 @@ export function ProtectedRoute({
     return <Navigate to={`/login?next=${next}`} replace />
   }
 
-  if (roles && !roles.includes(user.role)) return <Navigate to="/" replace />
+  if (roles && !roles.includes(user.role)) {
+    return (
+      <div className="container-mf pt-10 pb-16">
+        <EmptyState
+          icon={ShieldX}
+          title="No tienes permiso"
+          description="Tu cuenta no puede acceder a esta sección. Si crees que es un error, contacta con un administrador."
+          actionLabel="Volver al inicio"
+          actionTo="/"
+        />
+      </div>
+    )
+  }
 
   return children
 }

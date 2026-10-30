@@ -50,13 +50,18 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth()
   const navigate = useNavigate()
   const [favorites, setFavorites] = useState<Record<string, FavoriteItem>>({})
-  const [loaded, setLoaded] = useState<{ userId?: string; error?: string }>({})
+  const [loaded, setLoaded] = useState<{
+    userId?: string
+    nonce?: number
+    error?: string
+  }>({})
   const [nonce, setNonce] = useState(0)
   const [progress, setProgress] = useLocalStorage<Record<string, ReadingProgress>>(
     PROGRESS_KEY,
     {},
   )
   const userId = user?.id
+  const scope = userId ?? 'guest'
 
   useEffect(() => {
     if (!userId) return
@@ -72,12 +77,13 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
             ]),
           ),
         )
-        setLoaded({ userId })
+        setLoaded({ userId, nonce })
       },
       (error: unknown) =>
         active &&
         setLoaded({
           userId,
+          nonce,
           error: errorMessage(error, 'No pudimos cargar tus favoritos.'),
         }),
     )
@@ -86,21 +92,43 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     }
   }, [userId, nonce])
 
-  const visibleFavorites = useMemo(() => (userId ? favorites : {}), [userId, favorites])
+  // Los favoritos solo se muestran cuando pertenecen al usuario actual. Así no
+  // se filtran los de la cuenta anterior mientras carga la nueva.
+  const visibleFavorites = useMemo(
+    () => (userId && loaded.userId === userId && loaded.nonce === nonce ? favorites : {}),
+    [userId, favorites, loaded.userId, loaded.nonce, nonce],
+  )
+
+  // El progreso local se guarda por usuario. Las claves antiguas sin prefijo se
+  // tratan como progreso de invitado para no mezclar cuentas en el mismo equipo.
+  const userProgress = useMemo(() => {
+    const prefix = `${scope}:`
+    const scoped: Record<string, ReadingProgress> = {}
+    for (const [key, value] of Object.entries(progress)) {
+      if (key.startsWith(prefix)) scoped[key.slice(prefix.length)] = value
+    }
+    if (!userId) {
+      for (const [key, value] of Object.entries(progress)) {
+        if (!key.includes(':') && !scoped[key]) scoped[key] = value
+      }
+    }
+    return scoped
+  }, [progress, scope, userId])
 
   const removeFavorite = useCallback(
     async (seriesId: string) => {
-      const previous = favorites[seriesId]
+      const previous = visibleFavorites[seriesId]
+      if (!previous) return
       setFavorites((current) => without(current, seriesId))
       try {
         await reading.removeFavorite(seriesId)
         toast.success('Quitado de favoritos')
       } catch (error) {
-        if (previous) setFavorites((current) => ({ ...current, [seriesId]: previous }))
+        setFavorites((current) => ({ ...current, [seriesId]: previous }))
         toast.error(errorMessage(error, 'No pudimos quitarlo de favoritos.'))
       }
     },
-    [favorites],
+    [visibleFavorites],
   )
 
   const toggleFavorite = useCallback(
@@ -110,7 +138,7 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
         navigate(`/login?next=${encodeURIComponent(`/series/${series.id}`)}`)
         return
       }
-      if (favorites[series.id]) return removeFavorite(series.id)
+      if (visibleFavorites[series.id]) return removeFavorite(series.id)
       setFavorites((current) => ({
         ...current,
         [series.id]: { seriesId: series.id, addedAt: new Date().toISOString(), series },
@@ -123,7 +151,7 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
         toast.error(errorMessage(error, 'No pudimos guardarlo en favoritos.'))
       }
     },
-    [userId, favorites, removeFavorite, navigate],
+    [userId, visibleFavorites, removeFavorite, navigate],
   )
 
   const updateProgress = useCallback(
@@ -134,20 +162,25 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
       page: number,
       totalPages: number,
     ) => {
-      setProgress((current) => ({
-        ...current,
-        [seriesId]: {
-          seriesId,
-          chapterId,
-          chapterNumber,
-          page,
-          totalPages,
-          percentage: percent(page, totalPages),
-          updatedAt: new Date().toISOString(),
-        },
-      }))
+      setProgress((current) => {
+        const next: Record<string, ReadingProgress> = {
+          ...current,
+          [`${scope}:${seriesId}`]: {
+            seriesId,
+            chapterId,
+            chapterNumber,
+            page,
+            totalPages,
+            percentage: percent(page, totalPages),
+            updatedAt: new Date().toISOString(),
+          },
+        }
+        // Migra el progreso antiguo de invitado a su clave con prefijo.
+        if (!userId) delete next[seriesId]
+        return next
+      })
     },
-    [setProgress],
+    [setProgress, scope, userId],
   )
 
   const reloadFavorites = useCallback(() => setNonce((value) => value + 1), [])
@@ -155,25 +188,28 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
   const value = useMemo(
     () => ({
       favorites: visibleFavorites,
-      favoritesLoading: Boolean(userId) && loaded.userId !== userId,
-      favoritesError: loaded.userId === userId ? loaded.error : undefined,
+      favoritesLoading:
+        Boolean(userId) && (loaded.userId !== userId || loaded.nonce !== nonce),
+      favoritesError:
+        loaded.userId === userId && loaded.nonce === nonce ? loaded.error : undefined,
       reloadFavorites,
       favoriteCount: Object.keys(visibleFavorites).length,
       toggleFavorite,
       removeFavorite,
       isFavorite: (seriesId: string) => Boolean(visibleFavorites[seriesId]),
-      progress,
+      progress: userProgress,
       updateProgress,
-      getProgress: (seriesId: string) => progress[seriesId],
+      getProgress: (seriesId: string) => userProgress[seriesId],
     }),
     [
       visibleFavorites,
       userId,
       loaded,
+      nonce,
       reloadFavorites,
       toggleFavorite,
       removeFavorite,
-      progress,
+      userProgress,
       updateProgress,
     ],
   )
