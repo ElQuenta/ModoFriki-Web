@@ -1,6 +1,6 @@
 # Matriz de integración por operación
 
-Fecha: 2026-10-29. Fuente: routers registrados por `../ModoFriki-Backend/src/app.ts`, sus servicios y validaciones; consumidores inspeccionados en `src/services`, componentes, páginas y hooks del frontend. Esta matriz expresa trabajo de planificación: ninguna fila acredita ejecución contra un servidor ni E2E aprobado. Las rutas de producto incluyen su prefijo `/api` real.
+Fecha: 2026-10-30. Fuente: routers registrados por `../ModoFriki-Backend/src/app.ts`, sus servicios y validaciones; consumidores inspeccionados en `src/services`, componentes, páginas y hooks del frontend. Las secciones de preparación y auditoría documentan tests locales y no acreditan ejecución contra servidor ni E2E aprobado. Las rutas de producto incluyen su prefijo `/api` real.
 
 «Existente; por verificar» significa que se encontró un consumidor, pero falta probar sus resultados, errores y persistencia. «Hueco» identifica trabajo de frontend y no una dependencia externa que permita darlo por terminado. Los consumidores propuestos son nombres de diseño, no archivos ya implementados. Las variantes PUT y PATCH equivalentes comparten recorrido; se identifica la variante que usa actualmente el cliente y no se inventan botones duplicados.
 
@@ -141,3 +141,18 @@ Las variantes PUT/PATCH se mantienen como equivalentes contractuales registrados
 | INT009 consulta de obra | El DTO actual sigue sin `detailBannerAsset`; `incapBannerAsset` es banner de capítulo. | `Series` expone referencias/URLs separadas; ficha prioriza detail banner y usa el legado solo como fallback visual; el lector muestra chapter banner antes de páginas. | Adaptador probado con DTO fixture; banner de capítulo no cambia contador, página ni evento de apertura. |
 
 T077 sigue pendiente hasta que backend publique nombre multipart/DTO y reglas del tercer medio. Las pruebas locales y el fallback visual no representan un medio persistido ni verificación real.
+
+### Cobertura cruzada Phase 7 — FR/SC e INT001–INT048 (2026-10-30)
+
+Los estados siguientes separan cobertura de consumidor y preparación frontend de integración real. «Frontend preparado» solo refiere evidencia local descrita en `validation.md`; no implica autorización, persistencia, zona autoritativa o aceptación E2E. Las filas de operación contienen los detalles por método/ruta y las brechas frontend siguen abiertas.
+
+| Grupo INT | Requisitos / criterios relacionados | Consumidor / tareas y evidencia local | Estado real / pendiente |
+| --- | --- | --- | --- |
+| INT001–INT003 | FR-006/007/011/012/015/025/027/028; SC-002/009/010 | `AuthView`, `AuthContext`, `ProtectedRoute`; T039/T050/T060/T075; tests de auth/revalidación | Frontend preparado; flujo real, rechazo y persistencia pendientes T065 |
+| INT004–INT007 | FR-013/014/017; SC-003/004 | Descubrimiento, catálogo, rankings, novedades, consumidores T049–T064; fixtures de paginación en validation.md | Huecos de continuación de algunas vistas siguen pendientes; verificar servicio real T065 |
+| INT008–INT025 | FR-018–021/024/026/027/028; SC-005/008/010 | Administración de obras/capítulos/páginas/taxonomía; T058–T064/T067–T076; tests locales de formularios/409 y medios | Huecos INT018/019 no se cierran por la matriz; DEP-004/T066 y persistencia real pendientes T065/T066/T077 |
+| INT026–INT034 | FR-001–012/015/016/022/029/030; SC-001/006/009 | Comentarios Markdown, spoilers, reportes, cursor/conflicto; T011–T026/T038/T059–T064; suite Vitest local | Preparación frontend; permisos, sanción, privacidad y persistencia real pendientes T045/T046/T065 |
+| INT035–INT041 | FR-013/014/017/023/030; SC-003/004/007 | Stats, lector, eventos, valoración y estado leído; T049–T064; tests de identidad/navegación/valores | Preparación frontend; persistencia y eventos reales pendientes T065 |
+| INT042–INT048 | FR-015/016/023/026/030; SC-007/010 | Favoritos, historial, calendario, perfil y progreso; T051/T055/T056/T063/T074; fixtures de páginas y aislamiento | Preparación frontend; persistencia/identidad/zona real pendientes T065; INT047 mantiene hueco de controles de rango |
+
+No hay filas declaradas «verificado real» en esta revisión porque no se usó entorno de backend con identidades/datos de prueba. FR-001–FR-030 y SC-001–SC-010 tienen referencias a tareas en `tasks.md`; el mapeo anterior agrega la relación con grupos INT, pero no cambia sus criterios ni cierra los huecos de implementación. T078 tiene evidencia automatizada parcial y comprobación visual manual pendiente; T083 no es aceptable hasta resolver sus dependencias.

@@ -1,20 +1,20 @@
 # Implementation Plan: Comunidad, administración e integración completa del frontend
 
-**Branch**: `dev` (rama Git actual) | **Feature**: `001-deuda-tecnica-integracion` | **Date**: 2026-10-29 | **Spec**: [spec.md](spec.md)
+**Branch**: `phase7-polish-cross-cutting-concerns` (entrega apilada sobre Phase 6, cuya base es `dev`) | **Feature**: `001-deuda-tecnica-integracion` | **Date**: 2026-10-30 | **Spec**: [spec.md](spec.md)
 
-**Input**: Especificación aclarada y petición de reutilizar las librerías actuales, incorporando nuevas solo cuando sean necesarias. `setup-plan` identifica la feature como 001-deuda-tecnica-integracion; no se creó ni cambió la rama Git.
+**Input**: Especificación aclarada y petición de reutilizar las librerías actuales, incorporando nuevas solo cuando sean necesarias. La rama de entrega Phase 7 parte de `dev` e incorpora Phase 6 como ancestro para preservar el orden de integración.
 
 ## Summary
 
 Extender la aplicación existente para comentarios Markdown con spoilers, Usuarios con roles/sanciones/asignaciones y tres medios independientes de obra. Completar los recorridos existentes, especialmente paginación, estados y recuperación, conservando lector y datos privados por cuenta. La implementación se divide entre capacidades realmente disponibles y preparación aislada de dependencias del backend; no se desarrolla backend en esta feature.
 
-Se conservan React, Router, Hook Form, Zod, el cliente HTTP y UI compartida. Las cuatro nuevas dependencias de ejecución previstas son react-markdown, rehype-sanitize, micromark-extension-gfm-strikethrough y mdast-util-gfm-strikethrough para interpretar de forma segura solo el formato aprobado; la extensión de spoilers será local. Los tipos de AST usados se declaran como dependencias directas de desarrollo. Instalación y actualización de lockfile pertenecen a la implementación, después de comprobar compatibilidad; este plan no modifica paquetes.
+Se conservan React, Router, Hook Form, Zod, el cliente HTTP y UI compartida. La implementación fija `react-markdown@10.1.0`, `rehype-sanitize@6.0.0`, `micromark-extension-gfm-strikethrough@2.1.0` y `mdast-util-gfm-strikethrough@2.0.1` para interpretar de forma segura solo el formato aprobado; la extensión de spoilers es local. Los tipos AST usados se declaran directamente en desarrollo. El estado real de cada capacidad y sus pruebas está en [validation.md](validation.md) y [integration-matrix.md](contracts/integration-matrix.md); pruebas locales con fixtures no acreditan integración E2E.
 
 ## Technical Context
 
 **Language/Version**: TypeScript 6.0.3 estricto, ESM, React/React DOM 19.3.1 resueltos en lockfile; target ES2023.
 
-**Primary Dependencies**: Vite 8.3.4, Router 7.18.4, Tailwind 4.3.3, React Hook Form 7.90.0, Zod 4.6.7; Lucide, Motion y Sonner existentes. Nuevas propuestas: react-markdown 10.1.0, rehype-sanitize 6.0.0, micromark-extension-gfm-strikethrough 2.1.0 y mdast-util-gfm-strikethrough 2.0.1, sujetas a comprobación de compatibilidad/publicación al instalar. Tipos AST detallados en research.md.
+**Primary Dependencies**: Vite 8.3.4, Router 7.18.4, Tailwind 4.3.3, React Hook Form 7.90.0, Zod 4.6.7; Lucide, Motion y Sonner existentes. Dependencias runtime Markdown fijadas: `react-markdown@10.1.0`, `rehype-sanitize@6.0.0`, `micromark-extension-gfm-strikethrough@2.1.0` y `mdast-util-gfm-strikethrough@2.0.1`. Tipos AST directos de desarrollo detallados en research.md.
 
 **Storage**: Backend remoto como autoridad de identidad, catálogo, comunidad y biblioteca; referencias de medios externas. LocalStorage solo conserva token y ayudas existentes del dispositivo con aislamiento por cuenta. Sin nuevas bases, migraciones, secretos ni credenciales de Blob en frontend.
 
