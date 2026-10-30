@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import type { Series } from '@/types'
 import { zodResolver } from '@/lib/zod-resolver'
 import { RELEASE_STATUS_LABELS } from '@/services/catalog'
-import { assertWorkMediaTransportAvailable, type WorkFiles, type WorkInput } from '@/services/admin'
+import type { WorkFiles, WorkInput } from '@/services/admin'
 import { clearWorkMediaSelection, createWorkMediaSlot, disposeWorkMediaSlot, selectWorkMedia, validateWorkMediaSlots } from '@/services/work-media'
 import type { WorkMediaSlotName, WorkMediaSlots } from '@/types/work-media'
 import { useGenres, useWorkTypes } from '@/hooks/useCatalog'
@@ -35,6 +35,7 @@ type Values = z.infer<typeof schema>
 
 export function WorkForm({
   work,
+  onSubmit,
   onCancel,
 }: {
   work?: Series
@@ -51,6 +52,8 @@ export function WorkForm({
   const mediaRef = useRef(media)
   const [fileError, setFileError] = useState<string>()
   const [replacementConfirmation, setReplacementConfirmation] = useState<{ labels: string[] }>()
+  const pendingInput = useRef<WorkInput | null>(null)
+  const [saving, setSaving] = useState(false)
   const {
     register,
     handleSubmit,
@@ -71,6 +74,8 @@ export function WorkForm({
   useEffect(() => () => Object.values(mediaRef.current).forEach(disposeWorkMediaSlot), [])
 
   const updateMedia = (name: WorkMediaSlotName, file: File | null) => {
+    pendingInput.current = null
+    setReplacementConfirmation(undefined)
     setMedia((current) => ({
       ...current,
       [name]: file
@@ -80,30 +85,48 @@ export function WorkForm({
     setFileError(undefined)
   }
 
-  const persist = async () => {
+  const persist = async (input: WorkInput) => {
+    setSaving(true)
     try {
-      assertWorkMediaTransportAvailable()
-    } catch (error) {
-      setFileError(error instanceof Error ? error.message : 'El guardado de medios no está disponible (DEP-004).')
+      await onSubmit(input, {
+        ...(media.cover.selected ? { cover: media.cover.selected } : {}),
+        ...(media.detailBanner.selected ? { banner: media.detailBanner.selected } : {}),
+        ...(media.chapterBanner.selected ? { inpagecover: media.chapterBanner.selected } : {}),
+      })
+    } finally {
+      setSaving(false)
     }
   }
 
-  const submit = handleSubmit(async () => {
+  const submit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    void handleSubmit(async (values) => {
     const invalid = validateWorkMediaSlots(media)
-    if (invalid) return setFileError(invalid)
+    if (invalid) { setFileError(invalid); return }
     setFileError(undefined)
+    const input: WorkInput = {
+      title: values.title,
+      synopsis: values.synopsis,
+      typeId: values.typeId,
+      publicationStatus: values.publicationStatus,
+      releaseStatus: values.releaseStatus,
+      alternativeTitles: values.alternativeTitles.split(/\r?\n/).map((value) => value.trim()).filter(Boolean),
+      genreIds: values.genreIds,
+    }
     const replacements = (Object.entries(media) as [WorkMediaSlotName, WorkMediaSlots[WorkMediaSlotName]][])
       .filter(([, slot]) => slot.selected && slot.persisted)
       .map(([name]) => name === 'cover' ? 'Portada' : name === 'detailBanner' ? 'Banner de ficha' : 'Banner de capítulo')
     if (replacements.length) {
+      pendingInput.current = input
       setReplacementConfirmation({ labels: replacements })
       return
     }
-    await persist()
-  })
+    await persist(input)
+    })(event)
+  }
 
   return (
-    <form onSubmit={(event) => void submit(event)} className="space-y-4">
+    <form onSubmit={submit} className="space-y-4">
       <Field label="Título" error={errors.title?.message}>
         <input {...register('title')} maxLength={200} className={inputClass} />
       </Field>
@@ -167,8 +190,8 @@ export function WorkForm({
         <WorkImageField label="Banner de ficha" slot={media.detailBanner} hint="Obligatorio; se muestra en la ficha, no en tarjetas." onSelect={(file) => updateMedia('detailBanner', file)} />
         <WorkImageField label="Banner de capítulo" slot={media.chapterBanner} hint="Obligatorio; se muestra antes de las páginas del lector." onSelect={(file) => updateMedia('chapterBanner', file)} />
       </div>
-      <p className="text-warning rounded-lg border border-warning/30 bg-warning/10 p-3 text-xs" role="status">
-        El servidor todavía no admite los tres medios independientes (DEP-004). Puedes preparar las selecciones, pero no se enviará ningún guardado, incluso para borradores.
+      <p className="text-muted rounded-lg border border-line bg-raised p-3 text-xs" role="status">
+        Portada, banner de ficha y banner de capítulo se guardan por separado. Esta interfaz los requiere también para los borradores.
       </p>
       {fileError ? (
         <p className="border-danger/30 bg-danger/10 text-danger rounded-lg border px-3 py-2 text-xs" role="alert">
@@ -180,7 +203,12 @@ export function WorkForm({
           <p className="text-primary text-sm font-semibold">Vas a reemplazar: {replacementConfirmation.labels.join(', ')}.</p>
           <p className="text-muted mt-1 text-xs">Las demás selecciones se conservarán. La confirmación no elimina medios del servidor.</p>
           <div className="mt-3 flex gap-2">
-            <Button type="button" size="sm" onClick={() => void persist()}>Confirmar reemplazos</Button>
+            <Button type="button" size="sm" disabled={saving} onClick={() => {
+              const input = pendingInput.current
+              pendingInput.current = null
+              setReplacementConfirmation(undefined)
+              if (input) void persist(input)
+            }}>Confirmar reemplazos</Button>
             <Button type="button" size="sm" variant="secondary" onClick={() => setReplacementConfirmation(undefined)}>Seguir editando</Button>
           </div>
         </div>
@@ -190,12 +218,12 @@ export function WorkForm({
           type="button"
           variant="secondary"
           onClick={onCancel}
-          disabled={isSubmitting}
+          disabled={isSubmitting || saving}
         >
           Cancelar
         </Button>
-        <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? 'Validando…' : work ? 'Guardar cambios' : 'Crear obra'}
+        <Button type="submit" disabled={isSubmitting || saving}>
+          {isSubmitting || saving ? 'Guardando…' : work ? 'Guardar cambios' : 'Crear obra'}
         </Button>
       </div>
     </form>

@@ -100,12 +100,12 @@
 - [ ] T042 [US2] CONDICIONAL T041/entorno real: verificar listado, continuación, vacío/error, privacidad y rechazo BASIC/EDITOR con servidor real y registrar evidencia solo DEP-001 en `specs/001-deuda-tecnica-integracion/contracts/integration-matrix.md` y `specs/001-deuda-tecnica-integracion/validation.md`; no depender de otras activaciones administrativas.
 - [x] T043 [US2] Adaptar cambio de roles BASIC ↔ EDITOR de terceros en `src/services/user-admin.ts` y `src/services/user-admin.test.ts` al contrato publicado, con respuesta validada, token CAS, errores/concurrencia y rechazos propios/ADMIN/promoción ADMIN; registrar contrato en `specs/001-deuda-tecnica-integracion/integration-dependencies.md`, sin exigir otros adaptadores para preparar este.
 - [ ] T044 [US2] CONDICIONAL T043/entorno real: probar cambio y persistencia, rechazo de rol propio/ADMIN/promoción ADMIN y actualización de identidad del afectado; registrar evidencia solo DEP-002 en `specs/001-deuda-tecnica-integracion/contracts/integration-matrix.md` y `specs/001-deuda-tecnica-integracion/validation.md`. El recorrido de selección requiere fuente de identidad confirmada, sin bloquear prueba directa del adaptador por falta de otros contratos.
-- [ ] T045 [US2] CONDICIONAL DEP-003: acordar longitud/formato del motivo, consulta propia, instantes y errores antes de adaptar sanciones en `src/services/user-admin.ts` y `src/hooks/useCommentRestriction.ts`; validar respuestas y política sin SUSPENDED, añadir casos de contrato en `src/services/user-admin.test.ts` y documentar contrato en `specs/001-deuda-tecnica-integracion/integration-dependencies.md`, sin esperar roles/asignaciones.
+- [x] T045 [US2] Adaptar las operaciones publicadas de sanciones en `src/services/user-admin.ts` y `src/hooks/useCommentRestriction.ts`: motivo hasta 2000 caracteres, fechas UTC ISO, consulta propia y retirada; mantener extensión indisponible porque no existe endpoint. Validar DTO/política con pruebas de contrato y documentar en `specs/001-deuda-tecnica-integracion/integration-dependencies.md`, sin esperar roles/asignaciones ni presentar pruebas locales como evidencia de servidor.
 - [ ] T046 [US2] CONDICIONAL T045/entorno real: verificar temporal/permanente, extensión/retirada/vencimiento, bloqueo real de crear/responder/editar, acciones conservadas y rechazo de gestión de ADMIN, incluyendo cambio concurrente; registrar evidencia solo DEP-003 en `specs/001-deuda-tecnica-integracion/contracts/integration-matrix.md` y `specs/001-deuda-tecnica-integracion/validation.md`, sin pruebas simuladas como autorización real.
 - [x] T047 [US2] Adaptar consulta/asignación/revocación de DEP-007 en `src/services/user-admin.ts` y `src/components/admin/AssignmentsPanel.tsx`, con continuación y versión CAS; reutilizar el contrato vigente de obras seleccionables y registrar contrato/concurrencia/trazabilidad en `specs/001-deuda-tecnica-integracion/integration-dependencies.md`, sin presumir asignación por visibilidad ni esperar el contrato de sanciones.
 - [ ] T048 [US2] CONDICIONAL T047/entorno real: verificar persistencia, duplicado, revocación, pérdida de rol y rechazo directo de gestión no autorizada; registrar evidencia solo DEP-007 en `specs/001-deuda-tecnica-integracion/contracts/integration-matrix.md` y `specs/001-deuda-tecnica-integracion/validation.md`. Un consumidor sin identidad/obra confirmada sigue pendiente sin invalidar pruebas directas del adaptador disponibles.
 
-**Checkpoint**: T027–T040 acreditan preparación frontend; T041/T043/T047 adaptan contratos publicados de forma independiente. T042/T044/T046/T048 requieren servidor real y T045 requiere contrato DEP-003. El bloqueo de una pareja no impide avanzar otras ni US3/US4. Formularios se prueban solos.
+**Checkpoint**: T027–T041/T043/T045/T047 acreditan preparación o adaptación frontend por contrato disponible. T042/T044/T046/T048 requieren servidor real. El bloqueo de una pareja no impide avanzar otras ni US3/US4. Formularios se prueban solos.
 
 ## Phase 5: User Story 3 — Recorridos existentes completos (Priority: P1)
 
@@ -142,7 +142,7 @@
 ## Phase 6: User Story 4 — Tres imágenes por obra (Priority: P2)
 
 **Goal**: Portada/banner de ficha/banner de capítulo independientes y obligatorios, conservando medios existentes.
-**Independent Test**: Proveedor aislado con tres imágenes distinguibles, borrador incompleto rechazado y reemplazo individual; banner del lector fuera de páginas. Uso normal impide guardado hasta DEP-004, conservando lectura.
+**Independent Test**: Proveedor aislado con tres imágenes distinguibles, borrador incompleto rechazado y reemplazo individual; banner del lector fuera de páginas. Guardado integra `cover`, `banner` e `inpagecover`; se conserva lectura.
 **Cobertura**: FR-018–021/028; SC-005 y regresiones de lectura.
 
 ### Tests
@@ -160,9 +160,9 @@
 - [x] T074 [US4] Mostrar chapterBannerUrl al inicio de `src/components/reader/ReaderView.tsx` en ambos modos, fuera de páginas/contador/progreso y sin nuevo evento de apertura, conservando navegación y contenido antiguo; serializar con T063.
 - [x] T075 [US4] Completar confirmación de reemplazo y recuperación ante error/409 en `src/components/admin/WorkForm.tsx` y `src/services/admin.ts`; identificar slots afectados, conservar otros medios y selecciones locales, sin sobrescritura silenciosa ni promesa de purga física.
 - [x] T076 [US4] Ejecutar T067/T068 y escenarios de historia 4 en `specs/001-deuda-tecnica-integracion/validation.md`, incluidos obra antigua incompleta, límites, preview fallida, cancelación, tercero indisponible y conteo/progreso; no acreditar tres medios reales con una simulación.
-- [ ] T077 [US4] CONDICIONAL DEP-004: con multipart/DTO y reglas publicadas, adaptar/validar tercer medio en `src/services/admin.ts`, `src/services/catalog.ts` y `src/services/work-media.test.ts`; comprobar crear/editar/recargar destinos, reemplazo único/conflicto en `specs/001-deuda-tecnica-integracion/contracts/integration-matrix.md` y actualizar `specs/001-deuda-tecnica-integracion/integration-dependencies.md`, sin desarrollar backend.
+- [ ] T077 [US4] CONTRATO DISPONIBLE: adaptar/validar `cover`, `banner` e `inpagecover` en `src/services/admin.ts`, `src/services/catalog.ts` y `src/services/work-media.test.ts`; la adaptación frontend está implementada en `fix/backend-contracts-integration`. Completar evidencia de servidor para crear/editar/recargar destinos, reemplazo único/conflicto en `specs/001-deuda-tecnica-integracion/contracts/integration-matrix.md` y actualizar `specs/001-deuda-tecnica-integracion/integration-dependencies.md`, sin desarrollar backend.
 
-**Checkpoint**: T067–T076 acreditan preparación. T077 sigue sin marcar mientras no exista soporte y evidencia real del tercer medio.
+**Checkpoint**: T067–T076 acreditan preparación y el adaptador T077 está implementado. T077 sigue sin marcar hasta registrar persistencia y conflictos contra el servidor.
 
 ## Phase 7: Polish & Cross-Cutting Concerns — evidencia y entrega
 
@@ -218,7 +218,7 @@ Cada pareja administrativa se puede ejecutar sin esperar las demás. Una prueba 
 | DEP-001: listado | T041 / T042 | T027–T040 |
 | DEP-002: roles | T043 / T044 | T027–T040 |
 | DEP-003: sanción y estado propio | T045 / T046 | T030–T040 y US1 con unknown explícito |
-| DEP-004: tercer medio | T077 | T067–T076 con guardado no disponible |
+| DEP-004: medios independientes | T077 | T067–T076; adapter frontend implementado, verificación de persistencia real pendiente |
 | DEP-005: propuestas históricas | Sin activación automática | T003/T062 registran discrepancias sin ampliar alcance |
 | DEP-006: eliminación exclusiva ADMIN en servidor | T066 | T058 y pruebas de interfaz |
 | DEP-007: asignaciones/capacidad | T047 / T048 | T032–T040/T059 con unknown |
@@ -273,7 +273,7 @@ Fases 1 y 2 → US1 T011–T026: comentarios solo de texto con formato/spoilers,
 
 ### Recuento y correspondencia de identificadores
 
-83 tareas: Setup 3, Foundational 7, US1 16, US2 22, US3 18, US4 11 y cierre 6. Hay 13 tareas [P] y 9 CONDICIONAL: T042, T044–T046, T048, T065–T066, T077 y T083. En esta rama están completadas 35 tareas (T001–T003 de Setup y 32 de US1/US2); T024 y las verificaciones reales T042/T044/T048, además de T045/T046 por validación incompleta de DEP-003, permanecen pendientes.
+83 tareas: Setup 3, Foundational 7, US1 16, US2 22, US3 18, US4 11 y cierre 6. Hay 13 tareas [P] y 8 CONDICIONAL: T042, T044, T046, T048, T065–T066, T077 y T083. En esta rama están completadas 36 tareas (T001–T003 de Setup y 33 de US1/US2); T024 y las verificaciones reales T042/T044/T046/T048, T065/T066 y T077 permanecen pendientes.
 
 Renumeración de la versión anterior: T001–T040 se conservan; antigua T041 se divide en adaptación de listado T041 y roles T043; antiguas T042/T043 pasan a T045/T047; antigua T044 se separa en verificaciones T042/T044/T046/T048. Antiguas T045–T079 pasan a T049–T083 (+4). El resto de este documento usa los identificadores vigentes.
 

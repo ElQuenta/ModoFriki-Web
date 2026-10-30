@@ -6,6 +6,7 @@ import type { components } from '@/types/api.generated'
 // el build falla aquí en vez de fallar en producción.
 export type WorkDto = components['schemas']['CatalogWork']
 export type ChapterDto = components['schemas']['CatalogChapter']
+export type ChapterDetailDto = components['schemas']['CatalogChapterDetail']
 
 export const RELEASE_STATUS_LABELS: Record<ReleaseStatus, SeriesStatus> = {
   ONGOING: 'En emisión',
@@ -16,6 +17,7 @@ export const RELEASE_STATUS_LABELS: Record<ReleaseStatus, SeriesStatus> = {
 
 export function toSeries(work: WorkDto): Series {
   const cover = work.coverAsset?.url ?? ''
+  const detailBanner = work.bannerAsset?.url ?? null
   const chapterBanner = work.incapBannerAsset?.url ?? null
   return {
     id: work.id,
@@ -24,10 +26,12 @@ export function toSeries(work: WorkDto): Series {
     alternativeTitles: work.alternativeTitles.map((item) => item.title),
     coverUrl: cover,
     thumbUrl: work.coverThumbAsset?.url,
-    detailBannerUrl: null,
+    detailBannerUrl: detailBanner,
     chapterBannerUrl: chapterBanner,
     coverMedia: work.coverAsset ? { id: work.coverAsset.id, url: work.coverAsset.url } : null,
-    detailBannerMedia: null,
+    detailBannerMedia: work.bannerAsset
+      ? { id: work.bannerAsset.id, url: work.bannerAsset.url }
+      : null,
     chapterBannerMedia: work.incapBannerAsset
       ? { id: work.incapBannerAsset.id, url: work.incapBannerAsset.url }
       : null,
@@ -102,7 +106,7 @@ export async function listChapters(workId: string, includeDrafts = false, signal
 }
 
 export async function getChapter(workId: string, chapterId: string) {
-  return toChapter(await request<ChapterDto>(`/works/${workId}/chapters/${chapterId}`))
+  return toChapter(await request<ChapterDetailDto>(`/works/${workId}/chapters/${chapterId}`))
 }
 
 export function listWorkTypes() {

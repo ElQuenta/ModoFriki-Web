@@ -3,6 +3,7 @@ import type { SanctionInput, SanctionStatus, UUID } from '@/types/user-admin'
 export type SanctionValidationError =
   | 'subject-required'
   | 'reason-required'
+  | 'reason-too-long'
   | 'ends-at-required'
   | 'ends-at-invalid'
   | 'ends-at-not-future'
@@ -13,13 +14,14 @@ export interface SanctionValidationOptions {
   previous?: SanctionStatus
 }
 
-/** Validates local form rules without inventing a remote reason-length limit. */
+/** Mirrors the published backend reason limit and future-expiry rules. */
 export function validateSanctionInput(
   input: SanctionInput,
   options: SanctionValidationOptions = {},
 ): SanctionValidationError | null {
   if (!input.subjectId) return 'subject-required'
   if (!input.reason.trim()) return 'reason-required'
+  if (input.reason.trim().length > 2000) return 'reason-too-long'
   if (input.type === 'permanent') return null
   if (!input.endsAt) return 'ends-at-required'
 

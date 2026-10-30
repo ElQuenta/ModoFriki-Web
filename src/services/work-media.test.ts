@@ -22,6 +22,7 @@ const dto: WorkDto = {
   publicationStatus: 'DRAFT', releaseStatus: 'ONGOING', createdAt: '2026-01-01T00:00:00.000Z',
   updatedAt: '2026-01-01T00:00:00.000Z', publishedAt: null, visitsCount: 0,
   type: { id: 'type', name: 'Manga', slug: 'manga' }, coverAsset: asset('cover'),
+  bannerAsset: null,
   coverThumbAsset: null, incapBannerAsset: asset('chapter-banner'), alternativeTitles: [], genres: [],
 }
 
@@ -53,6 +54,15 @@ describe('work media slots and current DTO', () => {
     })
     expect(toSeries({ ...dto, coverAsset: null, incapBannerAsset: null })).toMatchObject({
       coverUrl: '', coverMedia: null, detailBannerUrl: null, chapterBannerUrl: null, bannerUrl: '',
+    })
+  })
+
+  it('maps the independent persisted detail banner returned by the backend', () => {
+    const series = toSeries({ ...dto, bannerAsset: asset('detail-banner') })
+    expect(series).toMatchObject({
+      detailBannerUrl: 'https://media.test/detail-banner.png',
+      detailBannerMedia: { id: 'detail-banner', url: 'https://media.test/detail-banner.png' },
+      chapterBannerUrl: 'https://media.test/chapter-banner.png',
     })
   })
 
