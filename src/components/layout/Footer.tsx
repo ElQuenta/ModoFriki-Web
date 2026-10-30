@@ -93,7 +93,7 @@ export function Footer() {
           <p>© 2026 ModoFriki. Hecho con demasiado café y cómics.</p>
           <p className="flex items-center gap-1.5">
             <Sparkles className="text-accent size-3.5" />
-            Proyecto académico. Solo frontend, datos de demostración.
+            Proyecto académico de la UPB.
           </p>
         </div>
       </div>

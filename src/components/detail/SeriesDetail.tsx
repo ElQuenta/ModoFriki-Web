@@ -59,11 +59,13 @@ export function SeriesDetail({
     <div>
       <div className="relative">
         <div className="absolute inset-0 h-[320px] overflow-hidden sm:h-[420px]">
-          <img
-            src={series.bannerUrl}
-            alt=""
-            className="size-full object-cover object-center"
-          />
+          {series.bannerUrl && (
+            <img
+              src={series.bannerUrl}
+              alt=""
+              className="size-full object-cover object-center"
+            />
+          )}
           <div className="from-canvas via-canvas/80 to-canvas/30 absolute inset-0 bg-gradient-to-t" />
           <div className="from-canvas/80 absolute inset-0 bg-gradient-to-r to-transparent" />
         </div>
