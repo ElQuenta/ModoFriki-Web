@@ -37,7 +37,10 @@ import { SectionHeader } from '@/components/ui/section-header'
 export function ProfileView() {
   const { user, logout } = useAuth()
   const { getProgress } = useLibrary()
-  const [historyPages, setHistoryPages] = useState(1)
+  const [historyState, setHistoryState] = useState<{ userId?: string; pages: number }>({
+    pages: 1,
+  })
+  const historyPages = historyState.userId === user?.id ? historyState.pages : 1
   const stats = useAsync(getReadingStats, `reading-stats:${user?.id}`, Boolean(user))
   const calendar = useAsync(
     () => getReadingCalendar(),
@@ -55,6 +58,7 @@ export function ProfileView() {
     },
     `history:${user?.id}:${historyPages}`,
     Boolean(user),
+    `history:${user?.id}`,
   )
   const { settings, setMode } = useReaderSettings()
 
@@ -72,8 +76,7 @@ export function ProfileView() {
     )
   }
 
-  const history: HistoryEntry[] =
-    historyQuery.data?.items ?? historyQuery.staleData?.items ?? []
+  const history: HistoryEntry[] = historyQuery.data?.items ?? []
   const hasMoreHistory = history.length < (historyQuery.data?.total ?? 0)
   const maxDay = Math.max(
     1,
@@ -271,10 +274,17 @@ export function ProfileView() {
               })}
             </div>
           )}
+          {historyQuery.error && history.length > 0 ? (
+            <p role="alert" className="text-danger mt-3 text-xs">
+              {historyQuery.error}
+            </p>
+          ) : null}
           {hasMoreHistory ? (
             <Button
               variant="secondary"
-              onClick={() => setHistoryPages((value) => value + 1)}
+              onClick={() =>
+                setHistoryState({ userId: user.id, pages: historyPages + 1 })
+              }
               disabled={historyQuery.loading}
               className="mt-3 w-full"
             >
