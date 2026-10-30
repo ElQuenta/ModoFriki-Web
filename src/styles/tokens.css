@@ -59,16 +59,3 @@
     }
   }
 }
-
-/*
- * Acento morado solo para la pantalla principal (Home).
- * Sobrescribe los tokens de acento dentro de este scope; el resto de la app
- * sigue usando el naranja.
- */
-.home-accent {
-  --color-accent: #a855f7;
-  --color-accent-hover: #c084fc;
-  --color-accent-strong: #9333ea;
-  --shadow-glow: 0 0 50px rgba(168, 85, 247, 0.16);
-  --shadow-accent: 0 10px 30px rgba(168, 85, 247, 0.18);
-}
