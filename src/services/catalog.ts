@@ -64,25 +64,28 @@ export interface WorkFilters {
   typeId?: string
   genreId?: string
   includeDrafts?: boolean
+  signal?: AbortSignal
 }
 
 export async function listWorks(filters: WorkFilters = {}) {
-  const works = await request<WorkDto[]>('/works', { query: { ...filters } })
+  const { signal, ...query } = filters
+  const works = await request<WorkDto[]>('/works', { query, signal })
   return works.map(toSeries)
 }
 
-export async function getWork(workId: string) {
-  return toSeries(await request<WorkDto>(`/works/${workId}`))
+export async function getWork(workId: string, signal?: AbortSignal) {
+  return toSeries(await request<WorkDto>(`/works/${workId}`, { signal }))
 }
 
 const CHAPTER_PAGE = 100
 
 /** Trae todos los capítulos (el backend pagina de a 100 como máximo), en orden ascendente. */
-export async function listChapters(workId: string, includeDrafts = false) {
+export async function listChapters(workId: string, includeDrafts = false, signal?: AbortSignal) {
   const all: Chapter[] = []
   for (let page = 1; ; page += 1) {
     const batch = await request<ChapterDto[]>(`/works/${workId}/chapters`, {
       query: { page, limit: CHAPTER_PAGE, includeDrafts: includeDrafts || undefined },
+      signal,
     })
     all.push(...batch.map(toChapter))
     if (batch.length < CHAPTER_PAGE) return all

@@ -17,11 +17,15 @@ function TaxonomyColumn({
   title,
   items,
   loading,
+  error: queryError,
+  onRetry,
   onCreate,
 }: {
   title: string
   items?: Taxonomy[]
   loading: boolean
+  error?: string
+  onRetry: () => void
   onCreate: (name: string, slug: string) => Promise<unknown>
 }) {
   const [name, setName] = useState('')
@@ -87,7 +91,7 @@ function TaxonomyColumn({
         </Button>
       </form>
       <div className="mt-5 flex flex-wrap gap-2">
-        {loading && !items
+        {queryError && !items ? <div role="alert" className="text-danger w-full text-sm">{queryError} <button type="button" className="text-accent underline" onClick={onRetry}>Reintentar</button></div> : loading && !items
           ? Array.from({ length: 6 }, (_, index) => (
               <Skeleton key={index} className="h-7 w-20 rounded-full" />
             ))
@@ -120,12 +124,16 @@ export function TaxonomyTab() {
         title="Tipos de obra"
         items={types.data}
         loading={types.loading}
+        error={types.error}
+        onRetry={types.reload}
         onCreate={(name, slug) => createWorkType(name, slug).then(created(types.reload))}
       />
       <TaxonomyColumn
         title="Géneros"
         items={genres.data}
         loading={genres.loading}
+        error={genres.error}
+        onRetry={genres.reload}
         onCreate={(name, slug) => createGenre(name, slug).then(created(genres.reload))}
       />
     </div>

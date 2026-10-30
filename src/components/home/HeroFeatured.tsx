@@ -16,7 +16,7 @@ import { buttonStyles } from '@/components/ui/button'
 export function HeroFeatured() {
   const [index, setIndex] = useState(0)
   const [paused, setPaused] = useState(false)
-  const { isFavorite, toggleFavorite } = useLibrary()
+  const { favoriteStatus, toggleFavorite } = useLibrary()
   const reduceMotion = usePrefersReducedMotion()
   // Destacadas = las más visitadas; la ficha completa trae banner, tipo y sinopsis.
   const { data, loading } = useAsync(
@@ -37,6 +37,7 @@ export function HeroFeatured() {
   const featured = data ?? []
   const count = featured.length
   const series = featured[index % Math.max(count, 1)]
+  const currentFavoriteStatus = series ? favoriteStatus(series.id) : 'unknown'
 
   useEffect(() => {
     if (paused || reduceMotion || count < 2) return
@@ -130,14 +131,14 @@ export function HeroFeatured() {
                   size: 'lg',
                   className: cn(
                     'w-full sm:w-auto',
-                    isFavorite(series.id) && 'border-accent/40 text-accent',
+                    currentFavoriteStatus === 'favorite' && 'border-accent/40 text-accent',
                   ),
                 })}
               >
                 <Heart
-                  className={cn('size-5', isFavorite(series.id) && 'fill-current')}
+                  className={cn('size-5', currentFavoriteStatus === 'favorite' && 'fill-current')}
                 />
-                {isFavorite(series.id) ? 'En favoritos' : 'Favorito'}
+                {currentFavoriteStatus === 'favorite' ? 'En favoritos' : currentFavoriteStatus === 'unknown' ? 'Guardar favorito' : 'Favorito'}
               </button>
               <Link
                 to={`/series/${series.id}`}

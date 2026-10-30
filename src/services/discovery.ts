@@ -35,12 +35,12 @@ interface PageQuery {
   page?: number
   limit?: number
   typeId?: string
+  signal?: AbortSignal
 }
 
 export async function listLatestChapters(query: PageQuery = {}) {
-  const data = await request<LatestChapterPage>('/chapters/latest', {
-    query: { ...query },
-  })
+  const { signal, ...params } = query
+  const data = await request<LatestChapterPage>('/chapters/latest', { query: params, signal })
   return {
     ...data,
     items: data.items.map<LatestChapterItem>((item) => ({
@@ -61,9 +61,8 @@ export async function listLatestChapters(query: PageQuery = {}) {
 export async function listPopularWorks(
   query: PageQuery & { period?: 'all' | 'day' } = {},
 ) {
-  const data = await request<PopularWorkPage>('/works/popular', {
-    query: { ...query },
-  })
+  const { signal, ...params } = query
+  const data = await request<PopularWorkPage>('/works/popular', { query: params, signal })
   return { ...data, items: data.items.map(toPopular) }
 }
 

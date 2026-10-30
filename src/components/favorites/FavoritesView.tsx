@@ -7,7 +7,7 @@ import { SeriesCardSkeleton } from '@/components/ui/skeleton'
 import { buttonStyles } from '@/components/ui/button'
 
 export function FavoritesView() {
-  const { favorites, favoritesLoading, favoritesError, reloadFavorites, removeFavorite } =
+  const { favorites, favoritesLoading, favoritesError, reloadFavorites, removeFavorite, favoritesTotal, favoritesHasMore, favoritesLoadingMore, loadMoreFavorites } =
     useLibrary()
 
   const items = Object.values(favorites).sort(
@@ -24,11 +24,11 @@ export function FavoritesView() {
           Favoritos
         </h1>
         <p className="text-secondary mt-3 max-w-xl text-sm">
-          {items.length} series guardadas. Retoma la lectura cuando quieras.
+          {favoritesTotal} series guardadas. Retoma la lectura cuando quieras.
         </p>
       </div>
 
-      {favoritesError ? (
+      {favoritesError && items.length === 0 ? (
         <ErrorState message={favoritesError} onRetry={reloadFavorites} />
       ) : favoritesLoading ? (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5">
@@ -61,6 +61,16 @@ export function FavoritesView() {
           ))}
         </div>
       )}
+
+      {!favoritesError && favoritesHasMore ? (
+        <button type="button" onClick={() => void loadMoreFavorites()} disabled={favoritesLoadingMore} className="border-line bg-surface text-secondary mt-4 w-full rounded-xl border py-3 text-sm disabled:opacity-50">
+          {favoritesLoadingMore ? 'Cargando…' : 'Cargar más favoritos'}
+        </button>
+      ) : null}
+      {favoritesError && items.length > 0 ? <p role="alert" className="text-danger mt-3 text-sm">{favoritesError}</p> : null}
+      {favoritesError && items.length > 0 && favoritesHasMore ? (
+        <button type="button" onClick={() => void loadMoreFavorites()} className="text-accent mt-2 w-full py-2 text-sm font-semibold">Reintentar carga</button>
+      ) : null}
 
       <div className="border-accent/20 bg-accent/5 mt-10 flex flex-col gap-3 rounded-2xl border p-4 sm:flex-row sm:items-center sm:p-5">
         <div className="bg-accent/10 text-accent flex size-10 items-center justify-center rounded-xl">

@@ -22,6 +22,9 @@ const GenresPage = lazy(() =>
 const RankingsPage = lazy(() =>
   import('@/pages/RankingsPage').then((module) => ({ default: module.RankingsPage })),
 )
+const LatestChaptersPage = lazy(() =>
+  import('@/pages/LatestChaptersPage').then((module) => ({ default: module.LatestChaptersPage })),
+)
 const FavoritesPage = lazy(() =>
   import('@/pages/FavoritesPage').then((module) => ({ default: module.FavoritesPage })),
 )
@@ -58,6 +61,7 @@ export function AppRoutes() {
         <Route path="/read/:workId/:chapterId" element={<ReaderPage />} />
         <Route path="/genres" element={<GenresPage />} />
         <Route path="/rankings" element={<RankingsPage />} />
+        <Route path="/chapters/latest" element={<LatestChaptersPage />} />
         <Route
           path="/favorites"
           element={

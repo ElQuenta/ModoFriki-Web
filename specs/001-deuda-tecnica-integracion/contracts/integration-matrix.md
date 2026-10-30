@@ -117,3 +117,18 @@ Backend de referencia: rama `dev`, revisión `c6a9f18a631db992e584d5a2d04fbf4974
 | DEP-002 roles | GET detalle + PATCH `/api/admin/users/:userId/role` con `expectedUpdatedAt` | `user-admin.test.ts`, `UsersTab.test.tsx`: token CAS y políticas BASIC/EDITOR | T044 pendiente |
 | DEP-007 asignaciones | GET cursor, PUT con `expectedVersion`, PATCH revocación; obras desde GET `/api/works` para personal | `user-admin.test.ts`, `AssignmentsPanel.test.tsx`: cursor, CAS, duplicado e historial | T048 pendiente |
 | DEP-003 sanciones | GET/POST `/api/admin/users/:userId/comment-sanctions`, PUT `.../:sanctionId/revocation`; GET propio `/api/auth/me/comment-restriction`. Sin operación de extensión | Backend rechaza creación sancionada en código; frontend/gateway no adaptados a este contrato en esta rama | T045 pendiente de adaptar/validar el contrato parcial; T046 requiere extensión ausente y entorno real |
+
+### Auditoría de consumidores US3 — 2026-10-30
+
+La revisión cubrió INT001–INT048 contra los servicios y consumidores de esta rama. Los tests son unitarios con HTTP/identidades simulados; el estado “preparación frontend” no acredita permisos ni persistencia del servidor.
+
+| Grupo de operaciones | Consumidores y cambios comprobados | Resultado / límite |
+| --- | --- | --- |
+| INT001–INT003 | `AuthView`, `AuthContext`, `ProtectedRoute`; registro BASIC preservado; 401 central, revalidación por foco/403 y descarte de respuestas tardías de otra identidad | Tests de sesión y roles pasan; recorrido real pendiente T065 |
+| INT004–INT007 | `LatestChaptersPage`, `RankingsPage`, `CatalogView`, `WorksTab`; páginas acotadas, filtros, orden estable, total solo cuando el contrato lo entrega, deduplicación y reintento | Tests con 121 obras y continuación administrativa; INT007 retorna array sin total |
+| INT008–INT025 | `WorksTab`, `ChaptersPanel`, `ChapterForm`, `PagesManager`, `TaxonomyTab`; expectedUpdatedAt/expectedVersion, decimales como texto, confirmación de reemplazo y recuperación 409 | Eliminación solo se habilita a ADMIN en UI; rechazo directo EDITOR sigue pendiente DEP-006/T066. Asignación editorial continúa `unknown` hasta DEP-007 |
+| INT026–INT034 | `CommentSection`, `CommentItem`, `ReportsTab`; cursores, deduplicación, aislamiento por identidad/destino, borrador ante conflicto, resolución escrita | Los componentes mantienen lectura y operaciones existentes; transporte/privacidad real pendiente T065 |
+| INT035–INT041 | `useWorkStats`, `ReaderView`, `useReading`; clave de evento estable por apertura, marcado manual separado, rango de valoración 0–5 por pasos de 0,5 | La paginación/cascada y la navegación anterior/siguiente permanecen en `ReaderView`; sin verificación real del servicio |
+| INT042–INT048 | `LibraryContext`, `FavoritesView`, `ProfileView`, `SeriesDetail`, `ContinueReading`; total autoritativo, favoritos parciales `unknown`, continuación de historial/progreso, calendario validado y página exacta local con clave userId/guest | Fixtures cubren 41 favoritos/historial y 101 registros de progreso; persistencia y zona autoritativa requieren T065 |
+
+Las variantes PUT/PATCH se mantienen como equivalentes contractuales registrados arriba: las pruebas de adaptador no afirman haber ejecutado ambas variantes. DEP-005 no se activa. INT018 queda pendiente de verificación directa hasta que DEP-006 corrija la autorización del servidor.

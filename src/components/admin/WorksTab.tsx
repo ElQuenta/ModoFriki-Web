@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { BookOpen, ListOrdered, Pencil, Plus, Search, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import type { Series } from '@/types'
+import type { ManagementAccess } from '@/types/user-admin'
 import { ApiError, errorMessage } from '@/lib/api'
 import { listWorks } from '@/services/catalog'
 import {
@@ -26,8 +27,6 @@ import { ChaptersPanel } from './ChaptersPanel'
 import { WorkForm } from './WorkForm'
 import { inputClass } from './styles'
 
-const PAGE_SIZE = 20
-// ponytail: una sola request de hasta 100 obras; paginar con varias si el catálogo crece.
 const MAX_LIMIT = 100
 
 type Dialog = { kind: 'create' } | { kind: 'edit' | 'delete'; work: Series }
@@ -36,20 +35,61 @@ export function WorksTab() {
   const { user } = useAuth()
   const [params, setParams] = useSearchParams()
   const [search, setSearch] = useState('')
-  const [pages, setPages] = useState(1)
+  const [extraPages, setExtraPages] = useState<{ filter: string; items: Series[]; page: number; lastBatchSize: number; loading: boolean; error?: string }>({ filter: '', items: [], page: 1, lastBatchSize: 0, loading: false })
   const [dialog, setDialog] = useState<Dialog>()
   const term = useDebounce(search.trim(), 300)
-  const limit = Math.min(PAGE_SIZE * pages, MAX_LIMIT)
   const isAdmin = user?.role === 'ADMIN'
+  // La visibilidad en el catálogo no acredita asignación editorial.
+  const managementAccess: ManagementAccess = isAdmin ? 'allowed' : 'unknown'
 
-  const { data, staleData, loading, error, reload, setData } = useAsync(
-    () => listWorks({ includeDrafts: true, search: term || undefined, limit }),
-    `admin-works:${term}:${limit}`,
+  const filterKey = `${term}:${user?.id ?? 'guest'}`
+  const filterRef = useRef(filterKey)
+  filterRef.current = filterKey
+  const { data, loading, error, reload, setData } = useAsync(
+    () => listWorks({ page: 1, includeDrafts: true, search: term || undefined, limit: MAX_LIMIT }),
+    `admin-works:${filterKey}`,
   )
-  const works = data ?? (pages > 1 ? staleData : undefined)
-  const hasMore = (data?.length ?? 0) === limit && limit < MAX_LIMIT
+  const continuation = extraPages.filter === filterKey ? extraPages : undefined
+  const works = [...(data ?? []), ...(continuation?.items ?? [])]
+  const lastBatchSize = continuation?.lastBatchSize ?? data?.length ?? 0
+  const hasMore = lastBatchSize === MAX_LIMIT
+  const loadMore = async () => {
+    if (!hasMore || continuation?.loading) return
+    const page = (continuation?.page ?? 1) + 1
+    const requestedFilter = filterKey
+    setExtraPages((current) => ({
+      filter: requestedFilter,
+      items: current.filter === requestedFilter ? current.items : [],
+      page: page - 1,
+      lastBatchSize: current.filter === requestedFilter ? current.lastBatchSize : data?.length ?? 0,
+      loading: true,
+    }))
+    try {
+      const batch = await listWorks({ page, limit: MAX_LIMIT, includeDrafts: true, search: term || undefined })
+      if (filterRef.current !== requestedFilter) return
+      setExtraPages((current) => {
+        const existing = current.filter === requestedFilter ? current.items : []
+        const ids = new Set([...((data ?? []).map((work) => work.id)), ...existing.map((work) => work.id)])
+        return {
+          filter: requestedFilter,
+          items: [...existing, ...batch.filter((work) => !ids.has(work.id))],
+          page,
+          lastBatchSize: batch.length,
+          loading: false,
+        }
+      })
+    } catch (caught) {
+      if (filterRef.current === requestedFilter) {
+        setExtraPages((current) => ({ ...current, filter: requestedFilter, loading: false, error: errorMessage(caught, 'No pudimos cargar más obras.') }))
+      }
+    }
+  }
+  const retryMore = () => {
+    if (continuation?.error) setExtraPages((current) => ({ ...current, error: undefined, lastBatchSize: MAX_LIMIT }))
+    void loadMore()
+  }
   const selectedId = params.get('work')
-  const selected = works?.find((work) => work.id === selectedId)
+  const selected = works.find((work) => work.id === selectedId)
   const close = () => setDialog(undefined)
 
   const select = (work?: Series) => {
@@ -61,6 +101,7 @@ export function WorksTab() {
 
   const fail = (caught: unknown, fallback: string) => {
     if (caught instanceof ApiError && caught.status === 409) {
+      setExtraPages({ filter: filterKey, items: [], page: 1, lastBatchSize: 0, loading: false })
       reload()
       toast.error(`${caught.message} Recargamos la lista con la versión más reciente.`)
     } else {
@@ -81,6 +122,9 @@ export function WorksTab() {
         setData((items) =>
           items?.map((item) => (item.id === updated.id ? updated : item)),
         )
+        setExtraPages((current) => current.filter === filterKey
+          ? { ...current, items: current.items.map((item) => item.id === updated.id ? updated : item) }
+          : current)
         toast.success('Obra actualizada')
       } else {
         const created = await createWork(input, files)
@@ -97,6 +141,9 @@ export function WorksTab() {
     try {
       await deleteWork(work.id, work.updatedAt ?? '')
       setData((items) => items?.filter((item) => item.id !== work.id))
+      setExtraPages((current) => current.filter === filterKey
+        ? { ...current, items: current.items.filter((item) => item.id !== work.id) }
+        : current)
       toast.success('Obra eliminada')
     } catch (caught) {
       fail(caught, 'No pudimos eliminar la obra.')
@@ -114,7 +161,6 @@ export function WorksTab() {
             value={search}
             onChange={(event) => {
               setSearch(event.target.value)
-              setPages(1)
             }}
             placeholder="Buscar obras por título..."
             aria-label="Buscar obras"
@@ -128,8 +174,10 @@ export function WorksTab() {
         ) : null}
       </div>
       {!isAdmin ? (
-        <p className="text-muted mb-4 text-xs">
-          Como editor, solo puedes modificar las obras que tienes asignadas.
+        <p className="text-muted mb-4 text-xs" role="status">
+          {managementAccess === 'unknown'
+            ? 'La asignación editorial de cada obra no está confirmada; las acciones de gestión permanecen deshabilitadas hasta verificarla.'
+            : 'Tienes acceso de administración a las obras.'}
         </p>
       ) : null}
 
@@ -175,6 +223,7 @@ export function WorksTab() {
               >
                 {work.publicationStatus === 'PUBLISHED' ? 'Publicada' : 'Borrador'}
               </Badge>
+              {!isAdmin ? <span className="text-muted hidden text-[11px] md:inline">Acceso: desconocido</span> : null}
               <div className="flex gap-1">
                 <Button
                   variant="ghost"
@@ -189,6 +238,7 @@ export function WorksTab() {
                   size="icon"
                   onClick={() => setDialog({ kind: 'edit', work })}
                   aria-label={`Editar ${work.title}`}
+                  disabled={!isAdmin && managementAccess !== 'allowed'}
                 >
                   <Pencil className="size-4" />
                 </Button>
@@ -197,6 +247,7 @@ export function WorksTab() {
                   size="icon"
                   onClick={() => setDialog({ kind: 'delete', work })}
                   aria-label={`Eliminar ${work.title}`}
+                  disabled={!isAdmin && managementAccess !== 'allowed'}
                   className="hover:text-danger"
                 >
                   <Trash2 className="size-4" />
@@ -207,14 +258,10 @@ export function WorksTab() {
         </ul>
       )}
 
+      {continuation?.error ? <p className="text-danger mt-3 text-sm" role="status">{continuation.error} <button type="button" className="text-accent underline" onClick={retryMore}>Reintentar</button></p> : null}
       {hasMore ? (
-        <Button
-          variant="secondary"
-          onClick={() => setPages((value) => value + 1)}
-          disabled={loading}
-          className="mt-3 w-full"
-        >
-          {loading ? 'Cargando…' : 'Cargar más'}
+        <Button variant="secondary" onClick={() => void loadMore()} disabled={continuation?.loading || loading} className="mt-3 w-full">
+          {continuation?.loading ? 'Cargando…' : 'Cargar más'}
         </Button>
       ) : null}
 

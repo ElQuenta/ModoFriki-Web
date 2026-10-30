@@ -1,5 +1,29 @@
 # Evidencia de validación
 
+## Phase 5 — User Story 3: recorridos existentes completos (2026-10-30)
+
+**Rama:** `phase5-recorridos-existentes-completos`; creada desde `dev` limpio y actualizado en `e8ccbb9`. **Alcance:** consumidor/frontend con fixtures locales; no se conectó a un backend de prueba. Los roles, respuestas 403 y persistencia se simularon y no demuestran autorización real.
+
+### Resultado local
+
+| Comprobación | Resultado | Evidencia |
+| --- | --- | --- |
+| Suite frontend | 153/153 pruebas, 34 archivos | `npm.cmd run test:run`; incluye páginas de catálogo/admin, 41 favoritos e historial, 101 registros de progreso, roles/sesión y conflictos |
+| Build | Correcto | `npm.cmd run build` (TypeScript y Vite) |
+| Lint | Correcto | `npm.cmd run lint` (sin errores ni warnings) |
+| Integridad del diff | Correcta | `git diff --check` |
+| Auditoría de consumidores | INT001–INT048 agrupados por recorrido | Ver “Auditoría de consumidores US3” en `contracts/integration-matrix.md`; no afirma verificación E2E |
+
+Pruebas sensibles incluidas: 121 obras en el catálogo y 121 en `WorksTab`, continuación y error adicional conservando resultados, últimas páginas sin total inventado, 41 favoritos e historial a través de tres páginas, progreso remoto de 101 capítulos con deduplicación, acceso ADMIN/EDITOR/BASIC, sesión 401/403 y respuestas tardías, capítulo de 101 páginas en fixture de servicio, decimales exactos, versión y reordenamiento tras 409, y revocación simulada con revalidación sin reintentar la mutación denegada. No se atribuye al fixture la semántica de permisos del servidor.
+
+### Dependencias externas pendientes
+
+- **T065:** requiere recorrer INT001–INT048 contra un backend ejecutable con identidades y datos de prueba autorizados, recarga y resultados positivos/negativos. La mera inspección del OpenAPI/servicios o pruebas con mocks no completa la tarea; permanece pendiente.
+- **T066 / DEP-006:** el servidor de referencia todavía necesita corregir la autorización de eliminación de capítulos para reservarla a ADMIN. Requiere luego probar rechazo directo a EDITOR asignado/BASIC/visitante, éxito ADMIN y conflicto de versión; esta rama frontend no modifica backend y la tarea permanece pendiente.
+- DEP-007 sigue sin confirmar asignaciones de EDITOR; la UI conserva `unknown` y bloquea gestión ambigua. Esconder o deshabilitar controles no se considera evidencia de autorización.
+
+T049–T064 quedan completadas con estas pruebas y cambios frontend. T065 y T066 permanecen sin marcar por ser condicionales, según el formato de `tasks.md`.
+
 **Revisión:** preparación frontend de US2
 **Fecha:** 2026-10-30
 **Alcance:** frontend y fixtures aislados. No se usó un backend compatible ni se acreditan permisos, auditoría o persistencia reales.
