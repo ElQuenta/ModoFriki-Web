@@ -12,11 +12,12 @@ export function safeRedirect(raw: string | null, fallback = '/'): string {
     // Routers and browsers may decode a path again after this check. Inspect
     // repeated encodings too, so `/%252f%252fhost` cannot become `//host`.
     let pathname = url.pathname
-    for (let attempt = 0; attempt < 5; attempt += 1) {
+    for (let attempt = 0; attempt < 10; attempt += 1) {
       if (/^\/[/\\]/.test(pathname)) return fallback
       const decoded = decodeURIComponent(pathname)
       if (decoded === pathname) break
       pathname = decoded
+      if (attempt === 9) return fallback
     }
     return `${url.pathname}${url.search}${url.hash}`
   } catch {
