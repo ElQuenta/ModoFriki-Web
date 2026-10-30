@@ -1,20 +1,3 @@
-<!--
-Sync Impact Report — material temporal de revisión; retirar antes del commit.
-Versión: plantilla sin versión ratificada → 1.0.0 (constitución inicial).
-Principios: cinco espacios genéricos sustituidos por nueve principios del frontend:
-I. Propósito; II. Evolución incremental; III. Responsabilidades y contratos;
-IV. Identidad y permisos; V. Publicación; VI. Lectura y actividad;
-VII. Diseño y accesibilidad; VIII. Comunidad y privacidad; IX. Calidad verificable.
-Secciones añadidas: contexto y restricciones; flujo y controles; gobernanza y fuentes.
-Secciones eliminadas: ejemplos y marcadores, sin normativa anterior.
-Plantillas y comandos dependientes: sin cambios; leen la constitución en ejecución.
-Pendientes de plantilla: ninguno.
-Discrepancias registradas: README desactualizado; ausencia de docs/ en frontend;
-permisos de borrado de EDITOR; estado local por dispositivo; pruebas limitadas;
-propuestas comerciales y mejoras del vault aún no equivalen a implementación.
-Alcance: solo .specify/memory/constitution.md; sin implementación ni cambios al backend.
--->
-
 # ModoFriki-Web Constitution
 
 ## Core Principles

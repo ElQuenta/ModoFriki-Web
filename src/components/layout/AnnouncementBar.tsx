@@ -14,10 +14,10 @@ export function AnnouncementBar() {
           Nueva temporada de{' '}
           <span className="text-primary font-semibold">Cazador de Sombras</span>.{' '}
           <Link
-            to="/series/cazador-de-sombras"
+            to="/series?q=Cazador%20de%20Sombras"
             className="text-accent font-semibold hover:underline"
           >
-            Leer ahora
+            Buscar en catálogo
           </Link>
         </p>
         <button

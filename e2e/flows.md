@@ -32,8 +32,8 @@ Casos que ejecuta el subagente `tester-e2e` con el MCP de Playwright (`/probar-f
 
 ### E2E-02 · Enlaces del encabezado y del anuncio
 1. Desde `/`, haz clic en cada link de "Navegación principal": Inicio, Catálogo, Rankings, Géneros.
-2. Vuelve a `/` y haz clic en el link del anuncio superior ("Leer ahora").
-3. **Esperado:** cada link lleva a una página que carga su contenido (sin "Algo salió mal" ni 404). El anuncio lleva a una ficha que existe.
+2. Vuelve a `/` y haz clic en el link del anuncio superior ("Buscar en catálogo").
+3. **Esperado:** cada link lleva a una página que carga su contenido (sin "Algo salió mal" ni 404). El anuncio abre /series con la busqueda de Cazador de Sombras.
 
 ### E2E-03 · Catálogo: búsqueda
 1. Abre `/series`. **Esperado:** texto "1 resultado" y artículo "Obra de Prueba".

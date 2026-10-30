@@ -34,6 +34,8 @@ export function useAsync<T>(
   useEffect(() => {
     if (!enabled) return
     let active = true
+    const belongsToFamily = (resultKey: string) =>
+      resultKey.startsWith(`${family}#`) || resultKey.startsWith(`${family}:`)
     Promise.resolve()
       .then(() => loadRef.current())
       .then(
@@ -42,7 +44,9 @@ export function useAsync<T>(
           active &&
           setResult((previous) => ({
             key: current,
-            data: previous.data,
+            // Keep stale data only for a refresh/page change in the same family.
+            // Never relabel a different work, user, or query as the new result.
+            data: belongsToFamily(previous.key) ? previous.data : undefined,
             error: errorMessage(error, 'No pudimos cargar los datos.'),
             errorStatus: error instanceof ApiError ? error.status : undefined,
           })),
@@ -50,7 +54,7 @@ export function useAsync<T>(
     return () => {
       active = false
     }
-  }, [current, enabled])
+  }, [current, enabled, family])
 
   const matchesFamily =
     result.key.startsWith(`${family}#`) || result.key.startsWith(`${family}:`)
