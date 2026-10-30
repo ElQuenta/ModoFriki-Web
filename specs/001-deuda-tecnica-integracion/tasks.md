@@ -1,7 +1,7 @@
 # Tasks: Comunidad, administración e integración
 
 **Input**: [plan.md](plan.md), [spec.md](spec.md), [research.md](research.md), [data-model.md](data-model.md), [contrato UI](contracts/frontend-ui.md), [matriz](contracts/integration-matrix.md) y [quickstart](quickstart.md).
-**Feature**: `001-deuda-tecnica-integracion` · **Rama observada**: `dev` · **Fecha**: 2026-10-29.
+**Feature**: `001-deuda-tecnica-integracion` · **Rama observada**: `Phase-1-Setup-estado-inicial-y-alcance` · **Fecha**: 2026-10-30.
 **Alcance**: Frontend existente. No desarrollar backend, migraciones ni permisos del servidor en esta feature.
 
 **Tests**: Incluidos por los criterios SC-001/002/008/009 y la constitución IX para comunidad, permisos, conflictos y subidas. Usar Vitest/Testing Library existentes; escribir primero los casos sensibles y observar fallo por comportamiento pendiente. No añadir pruebas que solo reproduzcan implementación ni presentar simulación como E2E.
@@ -18,9 +18,9 @@
 
 **Objetivo**: Capturar evidencia y contratos sin regenerar la aplicación.
 
-- [ ] T001 Inspeccionar `package.json`, `package-lock.json`, `tsconfig.app.json`, `src/app/router.tsx` y `vitest.config.ts`; capturar baseline de build/lint/test:run y fallos previos en `specs/001-deuda-tecnica-integracion/validation.md`, sin introducir cambios de código por generar evidencia.
-- [ ] T002 Registrar los 52 ítems pendientes de `specs/001-deuda-tecnica-integracion/checklists/ux-datos.md` y sus lagunas que afectan las historias en `specs/001-deuda-tecnica-integracion/validation.md`, sin evaluarlos ni cambiar marcadores; distinguir decisiones de producto ya aprobadas de precisiones técnicas pendientes.
-- [ ] T003 Recontrastar de solo lectura rutas/OpenAPI/validaciones del backend y actualizar revisión, consumidores y disponibilidad en `specs/001-deuda-tecnica-integracion/contracts/integration-matrix.md` y `specs/001-deuda-tecnica-integracion/integration-dependencies.md`, sin inventar endpoints, totales ni máximos de motivo.
+- [x] T001 Inspeccionar `package.json`, `package-lock.json`, `tsconfig.app.json`, `src/app/router.tsx` y `vitest.config.ts`; capturar baseline de build/lint/test:run y fallos previos en `specs/001-deuda-tecnica-integracion/validation.md`, sin introducir cambios de código por generar evidencia.
+- [x] T002 Registrar los 52 ítems pendientes de `specs/001-deuda-tecnica-integracion/checklists/ux-datos.md` y sus lagunas que afectan las historias en `specs/001-deuda-tecnica-integracion/validation.md`, sin evaluarlos ni cambiar marcadores; distinguir decisiones de producto ya aprobadas de precisiones técnicas pendientes.
+- [x] T003 Recontrastar de solo lectura rutas/OpenAPI/validaciones del backend y actualizar revisión, consumidores y disponibilidad en `specs/001-deuda-tecnica-integracion/contracts/integration-matrix.md` y `specs/001-deuda-tecnica-integracion/integration-dependencies.md`, sin inventar endpoints, totales ni máximos de motivo.
 
 **Checkpoint**: Baseline y dependencias documentados; fallos existentes diferenciados de los introducidos por esta feature.
 
@@ -273,7 +273,7 @@ Fases 1 y 2 → US1 T011–T026: comentarios solo de texto con formato/spoilers,
 
 ### Recuento y correspondencia de identificadores
 
-83 tareas: Setup 3, Foundational 7, US1 16, US2 22, US3 18, US4 11 y cierre 6. Hay 13 tareas [P] y 9 CONDICIONAL: T042, T044–T046, T048, T065–T066, T077 y T083. En esta rama están completadas 32 tareas de US1/US2; T024 y las verificaciones reales T042/T044/T048, además de T045/T046 por DEP-003, permanecen pendientes.
+83 tareas: Setup 3, Foundational 7, US1 16, US2 22, US3 18, US4 11 y cierre 6. Hay 13 tareas [P] y 9 CONDICIONAL: T042, T044–T046, T048, T065–T066, T077 y T083. En esta rama están completadas 35 tareas (T001–T003 de Setup y 32 de US1/US2); T024 y las verificaciones reales T042/T044/T048, además de T045/T046 por validación incompleta de DEP-003, permanecen pendientes.
 
 Renumeración de la versión anterior: T001–T040 se conservan; antigua T041 se divide en adaptación de listado T041 y roles T043; antiguas T042/T043 pasan a T045/T047; antigua T044 se separa en verificaciones T042/T044/T046/T048. Antiguas T045–T079 pasan a T049–T083 (+4). El resto de este documento usa los identificadores vigentes.
 
