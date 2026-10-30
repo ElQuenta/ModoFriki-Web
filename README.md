@@ -27,12 +27,17 @@ La aplicación queda disponible en `http://localhost:5173`.
 | Script | Descripción |
 | --- | --- |
 | `npm run dev` | Servidor de desarrollo. |
+| `npm run dev:e2e` | Servidor de desarrollo contra el backend de pruebas (`.env.e2e`). |
 | `npm run build` | Verificación de tipos y build de producción. |
 | `npm run preview` | Previsualiza el build. |
 | `npm run lint` | ESLint. |
 | `npm run format` | Formatea con Prettier. |
 | `npm run test` | Tests en modo watch. |
 | `npm run test:run` | Tests una sola vez. |
+
+## Pruebas E2E con Claude Code
+
+`/probar-frontend` ejecuta los casos de `e2e/flows.md` en un navegador real (MCP de Playwright), y `/corregir-frontend` además corrige los bugs que encuentre. Requisitos y uso en [`e2e/README.md`](e2e/README.md).
 
 ## Rutas
 
