@@ -18,9 +18,9 @@ expresamente.
 - Para datos persistidos en el navegador, usa `useLocalStorage` y claves con el
   prefijo `modofriki_`.
 - Modela carga, ausencia de datos y errores de forma visible para el consumidor
-  de la interfaz, incluso cuando los datos sigan siendo mocks.
-- Cuando una tarea prepare una API futura, define límites tipados y adaptadores
-  locales sin conectar una red hasta que la tarea autorice esa integración.
+  de la interfaz.
+- Las llamadas a la API pasan por `src/lib/api.ts` y los servicios de
+  `src/services/`, con adaptadores tipados entre los DTO y `src/types`.
 
 El resultado debe preservar los flujos actuales y permitir que la interfaz use
 los datos mediante una API interna simple y tipada.

@@ -78,6 +78,14 @@ src/
   pages/        # pantallas de cada ruta
 ```
 
+## Documentación
+
+| Qué | Dónde |
+| --- | --- |
+| Contrato con la API | `ModoFriki-Backend/docs/API.md` y `openapi.yaml` |
+| Pruebas E2E | [`e2e/README.md`](e2e/README.md) |
+| Decisiones, dominio y mejoras | Vault de Obsidian `Obsidian-ModoFriki/ModoFriki` (carpeta hermana de los repos; empieza por `ModoFriki - Mapa`) |
+
 ## Personalización
 
 Los colores y tipografías viven en `src/styles/tokens.css`. El acento naranja se
