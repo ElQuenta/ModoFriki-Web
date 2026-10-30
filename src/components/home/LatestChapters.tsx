@@ -24,8 +24,8 @@ export function LatestChapters() {
         eyebrow="Recién salido del horno"
         title="Últimos capítulos"
         description="Las actualizaciones más recientes de la biblioteca."
-        actionLabel="Ver catálogo"
-        actionTo="/series"
+        actionLabel="Ver todos"
+        actionTo="/chapters/latest"
       />
       {error ? (
         <ErrorState message={error} onRetry={reload} />

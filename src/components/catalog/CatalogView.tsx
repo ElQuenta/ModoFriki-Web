@@ -9,25 +9,49 @@ import { useAsync } from '@/hooks/useAsync'
 import { useDebounce } from '@/hooks/useDebounce'
 import { useGenres, useWorkTypes } from '@/hooks/useCatalog'
 import { SeriesCard } from '@/components/catalog/SeriesCard'
+import { catalogPageCache } from './catalog-page-cache'
 import { Button } from '@/components/ui/button'
 import { EmptyState, ErrorState } from '@/components/ui/empty-state'
 import { SeriesCardSkeleton } from '@/components/ui/skeleton'
 
 const PAGE_SIZE = 20
-const API_MAX = { works: 100, popular: 50 }
 
-/** Carga `pages` páginas de PAGE_SIZE con el menor número de requests que permite el backend. */
+/** Cachea paginas por filtro para que cargar mas no vuelva a pedir lotes ya vistos. */
 async function fetchPages<T>(
-  total: number,
-  max: number,
-  load: (page: number, limit: number) => Promise<T[]>,
+  wanted: number,
+  cacheKey: string,
+  load: (page: number, limit: number) => Promise<{ items: T[]; total?: number }>,
 ) {
-  const limit = Math.min(total, max)
-  const requests = Math.ceil(total / limit)
-  const batches = await Promise.all(
-    Array.from({ length: requests }, (_, index) => load(index + 1, limit)),
-  )
-  return batches.flat().slice(0, total)
+  const pages = catalogPageCache.get(cacheKey) ?? new Map<number, { items: unknown[]; total?: number }>()
+  catalogPageCache.set(cacheKey, pages)
+  const requestedPages = Math.ceil(wanted / PAGE_SIZE)
+  let exhausted = false
+  for (let page = 1; page <= requestedPages; page += 1) {
+    if (!pages.has(page)) {
+      const batch = await load(page, PAGE_SIZE)
+      pages.set(page, batch)
+      if (batch.items.length < PAGE_SIZE) {
+        exhausted = true
+        break
+      }
+    }
+    if (pages.get(page)?.items.length === 0) {
+      exhausted = true
+      break
+    }
+  }
+  const batches = Array.from({ length: requestedPages }, (_, index) => pages.get(index + 1))
+  const allItems = batches.flatMap((batch) => batch?.items ?? []) as T[]
+  const items = [...new Map(allItems.map((item, index) => [
+    item && typeof item === 'object' && 'id' in item ? String(item.id) : `row-${index}`,
+    item,
+  ])).values()]
+  const total = [...pages.values()].find((batch) => batch.total !== undefined)?.total
+  const lastLoaded = pages.get(Math.ceil(items.length / PAGE_SIZE))
+  const hasMore = !exhausted && (total !== undefined
+    ? allItems.length < total
+    : items.length > 0 && lastLoaded?.items.length === PAGE_SIZE)
+  return { items, hasMore }
 }
 
 export function CatalogView() {
@@ -65,28 +89,26 @@ export function CatalogView() {
   const works = useAsync(
     () =>
       byViews
-        ? fetchPages(
-            wanted,
-            API_MAX.popular,
-            async (page, limit) =>
-              (await listPopularWorks({ page, limit, typeId: typeId || undefined }))
-                .items,
+        ? fetchPages(wanted, `popular:${typeId}`, (page, limit) =>
+            listPopularWorks({ page, limit, typeId: typeId || undefined }).then(({ items, total }) => ({ items, total })),
           )
-        : fetchPages(wanted, API_MAX.works, (page, limit) =>
+        : fetchPages(wanted, `works:${typeId}:${genreId}:${debouncedQuery}`, (page, limit) =>
             listWorks({
               page,
               limit,
               search: debouncedQuery || undefined,
               typeId: typeId || undefined,
               genreId: genreId || undefined,
-            }),
+            }).then((items) => ({ items })),
           ),
     `catalog:${sort}:${typeId}:${byViews ? '' : `${genreId}:${debouncedQuery}`}:${wanted}`,
+    true,
+    `catalog:${sort}:${typeId}:${byViews ? '' : `${genreId}:${debouncedQuery}`}`,
   )
 
   // Al cargar más se mantienen visibles los resultados anteriores.
-  const visible = works.data ?? (pages > 1 ? works.staleData : undefined) ?? []
-  const hasMore = (works.data?.length ?? 0) === wanted
+  const visible = works.data?.items ?? (pages > 1 ? works.staleData?.items : undefined) ?? []
+  const hasMore = works.data?.hasMore ?? false
   const hasFilters = Boolean(query || typeId || genreId || sort !== 'recent')
 
   return (
@@ -247,7 +269,10 @@ export function CatalogView() {
       )}
 
       {works.error && visible.length > 0 ? (
-        <p className="text-danger mt-6 text-center text-xs">{works.error}</p>
+        <div className="mt-6 text-center text-xs" role="status">
+          <p className="text-danger">{works.error}</p>
+          <Button variant="ghost" onClick={works.reload} disabled={works.loading} className="mt-2">Reintentar</Button>
+        </div>
       ) : null}
 
       {hasMore || (works.loading && visible.length > 0) ? (

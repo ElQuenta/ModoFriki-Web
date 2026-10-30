@@ -31,14 +31,14 @@ export function useWorkTypes() {
   }, 'work-types')
 }
 
-export function useWork(workId: string) {
-  return useAsync(() => catalog.getWork(workId), `work:${workId}`)
+export function useWork(workId: string, signal?: AbortSignal) {
+  return useAsync(() => catalog.getWork(workId, signal), `work:${workId}`)
 }
 
 /** Capítulos en orden descendente (el más nuevo primero). */
-export function useChapters(workId: string) {
+export function useChapters(workId: string, signal?: AbortSignal) {
   return useAsync(
-    async () => (await catalog.listChapters(workId)).toReversed(),
+    async () => (await catalog.listChapters(workId, false, signal)).toReversed(),
     `chapters:${workId}`,
   )
 }

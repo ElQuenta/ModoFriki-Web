@@ -4,7 +4,7 @@ import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AuthProvider } from '@/context/AuthContext'
 import { useAuth } from '@/hooks/useAuth'
-import { PROTECTED_FORBIDDEN_EVENT } from '@/lib/api'
+import { PROTECTED_FORBIDDEN_EVENT, UNAUTHORIZED_EVENT } from '@/lib/api'
 import { TOKEN_KEY } from '@/lib/constants'
 import { writeStorage } from '@/lib/storage'
 import type { User } from '@/types'
@@ -71,6 +71,16 @@ describe('AuthProvider administrative revalidation', () => {
     expect(authService.getMe).toHaveBeenCalledTimes(1)
   })
 
+  it('clears the current identity on the central 401 event', async () => {
+    writeStorage(TOKEN_KEY, 'admin-token')
+    vi.mocked(authService.getMe).mockResolvedValueOnce(admin)
+    const { result } = renderHook(() => useAuth(), { wrapper })
+    await waitFor(() => expect(result.current.user).toEqual(admin))
+    act(() => window.dispatchEvent(new Event(UNAUTHORIZED_EVENT)))
+    await waitFor(() => expect(result.current.user).toBeNull())
+    expect(window.localStorage.getItem(TOKEN_KEY)).toBeNull()
+  })
+
   it('discards a late response from the previous token', async () => {
     writeStorage(TOKEN_KEY, 'old-token')
     vi.mocked(authService.getMe).mockResolvedValueOnce(admin)
@@ -89,6 +99,26 @@ describe('AuthProvider administrative revalidation', () => {
     await act(async () => pending.resolve(reader))
     expect(result.current.user).toBeNull()
     expect(window.localStorage.getItem(TOKEN_KEY)).toBeNull()
+  })
+
+  it('does not replace a newly logged-in identity with an older pending response', async () => {
+    writeStorage(TOKEN_KEY, 'old-token')
+    vi.mocked(authService.getMe).mockResolvedValueOnce(admin)
+    const { result } = renderHook(() => useAuth(), { wrapper })
+    await waitFor(() => expect(result.current.user).toEqual(admin))
+    vi.mocked(authService.getMe).mockReset()
+    const pending = deferred<User>()
+    vi.mocked(authService.getMe).mockReturnValue(pending.promise)
+
+    act(() => window.dispatchEvent(new Event('focus')))
+    await waitFor(() => expect(result.current.revalidating).toBe(true))
+    const nextUser: User = { ...reader, id: 'user-2', username: 'new-reader' }
+    vi.mocked(authService.login).mockResolvedValueOnce({ token: 'new-token', user: nextUser })
+    await act(async () => result.current.login('new@example.test', 'secret'))
+    await act(async () => pending.resolve(reader))
+
+    await waitFor(() => expect(result.current.user).toEqual(nextUser))
+    expect(window.localStorage.getItem(TOKEN_KEY)).toBe(JSON.stringify('new-token'))
   })
 
   it('keeps identity recoverable when revalidation fails', async () => {

@@ -1,10 +1,12 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ArrowLeft, Images, Pencil, Plus, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import type { Chapter, Series } from '@/types'
 import { ApiError, errorMessage } from '@/lib/api'
 import { formatChapterNumber, formatDate } from '@/lib/format'
-import { listChapters } from '@/services/catalog'
+import { getChapter, listChapters } from '@/services/catalog'
+import { userAdminGateway } from '@/services/user-admin'
+import type { ManagementAccess, UUID } from '@/types/user-admin'
 import {
   createChapter,
   deleteChapter,
@@ -12,6 +14,7 @@ import {
   type ChapterInput,
 } from '@/services/admin'
 import { useAsync } from '@/hooks/useAsync'
+import { useAuth } from '@/hooks/useAuth'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
@@ -28,6 +31,32 @@ type Dialog =
   | { kind: 'delete'; chapter: Chapter }
 
 export function ChaptersPanel({ work, onBack }: { work: Series; onBack: () => void }) {
+  const { user } = useAuth()
+  const isAdmin = user?.role === 'ADMIN'
+  const [assignmentAccess, setAssignmentAccess] = useState<{ workId: string; access: ManagementAccess }>()
+  const managementAccess: ManagementAccess = isAdmin
+    ? 'allowed'
+    : user?.role !== 'EDITOR'
+      ? 'denied'
+      : assignmentAccess?.workId === work.id
+        ? assignmentAccess.access
+        : 'unknown'
+  useEffect(() => {
+    if (isAdmin || user?.role !== 'EDITOR' || !userAdminGateway.capabilities.getManagementAccess.available) return
+    let current = true
+    void userAdminGateway
+      .getManagementAccess(work.id as UUID)
+      .then((access) => {
+        if (current) setAssignmentAccess({ workId: work.id, access })
+      })
+      .catch(() => {
+        if (current) setAssignmentAccess({ workId: work.id, access: 'unknown' })
+      })
+    return () => {
+      current = false
+    }
+  }, [isAdmin, user?.role, work.id])
+  const canManage = isAdmin || (user?.role === 'EDITOR' && managementAccess === 'allowed')
   const { data, loading, error, reload, setData } = useAsync(
     () => listChapters(work.id, true),
     `admin-chapters:${work.id}`,
@@ -46,10 +75,23 @@ export function ChaptersPanel({ work, onBack }: { work: Series; onBack: () => vo
     })
 
   // Ante un 409 recargamos para tener la versión más reciente.
-  const fail = (caught: unknown, fallback: string) => {
+  const fail = async (caught: unknown, fallback: string) => {
     if (caught instanceof ApiError && caught.status === 409) {
-      reload()
-      toast.error(`${caught.message} Recargamos la lista.`)
+      try {
+        const fresh = dialog?.kind === 'edit'
+          ? await getChapter(work.id, dialog.chapter.id)
+          : undefined
+        if (fresh) {
+          setData((items) => items?.map((item) => item.id === fresh.id ? fresh : item))
+          setDialog({ kind: 'edit', chapter: fresh })
+          toast.error(`${caught.message} Actualizamos la versión; el formulario conserva tus cambios.`)
+        } else {
+          await reload()
+          toast.error(`${caught.message} Recargamos la lista.`)
+        }
+      } catch {
+        toast.error(`${caught.message} No pudimos actualizar la versión; conserva el formulario y vuelve a intentarlo.`)
+      }
     } else {
       toast.error(errorMessage(caught, fallback))
     }
@@ -73,7 +115,7 @@ export function ChaptersPanel({ work, onBack }: { work: Series; onBack: () => vo
       }
       close()
     } catch (caught) {
-      fail(caught, 'No pudimos guardar el capítulo.')
+      await fail(caught, 'No pudimos guardar el capítulo.')
     }
   }
 
@@ -83,7 +125,7 @@ export function ChaptersPanel({ work, onBack }: { work: Series; onBack: () => vo
       setData((items) => items?.filter((item) => item.id !== chapter.id))
       toast.success('Capítulo eliminado')
     } catch (caught) {
-      fail(caught, 'No pudimos eliminar el capítulo.')
+      await fail(caught, 'No pudimos eliminar el capítulo.')
     }
   }
 
@@ -104,10 +146,18 @@ export function ChaptersPanel({ work, onBack }: { work: Series; onBack: () => vo
             <h2 className="font-display truncate text-lg font-bold">{work.title}</h2>
           </div>
         </div>
-        <Button onClick={() => setDialog({ kind: 'create' })}>
+        <Button onClick={() => setDialog({ kind: 'create' })} disabled={!canManage}>
           <Plus className="size-4" /> Nuevo capítulo
         </Button>
       </div>
+
+      {user?.role === 'EDITOR' && managementAccess !== 'allowed' ? (
+        <p className="text-muted mb-4 text-sm" role="status">
+          {managementAccess === 'denied'
+            ? 'No tienes una asignación vigente para gestionar esta obra.'
+            : 'No podemos confirmar tu asignación editorial; las acciones de gestión permanecen deshabilitadas.'}
+        </p>
+      ) : null}
 
       {error && !data ? (
         <ErrorState message={error} onRetry={reload} />
@@ -149,6 +199,7 @@ export function ChaptersPanel({ work, onBack }: { work: Series; onBack: () => vo
                   size="icon"
                   onClick={() => setDialog({ kind: 'pages', chapter })}
                   aria-label={`Páginas del capítulo ${formatChapterNumber(chapter.number)}`}
+                  disabled={!canManage}
                 >
                   <Images className="size-4" />
                 </Button>
@@ -157,10 +208,11 @@ export function ChaptersPanel({ work, onBack }: { work: Series; onBack: () => vo
                   size="icon"
                   onClick={() => setDialog({ kind: 'edit', chapter })}
                   aria-label={`Editar el capítulo ${formatChapterNumber(chapter.number)}`}
+                  disabled={!canManage}
                 >
                   <Pencil className="size-4" />
                 </Button>
-                <Button
+                {isAdmin ? <Button
                   variant="ghost"
                   size="icon"
                   onClick={() => setDialog({ kind: 'delete', chapter })}
@@ -168,7 +220,7 @@ export function ChaptersPanel({ work, onBack }: { work: Series; onBack: () => vo
                   className="hover:text-danger"
                 >
                   <Trash2 className="size-4" />
-                </Button>
+                </Button> : null}
               </div>
             </li>
           ))}

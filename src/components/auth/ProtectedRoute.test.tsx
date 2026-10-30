@@ -85,4 +85,9 @@ describe('ProtectedRoute', () => {
     ])
     expect(screen.getByText('contenido privado')).toBeInTheDocument()
   })
+
+  it('permite ADMIN en una ruta administrativa', () => {
+    renderAt('/admin', { user: user('ADMIN'), isAuthenticated: true }, ['ADMIN', 'EDITOR'])
+    expect(screen.getByText('contenido privado')).toBeInTheDocument()
+  })
 })

@@ -49,7 +49,8 @@ export function SeriesDetail({
     views: stats.data?.visits ?? work.views,
   }
   const [showAll, setShowAll] = useState(false)
-  const favorite = isFavorite(series.id)
+  const favoriteStatus = mine.data ? (mine.data.isFavorite ? 'favorite' : 'not-favorite') : 'unknown'
+  const favorite = favoriteStatus === 'favorite' || (favoriteStatus === 'unknown' && isFavorite(series.id))
   const progress = getProgress(series.id)
   const latest = chapters[0]
   const first = chapters[chapters.length - 1]
@@ -157,7 +158,7 @@ export function SeriesDetail({
                 ) : null}
                 <button
                   type="button"
-                  onClick={() => void toggleFavorite(series)}
+                  onClick={() => void toggleFavorite(series, mine.data?.isFavorite)}
                   className={buttonStyles({
                     variant: 'secondary',
                     size: 'lg',

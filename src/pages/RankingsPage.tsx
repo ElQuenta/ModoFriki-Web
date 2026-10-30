@@ -6,6 +6,7 @@ import { cn } from '@/lib/cn'
 import { formatViews } from '@/lib/format'
 import { useAsync } from '@/hooks/useAsync'
 import { useDocumentTitle } from '@/hooks/useDocumentTitle'
+import { useWorkTypes } from '@/hooks/useCatalog'
 import { CoverImage } from '@/components/ui/cover-image'
 import { EmptyState, ErrorState } from '@/components/ui/empty-state'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -19,9 +20,12 @@ export function RankingsPage() {
   useDocumentTitle('Rankings')
   const [params, setParams] = useSearchParams()
   const period = params.get('period') === 'day' ? 'day' : 'all'
+  const page = Math.max(1, Number(params.get('page')) || 1)
+  const typeId = params.get('type') || undefined
+  const { data: types } = useWorkTypes()
   const { data, loading, error, reload } = useAsync(
-    () => listPopularWorks({ period, limit: 50 }),
-    `rankings:${period}`,
+    () => listPopularWorks({ period, typeId, page, limit: 50 }),
+    `rankings:${period}:${typeId ?? ''}:${page}`,
     true,
     undefined,
     PUBLIC_CACHE_MS,
@@ -29,6 +33,18 @@ export function RankingsPage() {
   const ranking = data?.items ?? []
   const podium = ranking.slice(0, 3)
   const rest = ranking.slice(3)
+  const total = data?.total ?? 0
+  const pageCount = Math.max(1, Math.ceil(total / 50))
+  const change = (updates: { period?: 'all' | 'day'; type?: string; page?: number }) => {
+    const next = new URLSearchParams()
+    const nextPeriod = updates.period ?? period
+    const nextType = updates.type === undefined ? typeId : updates.type || undefined
+    const nextPage = updates.page ?? 1
+    if (nextPeriod !== 'all') next.set('period', nextPeriod)
+    if (nextType) next.set('type', nextType)
+    if (nextPage > 1) next.set('page', String(nextPage))
+    setParams(next)
+  }
 
   return (
     <div className="container-mf pt-8 pb-4">
@@ -49,9 +65,7 @@ export function RankingsPage() {
               key={item.value}
               type="button"
               aria-pressed={period === item.value}
-              onClick={() =>
-                setParams(item.value === 'all' ? {} : { period: item.value })
-              }
+              onClick={() => change({ period: item.value })}
               className={cn(
                 'rounded-lg border px-3 py-2 text-xs font-semibold transition-colors',
                 period === item.value
@@ -63,6 +77,13 @@ export function RankingsPage() {
             </button>
           ))}
         </div>
+        <label className="mt-3 block max-w-xs">
+          <span className="text-secondary mb-1.5 block text-xs font-semibold">Tipo de obra</span>
+          <select aria-label="Filtrar tipo de obra" value={typeId ?? ''} onChange={(event) => change({ type: event.target.value })} className="border-line bg-surface text-primary h-10 w-full rounded-lg border px-3 text-sm">
+            <option value="">Todos los tipos</option>
+            {types?.map((type) => <option key={type.id} value={type.id}>{type.name}</option>)}
+          </select>
+        </label>
       </div>
 
       {error ? <ErrorState message={error} onRetry={reload} /> : null}
@@ -82,6 +103,7 @@ export function RankingsPage() {
           actionTo="/series"
         />
       ) : null}
+      {data ? <p className="text-muted mb-4 text-xs">{total.toLocaleString('es')} resultados · Página {page} de {pageCount}</p> : null}
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {podium.map((series, index) => (
@@ -122,6 +144,11 @@ export function RankingsPage() {
           </Link>
         ))}
       </div>
+      {pageCount > 1 ? <nav className="mt-8 flex items-center justify-center gap-3" aria-label="Paginación del ranking">
+        <button type="button" className="border-line bg-surface text-secondary rounded-lg border px-4 py-2 text-sm disabled:opacity-50" disabled={page <= 1 || loading} onClick={() => change({ page: page - 1 })}>Anterior</button>
+        <span className="text-secondary text-sm">{page} / {pageCount}</span>
+        <button type="button" className="border-line bg-surface text-secondary rounded-lg border px-4 py-2 text-sm disabled:opacity-50" disabled={page >= pageCount || loading} onClick={() => change({ page: page + 1 })}>Siguiente</button>
+      </nav> : null}
 
       <div className="border-line bg-surface mt-8 overflow-hidden rounded-2xl border empty:hidden">
         {rest.map((series, index) => (
