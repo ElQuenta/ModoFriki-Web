@@ -5,7 +5,7 @@
 
 ## Evidencia y límites
 
-Backend inspeccionado: `../ModoFriki-Backend`, rama `dev`, revisión `37ad3f36538cb09731356af5bc9c47dbcac84afe`, árbol limpio al consultar. Se leyeron `AGENTS.md`, `docs/API.md`, `src/app.ts` y los cinco módulos de rutas registrados. `openapi.yaml` está presente; la planificación debe contrastar sus esquemas con los controladores, validaciones y servicios antes de fijar contratos de consumo. No se consultó un servidor en ejecución ni se verificó disponibilidad remota.
+Backend inspeccionado: `../ModoFriki-Backend`, rama `dev`, revisión `c6a9f18a631db992e584d5a2d04fbf49745fef5c`, árbol limpio al consultar. Se contrastaron `docs/API.md`, `openapi.yaml`, rutas registradas, esquemas Joi, controladores, servicios y repositorios. No se consultó un servidor en ejecución ni se verificó disponibilidad remota.
 
 Frontend inspeccionado: servicios de auth, catálogo, administración, comunidad, descubrimiento y lectura; tipos, comentarios, formulario de obra y panel. Hay integración existente; no se presupone que haya que rehacerla. El README contiene descripciones históricas de mocks que no coinciden con el código.
 
@@ -32,8 +32,8 @@ Todas las rutas de esta tabla llevan prefijo `/api`. Las operaciones indicadas e
 | Publicación | PUT, POST, PATCH `/works/:workId/chapters/:chapterId/pages` | Reemplazar, insertar y reordenar páginas | ADMIN o EDITOR asignado |
 | Taxonomía | POST `/work-types`, POST `/genres` | Crear tipo y género desde el panel | ADMIN |
 | Comunidad | GET `/comments` | Comentarios de obra/capítulo y respuestas, por cursores | Público con identidad opcional |
-| Comunidad | POST `/comments` | Publicar comentario o respuesta | Cuenta activa; sanción futura según DEP-003 |
-| Comunidad | PATCH `/comments/:id` | Editar comentario propio | Autor; sanción futura según DEP-003 |
+| Comunidad | POST `/comments` | Publicar comentario o respuesta | Cuenta activa; backend rechaza actor con sanción vigente (runtime pendiente) |
+| Comunidad | PATCH `/comments/:id` | Editar comentario propio | Autor; enforcement de sanción sobre edición no confirmado |
 | Comunidad | DELETE `/comments/:id` | Eliminar comentario conservando descendientes | Autor o ADMIN |
 | Comunidad | PUT, DELETE `/comments/:id/vote` | Emitir, cambiar y retirar voto | Cuenta activa |
 | Comunidad | POST `/comments/:id/reports` | Reportar comentario | Cuenta activa |
@@ -52,9 +52,15 @@ Todas las rutas de esta tabla llevan prefijo `/api`. Las operaciones indicadas e
 
 ## Dependencias pendientes del backend
 
+### Revisión de contratos administrativos — 2026-10-30
+
+Se contrastaron `../ModoFriki-Backend/docs/API.md`, `openapi.yaml`, rutas, esquemas Joi, controladores, servicios y repositorios en `dev` (revisión `c6a9f18a631db992e584d5a2d04fbf49745fef5c`). DEP-001, DEP-002 y DEP-007 cuentan con contrato publicado y rutas registradas; el cliente web las adapta en esta rama. DEP-003 publica operaciones parciales de sanciones y consulta propia, detalladas abajo. La presencia de contratos no equivale a verificación en un servidor de prueba: no se levantó ni se consultó el entorno.
+
+El listado administrativo ofrece cursor `{createdAt,id}`, no búsqueda. La UI filtra las páginas ya cargadas y permite continuar; para verificar un sujeto se usa el GET de detalle. El listado de obras seleccionables reutiliza el contrato vigente `GET /works` con `includeDrafts=true` en sesión de personal. Los cambios de rol usan `updatedAt` como CAS y asignaciones usan `version`; para reasignar una relación revocada se envía su versión histórica, no la versión inicial `0`.
+
 ### DEP-001 — Listado administrativo de usuarios
 
-- **Estado**: No se encontró una ruta registrada para listar usuarios administrativos. GET `/auth/me` no sustituye un listado.
+- **Estado (revisión 2026-10-30)**: Publicado y registrado: GET `/api/admin/users` y GET `/api/admin/users/:userId`; cursor/DTO documentados en `../ModoFriki-Backend/docs/API.md` y `openapi.yaml`. El frontend adapta ambos en `src/services/user-admin.ts`; el servidor real sigue pendiente de prueba.
 - **Afecta**: FR-006, FR-012, FR-014; historia 2.
 - **Responsable de resolución**: Backend; frontend consume el contrato acordado.
 - **Necesario**: Ruta y permiso ADMIN, identidad y rol visibles, estado de sanción, forma de paginación y continuación, orden estable y errores. No se fija una URL propuesta como si existiera.
@@ -62,7 +68,7 @@ Todas las rutas de esta tabla llevan prefijo `/api`. Las operaciones indicadas e
 
 ### DEP-002 — Cambio de roles
 
-- **Estado**: No se encontró ruta registrada. Los roles actuales son BASIC, EDITOR y ADMIN; la identidad se obtiene del servidor en cada petición protegida.
+- **Estado (revisión 2026-10-30)**: Publicado y registrado: PATCH `/api/admin/users/:userId/role` con precondición `expectedUpdatedAt`; el frontend obtiene el token vigente por GET de detalle. Contrato en `docs/API.md`, `openapi.yaml` y `src/routes/admin.routes.ts`; persistencia/permisos reales pendientes.
 - **Afecta**: FR-007, FR-011, FR-012; historia 2.
 - **Responsable de resolución**: Backend.
 - **Política aclarada**: Solo ADMIN puede cambiar otras cuentas entre BASIC y EDITOR. No puede cambiar su propio rol, modificar el rol de ninguna cuenta ADMIN ni promover cuentas a ADMIN. No se añade un mecanismo alternativo de gestión de ADMIN en esta feature.
@@ -71,13 +77,14 @@ Todas las rutas de esta tabla llevan prefijo `/api`. Las operaciones indicadas e
 
 ### DEP-003 — Sanciones de comentarios y estado del afectado
 
-- **Estado**: No se encontraron operaciones de sanción. Resolver reportes ya existe y no equivale a sancionar.
+- **Estado (revisión 2026-10-30, backend `c6a9f18`)**: Contrato parcial publicado. Rutas: `GET`/`POST /api/admin/users/:userId/comment-sanctions`, `PUT /api/admin/users/:userId/comment-sanctions/:sanctionId/revocation` y consulta propia `GET /api/auth/me/comment-restriction`. Rutas administrativas protegidas por ADMIN. No se encontró operación de extensión temporal. No equivale a verificación del servidor en ejecución.
 - **Afecta**: FR-008 a FR-012; historia 2.
 - **Responsable de resolución**: Backend, con confirmación del alcance de moderación por producto.
-- **Necesario**: Consultar sanción vigente, crear temporal/permanente, retirar y extender temporal; motivo, instante de vencimiento y distinción entre estado activo, vencido o retirado. Confirmar cómo recibe su estado el usuario afectado y qué error identifica una sanción al comentar.
+- **Contrato verificado en código**: crear con motivo no vacío (Joi hasta 2000 caracteres), fin ISO o `null` permanente; historial paginado por cursor y estado activo/revocado/vencido; retirada por endpoint dedicado; consulta propia devuelve `active`, `reason`, `endsAt`, `permanent`. El rechazo de sanción en creación de comentarios está implementado en el backend.
+- **Pendiente**: no hay extensión temporal publicada; falta verificar si edición de comentarios está bloqueada, y probar creación/respuesta/edición y permisos en servidor real. El contrato y estos hallazgos no acreditan disponibilidad remota.
 - **Regla de producto confirmada**: Respuesta A del usuario: impedir crear, responder y editar comentarios propios; conservar lectura, login, votos, reportes y permiso existente de eliminar comentarios propios, sin retirada automática de comentarios previos. Es una sanción de comentarios independiente del estado SUSPENDED de la cuenta; no se debe reutilizar este estado para implementarla. Backend debe aplicar la restricción, no solo la interfaz.
 - **Destinatarios confirmados**: Solo BASIC y EDITOR. No se admite aplicar, extender ni quitar sanciones de cuentas ADMIN desde el panel, incluida la cuenta propia; un estado histórico puede consultarse sin dar permiso para modificarlo. Se debe comprobar el rol vigente también si cambia mientras un modal está abierto.
-- **Necesario además**: Semántica de vencimiento y concurrencia entre administradores conforme a esas restricciones. Registrar autoritativamente actor, destinatario, fecha, motivo y cambio de sanción; restringir consulta del motivo al afectado y al administrador autorizado. Los nombres y cuerpos de operaciones quedan pendientes; no se inventan endpoints.
+- **Necesario además**: validar semántica de vencimiento y concurrencia en runtime, y comprobar auditoría autoritativa y privacidad del motivo con los permisos confirmados. No inventar operación de extensión temporal.
 - **Desbloqueo**: Probar temporal, permanente, retirada, extensión y vencimiento contra servidor real; rechazar intentos directos de crear, responder y editar durante sanción. Verificar que la sanción por sí sola no impide login, lectura, votos, reportes o eliminación propia autorizada, ni cambia la cuenta a SUSPENDED.
 - **Rechazos de administración**: Verificar denegación para actores BASIC/EDITOR y destinatarios ADMIN, incluida la cuenta propia; repetir ante cambio concurrente del rol del destinatario. La preparación visual no acredita esos rechazos en servidor.
 
@@ -110,7 +117,7 @@ Todas las rutas de esta tabla llevan prefijo `/api`. Las operaciones indicadas e
 
 ### DEP-007 — Gestión de asignaciones editoriales
 
-- **Estado**: Alcance confirmado por el usuario: incluir interfaz de consulta, asignación y revocación de obras a EDITOR. El modelo WorkEditorAssignment existe, pero no se encontraron rutas de gestión registradas; una tabla no constituye un contrato disponible.
+- **Estado (revisión 2026-10-30)**: Publicado y registrado: GET `/api/admin/users/:userId/work-assignments`, PUT asignación y PATCH revocación con `expectedVersion`. El frontend adapta lectura, asignación y revocación; la selección de obras usa el listado editorial existente. Persistencia/autorización real pendiente.
 - **Afecta**: FR-012, FR-025, FR-027 y FR-028; historia 2, escenarios 12 a 16; SC-009.
 - **Responsable de resolución**: Backend para operaciones, autorización y trazabilidad; frontend para consulta, selección y confirmación de asignar/revocar.
 - **Necesario**: Contratos exclusivos ADMIN para consultar asignaciones vigentes, asignar y revocar por obra y editor; paginación o continuación cuando corresponda, respuesta confirmada, validación de rol EDITOR y tratamiento de duplicados y concurrencia. No se proponen URLs como si estuvieran implementadas.

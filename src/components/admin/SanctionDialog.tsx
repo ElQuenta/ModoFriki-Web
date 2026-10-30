@@ -85,9 +85,8 @@ export function SanctionDialog({
       try {
         const actor = await revalidateSession()
         if (actor.role !== 'ADMIN') throw new Error('La cuenta ya no cumple las condiciones para gestionar sanciones.')
-        if (!gateway.capabilities.listUsers.available) throw new Error('No se puede verificar el rol vigente de la cuenta.')
-        const latest = await gateway.listUsers({ limit: 20, search: subject.username })
-        const currentSubject = latest.items.find((item) => item.id === subject.id)
+        if (!gateway.capabilities.getUser.available) throw new Error('No se puede verificar el rol vigente de la cuenta.')
+        const currentSubject = await gateway.getUser(subject.id)
         if (!currentSubject || currentSubject.role !== subject.role || currentSubject.role === 'ADMIN') {
           onRefresh()
           throw new Error('La cuenta cambió o ya no está disponible. Actualiza la lista antes de continuar.')
@@ -125,9 +124,8 @@ export function SanctionDialog({
     try {
       const actor = await revalidateSession()
       if (actor.role !== 'ADMIN' || actor.id === subject.id) throw new Error('La cuenta ya no cumple las condiciones para recibir una sanción.')
-      if (!gateway.capabilities.listUsers.available) throw new Error('No se puede verificar el rol vigente de la cuenta.')
-      const latest = await gateway.listUsers({ limit: 20, search: subject.username })
-      const currentSubject = latest.items.find((item) => item.id === subject.id)
+      if (!gateway.capabilities.getUser.available) throw new Error('No se puede verificar el rol vigente de la cuenta.')
+      const currentSubject = await gateway.getUser(subject.id)
       if (!currentSubject || currentSubject.role !== subject.role || currentSubject.role === 'ADMIN') {
         onRefresh()
         throw new Error('La cuenta cambió o ya no está disponible. Actualiza la lista antes de continuar.')

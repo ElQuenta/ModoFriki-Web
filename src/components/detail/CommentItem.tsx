@@ -35,6 +35,8 @@ export function CommentItem({
   targetId,
   onRefreshComment,
   contextKey,
+  commentRestricted = false,
+  restrictionMessage,
 }: {
   comment: Comment
   onChange: (comment: Comment) => void
@@ -46,6 +48,8 @@ export function CommentItem({
     parentCommentId: string | null,
   ) => Promise<Comment | null>
   contextKey?: string
+  commentRestricted?: boolean
+  restrictionMessage?: string
 }) {
   const { user } = useAuth()
   const [votes, setVotes] = useState<Record<string, 1 | -1>>(
@@ -150,6 +154,7 @@ export function CommentItem({
   }
 
   const openEdit = async () => {
+    if (commentRestricted) return
     setDraft(comment.bodyMarkdown ?? '')
     setEditError(undefined)
     setCurrentVersion(undefined)
@@ -177,6 +182,7 @@ export function CommentItem({
   }
 
   const saveEdit = async (source: string, expectedRevision = baseRevision) => {
+    if (commentRestricted) return
     const validationError = validateCommentSource(source)
     if (validationError) {
       setEditError(validationError)
@@ -253,6 +259,7 @@ export function CommentItem({
   }
 
   const sendReply = async (source: string) => {
+    if (commentRestricted) return
     const validationError = validateCommentSource(source)
     if (validationError) {
       setReplyError(validationError)
@@ -301,6 +308,9 @@ export function CommentItem({
 
           {editing ? (
             <div className="mt-2">
+              {commentRestricted && restrictionMessage ? (
+                <p className="text-warning mb-2 text-sm" role="status">{restrictionMessage}</p>
+              ) : null}
               <CommentEditor
                 key={`${comment.id}:${baseRevision}`}
                 source={draft}
@@ -312,6 +322,7 @@ export function CommentItem({
                 onCancel={() => setEditing(false)}
                 mode="edit"
                 pending={busy || refreshingRevision}
+                submitDisabled={commentRestricted}
                 error={editError}
                 previewKey={`${comment.id}:${baseRevision}`}
                 label="Editar comentario"
@@ -400,9 +411,12 @@ export function CommentItem({
                 <button
                   type="button"
                   onClick={() => {
+                    if (commentRestricted) return
                     setReplying((value) => !value)
                     setReplyError(undefined)
                   }}
+                  disabled={commentRestricted}
+                  title={commentRestricted ? restrictionMessage : undefined}
                   className="hover:bg-raised flex h-8 items-center gap-1 rounded-lg px-2 transition-colors"
                 >
                   <MessageSquareReply className="size-3.5" /> Responder
@@ -412,6 +426,8 @@ export function CommentItem({
                 <button
                   type="button"
                   onClick={() => void openEdit()}
+                  disabled={commentRestricted}
+                  title={commentRestricted ? restrictionMessage : undefined}
                   className="hover:bg-raised flex h-8 items-center gap-1 rounded-lg px-2 transition-colors"
                 >
                   <Pencil className="size-3.5" /> Editar
@@ -440,6 +456,9 @@ export function CommentItem({
 
           {replying ? (
             <div className="mt-2">
+              {commentRestricted && restrictionMessage ? (
+                <p className="text-warning mb-2 text-sm" role="status">{restrictionMessage}</p>
+              ) : null}
               <CommentEditor
                 source={reply}
                 onSourceChange={(source) => {
@@ -450,6 +469,7 @@ export function CommentItem({
                 onCancel={() => setReplying(false)}
                 mode="reply"
                 pending={busy}
+                submitDisabled={commentRestricted}
                 error={replyError}
                 label={`Responder a ${name}`}
               />
@@ -511,6 +531,8 @@ export function CommentItem({
                     targetId={targetId}
                     onRefreshComment={onRefreshComment}
                     contextKey={`${context}:${item.id}`}
+                    commentRestricted={commentRestricted}
+                    restrictionMessage={restrictionMessage}
                   />
                 ))
               )}

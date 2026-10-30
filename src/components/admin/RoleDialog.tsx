@@ -51,12 +51,11 @@ export function RoleDialog({
         setError('La identidad o el rol actual no permite cambiar esta cuenta. Actualiza la lista antes de continuar.')
         return
       }
-      if (!gateway.capabilities.listUsers.available) {
+      if (!gateway.capabilities.getUser.available) {
         setError('No se puede verificar el rol vigente de la cuenta. No se envió el cambio.')
         return
       }
-      const latest = await gateway.listUsers({ limit: 20, search: subject.username })
-      const currentSubject = latest.items.find((item) => item.id === subject.id)
+      const currentSubject = await gateway.getUser(subject.id)
       if (!currentSubject || currentSubject.role !== subject.role) {
         onRefresh()
         setError('La cuenta cambió o ya no está disponible. Actualiza la lista antes de continuar.')

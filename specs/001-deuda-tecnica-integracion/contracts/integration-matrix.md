@@ -34,8 +34,8 @@ Fecha: 2026-10-29. Fuente: routers registrados por `../ModoFriki-Backend/src/app
 | INT024 | GET `/api/genres` | `catalog.listGenres` | `useGenres`, `GenresPage`, `CatalogView`, `WorkForm`, `TaxonomyTab` | Público | Colección acotada, sin continuación | Existente; por verificar |
 | INT025 | POST `/api/genres` | `admin.createGenre` | `TaxonomyTab` | ADMIN | Nombre y slug válidos | Existente; por verificar duplicado e invalidación |
 | INT026 | GET `/api/comments` | `community.listComments`, `community.listReplies` | `CommentSection`, `CommentItem` en ficha y lector | Público con identidad opcional | Destino o padre; `cursorCreatedAt`, `cursorId`, `limit`; `hasMore/nextCursor` | Hueco: deduplicación, aislamiento de contexto y errores de continuación |
-| INT027 | POST `/api/comments` | `community.createComment` | `CommentSection`, respuesta en `CommentItem`; propuesto `CommentEditor` compartido | Cuenta activa; restricción futura de sanción DEP-003 | Fuente no vacía hasta 10 000; destino publicado o padre válido | Hueco: editor y preview; sanción real pendiente DEP-003; resto por verificar |
-| INT028 | PATCH `/api/comments/:id` | `community.editComment` | Edición en `CommentItem`; propuesto `CommentEditor` | Autor activo; restricción futura DEP-003 | `expectedRevision`; fuente hasta 10 000 | Hueco: recuperación de versión vigente preservando borrador; sanción pendiente |
+| INT027 | POST `/api/comments` | `community.createComment` | `CommentSection`, respuesta en `CommentItem`; propuesto `CommentEditor` compartido | Cuenta activa; backend rechaza sanción vigente en creación (runtime por verificar) | Fuente no vacía hasta 10 000; destino publicado o padre válido | Hueco: editor y preview; enforcement de creación existe en código, recorrido real pendiente |
+| INT028 | PATCH `/api/comments/:id` | `community.editComment` | Edición en `CommentItem`; propuesto `CommentEditor` | Autor activo; aplicación de sanción a edición por confirmar | `expectedRevision`; fuente hasta 10 000 | Hueco: recuperación de versión vigente preservando borrador; restricción de edición sancionada pendiente de confirmar |
 | INT029 | DELETE `/api/comments/:id` | `community.deleteComment` | `CommentItem` / `ConfirmDialog` | Autor o ADMIN | Baja lógica; conservar descendientes | Existente; por verificar indicador eliminado sin restaurar texto |
 | INT030 | PUT `/api/comments/:id/vote` | `community.voteComment` | `CommentItem` | Cuenta activa | `value` 1 o -1; voto local recordado por usuario no acredita voto remoto propio | Existente; por verificar concurrencia y revisión |
 | INT031 | DELETE `/api/comments/:id/vote` | `community.removeVote` | `CommentItem` | Cuenta activa | Voto del actor | Existente; por verificar restauración ante error |
@@ -94,7 +94,7 @@ Las siguientes comprobaciones usan fixtures y no acreditan respuestas del backen
 | DEP-003 | `admin-validation.test.ts`, `zoned-date.test.ts`, `AuthRevalidation.test.tsx`: validación de fecha/motivo, zonas y sesión; hook de restricción preparado, integración de consumidor pendiente de T019–T023 de US1 | Preparación parcial; falta contrato y comprobación de servidor |
 | DEP-007 | `admin-policy.test.ts`, `AssignmentsPanel.test.tsx`: solo EDITOR como destinatario, lectura actualizada antes de mutar, duplicado vigente no crea otra relación | Preparación frontend; falta contrato/permisos/persistencia |
 
-La evidencia detallada y los comandos están en [`validation.md`](../validation.md). No se añaden resultados reales porque las cuatro capacidades siguen sin contrato publicado.
+La evidencia detallada está en [`validation.md`](../validation.md). DEP-001/002/007 tienen contrato y adaptación frontend, pero faltan recorridos reales; DEP-003 tiene contrato parcial sin adaptación/comprobación real completa.
 
 ## Evidencia futura por operación
 
@@ -102,7 +102,18 @@ Se crea una entrada por ID y variante utilizada al ejecutar las verificaciones; 
 
 | ID / escenario | Entorno y versión frontend/backend | Identidad de prueba / rol sin credenciales | Fecha | Resultado positivo / evidencia | Resultado negativo / evidencia | Persistencia tras recarga | Clasificación |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| INT026–INT032 / US1 — pruebas frontend | Vitest local; frontend de esta rama; servicios simulados | BASIC simulado | Render y disclosure Markdown; crear, responder, editar, votar, reportar, tombstone, cursores, deduplicación, error y conflicto según pruebas focalizadas | Casos seguros y negativos cubiertos por 27 pruebas; 6 archivos pasan | No aplica a mocks; persistencia del backend no verificada | Proveedor de prueba |
+| INT026–INT032 / US1 — pruebas frontend | Vitest local; frontend de esta rama; servicios simulados | BASIC simulado | Render/disclosure Markdown; crear, responder, editar, votar, reportar, tombstone, cursores, deduplicación, error, conflicto y restricción conocida por sanción | 30 pruebas en 6 archivos pasan; no se prueba persistencia con mocks | No aplica a mocks; persistencia del backend no verificada | Proveedor de prueba |
 | INT026–INT032 / US1 — recorrido real | Entorno/backend no conectado en esta revisión | Pendiente | Pendiente | Pendiente | Pendiente | Por verificar en entorno real |
 
 Para listados y consultas, persistencia se comprueba sobre un cambio relacionado cuando corresponda o se justifica «no aplica»; no se inventa una mutación. Las capacidades nuevas con proveedor de prueba no acreditan persistencia ni autorización real. Cada hueco frontend permanece pendiente hasta implementar y comprobar el recorrido; ningún E2E está aprobado por la existencia de esta matriz.
+
+### Adaptación de contratos administrativos US2 — 2026-10-30
+
+Backend de referencia: rama `dev`, revisión `c6a9f18a631db992e584d5a2d04fbf49745fef5c`. Esta evidencia acredita inspección de contratos/código y pruebas unitarias del cliente, no recorridos de servidor.
+
+| Capacidad | Contrato consumido | Evidencia frontend | Verificación real |
+| --- | --- | --- | --- |
+| DEP-001 listado/detalle | GET `/api/admin/users`, GET `/api/admin/users/:userId`; cursor `{createdAt,id}`; búsqueda local en páginas cargadas | `user-admin.test.ts`: mapeo de DTO, continuación y sanción `unknown` | T042 pendiente |
+| DEP-002 roles | GET detalle + PATCH `/api/admin/users/:userId/role` con `expectedUpdatedAt` | `user-admin.test.ts`, `UsersTab.test.tsx`: token CAS y políticas BASIC/EDITOR | T044 pendiente |
+| DEP-007 asignaciones | GET cursor, PUT con `expectedVersion`, PATCH revocación; obras desde GET `/api/works` para personal | `user-admin.test.ts`, `AssignmentsPanel.test.tsx`: cursor, CAS, duplicado e historial | T048 pendiente |
+| DEP-003 sanciones | GET/POST `/api/admin/users/:userId/comment-sanctions`, PUT `.../:sanctionId/revocation`; GET propio `/api/auth/me/comment-restriction`. Sin operación de extensión | Backend rechaza creación sancionada en código; frontend/gateway no adaptados a este contrato en esta rama | T045 pendiente de adaptar/validar el contrato parcial; T046 requiere extensión ausente y entorno real |

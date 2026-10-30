@@ -65,6 +65,7 @@ export function CommentEditor({
   onCancel,
   mode = 'create',
   pending = false,
+  submitDisabled = false,
   error,
   initialSource,
   previewKey,
@@ -76,6 +77,7 @@ export function CommentEditor({
   onCancel?: () => void
   mode?: CommentEditorMode
   pending?: boolean
+  submitDisabled?: boolean
   error?: string
   /** Snapshot used to identify a dirty draft. Defaults to the initially rendered source. */
   initialSource?: string
@@ -241,7 +243,7 @@ export function CommentEditor({
               Cancelar
             </Button>
           ) : null}
-          <Button type="submit" size="sm" disabled={!valid || pending || confirmDiscard || preview}>
+          <Button type="submit" size="sm" disabled={!valid || pending || submitDisabled || confirmDiscard || preview}>
             <Send className="size-3.5" aria-hidden="true" />
             {pending ? 'Guardando…' : actionLabel}
           </Button>

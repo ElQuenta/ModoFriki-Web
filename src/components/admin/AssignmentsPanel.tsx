@@ -47,12 +47,11 @@ export function AssignmentsPanel({
     try {
       const actor = await revalidateSession()
       if (actor.role !== 'ADMIN' || editor.role !== 'EDITOR') throw new Error('El rol confirmado ya no permite gestionar asignaciones.')
-      if (!gateway.capabilities.listUsers.available || !gateway.capabilities.listAssignments.available) throw new Error('No se pueden verificar las condiciones vigentes de la asignación.')
-      const [users, currentAssignments] = await Promise.all([
-        gateway.listUsers({ limit: 20, search: editor.username }),
+      if (!gateway.capabilities.getUser.available || !gateway.capabilities.listAssignments.available) throw new Error('No se pueden verificar las condiciones vigentes de la asignación.')
+      const [currentEditor, currentAssignments] = await Promise.all([
+        gateway.getUser(editor.id),
         gateway.listAssignments(editor.id),
       ])
-      const currentEditor = users.items.find((item) => item.id === editor.id)
       if (!currentEditor || currentEditor.role !== 'EDITOR') throw new Error('La cuenta ya no tiene rol EDITOR. Actualiza la lista antes de continuar.')
       if (kind === 'assign') {
         if (currentAssignments.some((item) => item.workId === workId && item.revokedAt === null)) {

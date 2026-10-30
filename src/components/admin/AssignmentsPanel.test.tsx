@@ -34,6 +34,7 @@ describe('AssignmentsPanel', () => {
     const assignWork = vi.fn()
     const gateway = createFakeUserAdminGateway({
       listAssignments,
+      getUser: vi.fn().mockResolvedValue(editor),
       listUsers: vi.fn().mockResolvedValue({ items: [editor], nextCursor: null }),
       listAssignableWorks: vi.fn().mockResolvedValue({
         items: [{ id: assignment.workId, title: 'Obra de prueba' }],

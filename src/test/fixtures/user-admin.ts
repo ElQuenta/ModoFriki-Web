@@ -27,6 +27,7 @@ export function createFakeUserAdminGateway(
   const emptyWorks: AssignableWorkPage = { items: [], nextCursor: null }
   const capabilities: UserAdminCapabilities = {
     listUsers: { available: true },
+    getUser: { available: true },
     changeRole: { available: true },
     getSanction: { available: true },
     applySanction: { available: true },
@@ -49,6 +50,7 @@ export function createFakeUserAdminGateway(
   return {
     capabilities,
     listUsers: async () => emptyUsers,
+    getUser: async () => fakeUser,
     changeRole: async ({ role }) => ({ ...fakeUser, role }),
     getSanction: async () => unknownSanction,
     applySanction: async () => unknownSanction,

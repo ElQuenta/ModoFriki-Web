@@ -24,11 +24,11 @@ export function UsersTab({ gateway: gatewayOverride }: { gateway?: UserAdminGate
   const [additional, setAdditional] = useState<{ key: string; items: AdminUser[]; nextCursor: string | null; error?: string }>()
   const [loadingMore, setLoadingMore] = useState(false)
   const [selected, setSelected] = useState<{ kind: 'role' | 'sanction' | 'assignments'; user: AdminUser }>()
-  const scope = `admin-users:${user?.id ?? 'none'}:${search.trim()}`
+  const scope = `admin-users:${user?.id ?? 'none'}`
   const list = useAsync(
-    () => gateway.listUsers({ limit: PAGE_SIZE, search: term || undefined }),
-    `${scope}:${term}`,
-    gateway.capabilities.listUsers.available && search.trim() === term,
+    () => gateway.listUsers({ limit: PAGE_SIZE }),
+    scope,
+    gateway.capabilities.listUsers.available,
     scope,
   )
   const extra = additional?.key === scope ? additional : undefined
@@ -36,6 +36,10 @@ export function UsersTab({ gateway: gatewayOverride }: { gateway?: UserAdminGate
     const merged = [...(list.data?.items ?? []), ...(extra?.items ?? [])]
     return merged.filter((item, index) => merged.findIndex((candidate) => candidate.id === item.id) === index)
   }, [list.data, extra])
+  const visibleItems = useMemo(() => {
+    const normalized = term.toLocaleLowerCase()
+    return normalized ? items.filter((item) => item.username.toLocaleLowerCase().includes(normalized)) : items
+  }, [items, term])
   const nextCursor = extra?.nextCursor ?? list.data?.nextCursor ?? null
   const listError = extra?.error ?? list.error
 
@@ -51,7 +55,7 @@ export function UsersTab({ gateway: gatewayOverride }: { gateway?: UserAdminGate
     if (!nextCursor || loadingMore) return
     setLoadingMore(true)
     try {
-      const page = await gateway.listUsers({ limit: PAGE_SIZE, cursor: nextCursor, search: term || undefined })
+      const page = await gateway.listUsers({ limit: PAGE_SIZE, cursor: nextCursor })
       setAdditional((previous) => ({
         key: scope,
         items: [...(previous?.key === scope ? previous.items : []), ...page.items],
@@ -85,19 +89,19 @@ export function UsersTab({ gateway: gatewayOverride }: { gateway?: UserAdminGate
   return (
     <section aria-label="Gestión de usuarios">
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
-        <label className="sr-only" htmlFor="admin-user-search">Buscar usuarios</label>
-        <input id="admin-user-search" className={inputClass} value={search} onChange={(event) => resetSearch(event.target.value)} placeholder="Buscar usuario…" />
+        <label className="sr-only" htmlFor="admin-user-search">Buscar entre usuarios cargados</label>
+        <input id="admin-user-search" className={inputClass} value={search} onChange={(event) => resetSearch(event.target.value)} placeholder="Buscar entre usuarios cargados…" />
         <span className="text-muted text-sm" aria-live="polite">{title}</span>
       </div>
       {sessionError ? <p role="alert" className="text-danger mb-3 text-sm">No se confirmó la sesión. Revalida antes de hacer cambios: {sessionError}</p> : null}
       {listError ? <div role="alert" className="border-danger/30 bg-danger/5 mb-4 rounded-xl border p-4 text-sm"><p>{listError}</p><Button variant="secondary" size="sm" onClick={() => extra?.error ? void loadMore() : list.reload()} className="mt-2">Reintentar</Button></div> : null}
-      {!items.length && !listError ? <EmptyState icon={ShieldCheck} title="No hay usuarios" description="No se encontraron usuarios para esta consulta." /> : null}
-      {items.length ? (
+      {!visibleItems.length && !listError ? <EmptyState icon={ShieldCheck} title={term ? 'Sin coincidencias en las páginas cargadas' : 'No hay usuarios'} description={term ? 'Carga más usuarios para ampliar la búsqueda.' : 'No se encontraron usuarios.'} /> : null}
+      {visibleItems.length ? (
         <div className="border-line overflow-x-auto rounded-2xl border">
           <table className="w-full min-w-[40rem] text-left text-sm">
             <thead className="bg-raised text-secondary"><tr><th className="px-4 py-3 font-semibold">Usuario</th><th className="px-4 py-3 font-semibold">Rol</th><th className="px-4 py-3 font-semibold">Estado de sanción</th><th className="px-4 py-3 font-semibold">Acciones</th></tr></thead>
             <tbody className="divide-line divide-y">
-              {items.map((row) => {
+              {visibleItems.map((row) => {
                 const protectedTarget = row.id === user?.id || row.role === 'ADMIN'
                 const canChangeRole = canAdminister(user?.role, user?.id, row.role, row.id, 'change-role')
                 const canManageSanction = canAdminister(user?.role, user?.id, row.role, row.id, 'manage-sanction')

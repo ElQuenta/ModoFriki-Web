@@ -18,6 +18,9 @@ export interface AdminUser {
   username: string
   role: AdminRole
   sanction: AdminSanctionState
+  status?: 'ACTIVE' | 'SUSPENDED'
+  createdAt?: string
+  updatedAt?: string
 }
 
 export interface SanctionInput {
@@ -29,10 +32,13 @@ export interface SanctionInput {
 }
 
 export interface WorkEditorAssignment {
+  id?: UUID
   workId: UUID
   editorId: UUID
   assignedAt: string
   revokedAt: string | null
+  createdAt?: string
+  version?: number
 }
 
 export type ManagementAccess = 'allowed' | 'denied' | 'unknown'

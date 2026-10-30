@@ -33,7 +33,7 @@ describe('UsersTab', () => {
     expect(await screen.findByText('ana')).toBeInTheDocument()
     expect(screen.getByText('Estado no disponible')).toBeInTheDocument()
     expect(screen.queryByText('Sin sanción')).not.toBeInTheDocument()
-    expect(gateway.listUsers).toHaveBeenCalledWith({ limit: 20, search: undefined })
+    expect(gateway.listUsers).toHaveBeenCalledWith({ limit: 20 })
   })
 
   it('does not show mutation actions for the acting account or an ADMIN subject', async () => {
@@ -64,6 +64,7 @@ describe('UsersTab', () => {
     const changeRole = vi.fn()
     const gateway = createFakeUserAdminGateway({
       listUsers: vi.fn().mockResolvedValue({ items: [account('reader-id', 'ana', 'BASIC', 'none')], nextCursor: null }),
+      getUser: vi.fn().mockResolvedValue(account('reader-id', 'ana', 'BASIC', 'none')),
       changeRole,
     })
     render(<UsersTab gateway={gateway} />)
@@ -85,7 +86,7 @@ describe('UsersTab', () => {
       .mockResolvedValueOnce({ items: [target], nextCursor: null })
       .mockResolvedValueOnce({ items: [{ ...target, role: 'ADMIN' }], nextCursor: null })
     const changeRole = vi.fn()
-    const gateway = createFakeUserAdminGateway({ listUsers, changeRole })
+    const gateway = createFakeUserAdminGateway({ listUsers, getUser: vi.fn().mockResolvedValue({ ...target, role: 'ADMIN' }), changeRole })
     render(<UsersTab gateway={gateway} />)
     fireEvent.click(await screen.findByRole('button', { name: 'Cambiar rol' }))
     fireEvent.change(screen.getByLabelText('Nuevo rol'), { target: { value: 'EDITOR' } })
