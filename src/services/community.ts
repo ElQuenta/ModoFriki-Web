@@ -26,15 +26,23 @@ export function listComments(
   targetId: string,
   cursor?: Cursor | null,
   limit = 20,
+  signal?: AbortSignal,
 ) {
   return request<CursorPage<Comment>>('/comments', {
     query: { targetType, targetId, limit, ...cursorQuery(cursor) },
+    signal,
   })
 }
 
-export function listReplies(parentCommentId: string, cursor?: Cursor | null, limit = 20) {
+export function listReplies(
+  parentCommentId: string,
+  cursor?: Cursor | null,
+  limit = 20,
+  signal?: AbortSignal,
+) {
   return request<CursorPage<Comment>>('/comments', {
     query: { parentCommentId, limit, ...cursorQuery(cursor) },
+    signal,
   })
 }
 

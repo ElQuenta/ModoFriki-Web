@@ -102,6 +102,7 @@ Se crea una entrada por ID y variante utilizada al ejecutar las verificaciones; 
 
 | ID / escenario | Entorno y versión frontend/backend | Identidad de prueba / rol sin credenciales | Fecha | Resultado positivo / evidencia | Resultado negativo / evidencia | Persistencia tras recarga | Clasificación |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| INT___ / descripción | Pendiente | Pendiente | Pendiente | Pendiente | Pendiente | Pendiente o no aplica justificado | Por verificar / verificado real / proveedor de prueba / bloqueado con DEP |
+| INT026–INT032 / US1 — pruebas frontend | Vitest local; frontend de esta rama; servicios simulados | BASIC simulado | Render y disclosure Markdown; crear, responder, editar, votar, reportar, tombstone, cursores, deduplicación, error y conflicto según pruebas focalizadas | Casos seguros y negativos cubiertos por 27 pruebas; 6 archivos pasan | No aplica a mocks; persistencia del backend no verificada | Proveedor de prueba |
+| INT026–INT032 / US1 — recorrido real | Entorno/backend no conectado en esta revisión | Pendiente | Pendiente | Pendiente | Pendiente | Por verificar en entorno real |
 
 Para listados y consultas, persistencia se comprueba sobre un cambio relacionado cuando corresponda o se justifica «no aplica»; no se inventa una mutación. Las capacidades nuevas con proveedor de prueba no acreditan persistencia ni autorización real. Cada hueco frontend permanece pendiente hasta implementar y comprobar el recorrido; ningún E2E está aprobado por la existencia de esta matriz.
