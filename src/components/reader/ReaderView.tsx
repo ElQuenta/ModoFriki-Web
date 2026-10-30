@@ -564,6 +564,16 @@ export function ReaderView({
         </>
       ) : null}
 
+      {series.chapterBannerUrl ? (
+        <div className="reader-canvas mx-auto px-2 pt-4 sm:px-4">
+          <img
+            src={series.chapterBannerUrl}
+            alt={`Banner del capítulo ${formatChapterNumber(chapter.number)}`}
+            className="mx-auto mb-4 max-h-72 w-full max-w-5xl rounded-xl object-cover"
+          />
+        </div>
+      ) : null}
+
       <main className="reader-canvas mx-auto px-2 pt-4 sm:px-4">
         {totalPages === 0 ? (
           <div className="container-mf py-10">

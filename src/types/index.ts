@@ -1,3 +1,5 @@
+import type { PersistedMedia } from './work-media'
+
 export type SeriesType = string
 
 export type SeriesStatus = 'En emisión' | 'Finalizado' | 'En pausa' | 'Cancelado'
@@ -48,6 +50,15 @@ export interface Series {
   coverUrl: string
   /** Miniatura WebP (300 px) para tarjetas y listas; si falta, usar coverUrl. */
   thumbUrl?: string
+  /** Banner propio de ficha; null hasta que DEP-004 lo exponga en el DTO. */
+  detailBannerUrl?: string | null
+  /** Banner propio de capítulo, sin confundirlo con el fallback de ficha. */
+  chapterBannerUrl?: string | null
+  /** Referencias persistidas solo cuando el DTO provee ID y URL. */
+  coverMedia?: PersistedMedia | null
+  detailBannerMedia?: PersistedMedia | null
+  chapterBannerMedia?: PersistedMedia | null
+  /** Alias visual legado de banner para consumidores en transición. */
   bannerUrl: string
   type: SeriesType
   typeId?: string

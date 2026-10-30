@@ -1,5 +1,32 @@
 # Evidencia de validación
 
+## Phase 6 — User Story 4: tres imágenes por obra (2026-10-30)
+
+**Rama:** `phase5-tres-imagenes-por-obra`, creada desde `dev` en `58295371`. **Alcance:** preparación frontend y fixtures; no se conectó a un backend compatible con DEP-004. Estos resultados no acreditan persistencia ni existencia de tres medios en el servidor.
+
+### Evidencia local T067–T076
+
+| Comprobación | Resultado | Evidencia |
+| --- | --- | --- |
+| Pruebas focalizadas | 17/17 correctas, 6 archivos | `work-media.test.ts`, `admin-work-media.test.ts`, `WorkForm.test.tsx`, `WorkImageField.test.tsx`, `ReaderView.test.tsx`, `WorksTab.test.tsx` |
+| Suite frontend completa | 168/168 pruebas, 38 archivos | `npm.cmd run test:run` |
+| Build | Correcto | `npm.cmd run build` (TypeScript y Vite) |
+| Lint | Correcto | `npm.cmd run lint` (sin errores ni warnings) |
+| Estado del transporte de crear/editar | Bloqueado antes de HTTP | `admin-work-media.test.ts`: `createWork` y `updateWork` reportan DEP-004 y no llaman al cliente; no se inventa campo multipart |
+| Integridad del diff | Correcta al validar | `git diff --check` |
+
+Los fixtures comprueban los tres slots separados y requeridos aunque la publicación sea borrador; una obra antigua sin banner de ficha conserva sus medios conocidos, muestra el slot ausente y no reutiliza el banner de capítulo como persistencia del banner de ficha; previsualizaciones ausentes o fallidas se distinguen de referencias persistidas; MIME JPEG/PNG/WebP, límite individual inclusivo de 10 MiB y total inclusivo de 100 MiB; selección inválida bloquea pese a imagen persistida y cancelar restaura la previsualización persistida; confirmación informa únicamente el slot reemplazado. El servicio libera object URLs reemplazadas/canceladas/al desmontar. La UI explica DEP-004 y no envía guardados parciales. Un 409 simulado en `WorksTab.test.tsx` conserva el formulario montado y el borrador local, y usa el `updatedAt` recargado en el siguiente intento; no acredita comportamiento de conflicto del servidor.
+
+En el lector, el banner de capítulo aparece antes de las páginas en ambos modos. El test mantiene contador/página en 1 de 3 y no agrega un evento de apertura al cambiar el modo; se usan URLs distintas para portada, banner de ficha y banner de capítulo.
+
+### Límites de evidencia y tareas condicionales
+
+- Los escenarios de reemplazo solo validan selección/confirmación local. No se pudo guardar ni recargar un reemplazo real, comprobar conflicto de `updatedAt`, ni demostrar persistencia de tres destinos: el DTO actual solo ofrece `coverAsset` e `incapBannerAsset`, y el transporte real acepta `cover` e `inpagecover`.
+- T077 sigue pendiente mientras backend publique el tercer campo multipart/DTO y sus reglas. No marcarlo completo mediante mocks; requiere crear/editar/recargar las tres ubicaciones, reemplazo individual y conflicto real.
+- Las previews y URLs de prueba no sustituyen revisión visual en navegador ni ejecución responsiva con servidor. T078–T083 son fases posteriores.
+
+La evidencia acredita preparación frontend y límites de archivo locales. No acredita que un archivo sea aceptado por almacenamiento/servidor ni que tras recarga se conserven los tres medios.
+
 ## Phase 5 — User Story 3: recorridos existentes completos (2026-10-30)
 
 **Rama:** `phase5-recorridos-existentes-completos`; creada desde `dev` limpio y actualizado en `e8ccbb9`. **Alcance:** consumidor/frontend con fixtures locales; no se conectó a un backend de prueba. Los roles, respuestas 403 y persistencia se simularon y no demuestran autorización real.

@@ -55,6 +55,17 @@ describe('toSeries', () => {
   })
 })
 
+describe('refToSeries media semantics', () => {
+  it('does not infer a persisted detail or chapter banner from the WorkRef cover', () => {
+    expect(refToSeries({ id: 'w1', slug: 'obra', title: 'Obra', coverUrl: '/cover.png', thumbUrl: null })).toMatchObject({
+      coverUrl: '/cover.png',
+      detailBannerUrl: null,
+      chapterBannerUrl: null,
+      bannerUrl: '/cover.png',
+    })
+  })
+})
+
 describe('toChapter', () => {
   it('ordena las páginas por posición y usa publishedAt como fecha', () => {
     const dto: ChapterDto = {

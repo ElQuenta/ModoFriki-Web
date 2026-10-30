@@ -60,9 +60,9 @@ export function SeriesDetail({
     <div>
       <div className="relative">
         <div className="absolute inset-0 h-[320px] overflow-hidden sm:h-[420px]">
-          {series.bannerUrl && (
+          {(series.detailBannerUrl || series.bannerUrl) && (
             <img
-              src={series.bannerUrl}
+              src={series.detailBannerUrl || series.bannerUrl}
               alt=""
               className="size-full object-cover object-center"
             />
