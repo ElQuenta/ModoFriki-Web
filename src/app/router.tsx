@@ -12,6 +12,7 @@ import { RegisterPage } from '@/pages/RegisterPage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
 import { AdminPage } from '@/pages/AdminPage'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
+import { PublicOnlyRoute } from '@/components/auth/PublicOnlyRoute'
 
 export function AppRoutes() {
   return (
@@ -46,8 +47,22 @@ export function AppRoutes() {
           </ProtectedRoute>
         }
       />
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/register" element={<RegisterPage />} />
+      <Route
+        path="/login"
+        element={
+          <PublicOnlyRoute>
+            <LoginPage />
+          </PublicOnlyRoute>
+        }
+      />
+      <Route
+        path="/register"
+        element={
+          <PublicOnlyRoute>
+            <RegisterPage />
+          </PublicOnlyRoute>
+        }
+      />
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
   )
