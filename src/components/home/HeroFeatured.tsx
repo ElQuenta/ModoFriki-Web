@@ -1,3 +1,4 @@
+import { PUBLIC_CACHE_MS } from '@/lib/constants'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ChevronLeft, ChevronRight, Eye, Heart, Play } from 'lucide-react'
@@ -18,15 +19,21 @@ export function HeroFeatured() {
   const { isFavorite, toggleFavorite } = useLibrary()
   const reduceMotion = usePrefersReducedMotion()
   // Destacadas = las más visitadas; la ficha completa trae banner, tipo y sinopsis.
-  const { data, loading } = useAsync(async () => {
-    const popular = await listPopularWorks({ period: 'all', limit: 3 })
-    const works = await Promise.all(popular.items.map((item) => getWork(item.id)))
-    return works.map((work, position) => ({
-      ...work,
-      views: popular.items[position]?.views,
-      isFeatured: position === 0,
-    }))
-  }, 'hero-featured')
+  const { data, loading } = useAsync(
+    async () => {
+      const popular = await listPopularWorks({ period: 'all', limit: 3 })
+      const works = await Promise.all(popular.items.map((item) => getWork(item.id)))
+      return works.map((work, position) => ({
+        ...work,
+        views: popular.items[position]?.views,
+        isFeatured: position === 0,
+      }))
+    },
+    'hero-featured',
+    true,
+    undefined,
+    PUBLIC_CACHE_MS,
+  )
   const featured = data ?? []
   const count = featured.length
   const series = featured[index % Math.max(count, 1)]

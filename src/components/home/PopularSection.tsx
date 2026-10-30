@@ -1,3 +1,4 @@
+import { PUBLIC_CACHE_MS } from '@/lib/constants'
 import type { Series } from '@/types'
 import { listPopularWorks, listRecommendedWorks } from '@/services/discovery'
 import { useAsync } from '@/hooks/useAsync'
@@ -32,6 +33,9 @@ export function PopularSection() {
   const { data, loading, error, reload } = useAsync(
     () => listPopularWorks({ period: 'all', limit: 6 }),
     'popular-all-6',
+    true,
+    undefined,
+    PUBLIC_CACHE_MS,
   )
 
   if (!loading && !error && !data?.items.length) return null

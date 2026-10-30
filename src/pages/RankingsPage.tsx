@@ -1,3 +1,4 @@
+import { PUBLIC_CACHE_MS } from '@/lib/constants'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Crown, Eye, Medal, Trophy } from 'lucide-react'
 import { listPopularWorks } from '@/services/discovery'
@@ -21,6 +22,9 @@ export function RankingsPage() {
   const { data, loading, error, reload } = useAsync(
     () => listPopularWorks({ period, limit: 50 }),
     `rankings:${period}`,
+    true,
+    undefined,
+    PUBLIC_CACHE_MS,
   )
   const ranking = data?.items ?? []
   const podium = ranking.slice(0, 3)

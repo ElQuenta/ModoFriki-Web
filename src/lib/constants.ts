@@ -20,6 +20,8 @@ export const SORT_OPTIONS = [
 
 export const READER_KEY = 'modofriki_reader'
 export const PROGRESS_KEY = 'modofriki_progress'
+/** Listas públicas (novedades, rankings): mismo minuto que la caché del backend. */
+export const PUBLIC_CACHE_MS = 60_000
 export const TOKEN_KEY = 'modofriki_token'
 export const VOTES_KEY = 'modofriki_votes'
 export const UI_KEY = 'modofriki_ui'
