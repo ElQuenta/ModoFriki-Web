@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "playwright": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp@0.0.83", "--isolated", "--viewport-size", "1280x800", "--output-dir", "e2e/reports"]
+    }
+  }
+}
