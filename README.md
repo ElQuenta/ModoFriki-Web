@@ -104,5 +104,6 @@ src/
 El frontend ofrece catálogo, ficha, lector, biblioteca, comentarios y panel de
 administración según los contratos disponibles. Las capacidades aún no
 disponibles informan su estado; las pruebas con fixtures no certifican permisos
-ni persistencia del backend. El tercer medio independiente de obra sigue
-condicionado por DEP-004.
+ni persistencia del backend. El formulario ya integra portada, banner de ficha y
+banner de capítulo; la verificación de persistencia contra el servidor sigue
+pendiente.

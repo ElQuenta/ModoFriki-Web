@@ -10,21 +10,83 @@ describe('userAdminGateway', () => {
   beforeEach(() => { api.request.mockReset(); api.listWorks.mockReset(); vi.stubGlobal('fetch', vi.fn()) })
   afterEach(() => vi.unstubAllGlobals())
 
-  it('enables published DEP-001/002/007 operations and leaves sanctions unavailable', () => {
+  it('enables published user, assignment, and supported sanction operations while keeping extension unavailable', () => {
     for (const name of ['listUsers', 'getUser', 'changeRole', 'listAssignments', 'listAssignableWorks', 'assignWork', 'revokeAssignment'] as const) expect(userAdminGateway.capabilities[name].available).toBe(true)
-    for (const name of ['getSanction', 'applySanction', 'extendSanction', 'revokeSanction', 'getMyCommentRestriction', 'getManagementAccess'] as const) expect(userAdminGateway.capabilities[name].available).toBe(false)
+    for (const name of ['getSanction', 'applySanction', 'revokeSanction', 'getMyCommentRestriction'] as const) expect(userAdminGateway.capabilities[name].available).toBe(true)
+    expect(userAdminGateway.capabilities.extendSanction.available).toBe(false)
+    expect(userAdminGateway.capabilities.getManagementAccess.available).toBe(false)
   })
 
   it.each([
-    ['getSanction', () => userAdminGateway.getSanction('subject' as never)],
-    ['applySanction', () => userAdminGateway.applySanction({ subjectId: 'subject' as never, reason: 'motivo', type: 'permanent' })],
     ['extendSanction', () => userAdminGateway.extendSanction({ subjectId: 'subject' as never, endsAt: '2027-01-01T00:00:00Z' })],
-    ['revokeSanction', () => userAdminGateway.revokeSanction('subject' as never)],
-    ['getMyCommentRestriction', () => userAdminGateway.getMyCommentRestriction()],
     ['getManagementAccess', () => userAdminGateway.getManagementAccess('work' as never)],
-  ] as const)('rejects unpublished %s before HTTP', async (operation, invoke) => {
+  ] as const)('rejects unsupported %s before HTTP', async (operation, invoke) => {
     await expect(invoke()).rejects.toMatchObject({ name: 'CapabilityUnavailable', code: 'CAPABILITY_UNAVAILABLE', operation })
     expect(fetch).not.toHaveBeenCalled()
+  })
+
+  it('maps the published sanction history and preserves none versus invalid response', async () => {
+    const active = {
+      id: '00000000-0000-4000-8000-000000000021', userId: '00000000-0000-4000-8000-000000000001',
+      reason: 'spam', startsAt: '2026-10-30T12:00:00.000Z', endsAt: '2026-10-31T12:00:00.000Z',
+      permanent: false, status: 'ACTIVE', imposedById: '00000000-0000-4000-8000-000000000002',
+      revokedAt: null, revokedById: null, evidence: null,
+    }
+    api.request.mockResolvedValueOnce({ current: active, history: { items: [active], hasMore: false, nextCursor: null } })
+    await expect(userAdminGateway.getSanction(active.userId as never)).resolves.toEqual({
+      kind: 'active-temporary', id: active.id, reason: 'spam', endsAt: active.endsAt,
+    })
+    expect(api.request).toHaveBeenCalledWith(`/admin/users/${active.userId}/comment-sanctions`)
+
+    api.request.mockResolvedValueOnce({ current: null, history: { items: [], hasMore: false, nextCursor: null } })
+    await expect(userAdminGateway.getSanction(active.userId as never)).resolves.toEqual({ kind: 'none' })
+    api.request.mockResolvedValueOnce({ history: { items: [], hasMore: false, nextCursor: null } })
+    await expect(userAdminGateway.getSanction(active.userId as never)).rejects.toThrow(/historial.*inválido/i)
+  })
+
+  it('posts the published temporary and permanent payloads and maps the confirmed sanction', async () => {
+    const subjectId = '00000000-0000-4000-8000-000000000001'
+    const sanction = {
+      id: '00000000-0000-4000-8000-000000000021', userId: subjectId, reason: 'motivo',
+      startsAt: '2026-10-30T12:00:00.000Z', endsAt: null, permanent: true, status: 'ACTIVE',
+      imposedById: '00000000-0000-4000-8000-000000000002', revokedAt: null, revokedById: null, evidence: null,
+    }
+    api.request.mockResolvedValueOnce(sanction)
+    await expect(userAdminGateway.applySanction({ subjectId: subjectId as never, reason: 'motivo', type: 'permanent' })).resolves.toMatchObject({ kind: 'active-permanent', id: sanction.id })
+    expect(api.request).toHaveBeenLastCalledWith(`/admin/users/${subjectId}/comment-sanctions`, { method: 'POST', body: { reason: 'motivo', endsAt: null } })
+
+    api.request.mockReset()
+    api.request.mockResolvedValueOnce({ ...sanction, permanent: false, endsAt: '2026-11-01T00:00:00.000Z' })
+    await userAdminGateway.applySanction({ subjectId: subjectId as never, reason: 'motivo', type: 'temporary', endsAt: '2026-11-01T00:00:00.000Z' })
+    expect(api.request).toHaveBeenLastCalledWith(`/admin/users/${subjectId}/comment-sanctions`, { method: 'POST', body: { reason: 'motivo', endsAt: '2026-11-01T00:00:00.000Z' } })
+    await expect(userAdminGateway.applySanction({ subjectId: subjectId as never, reason: 'motivo', type: 'temporary' })).rejects.toThrow(/vencimiento temporal/)
+    expect(api.request).toHaveBeenCalledTimes(1)
+  })
+
+  it('revokes only the sanction returned as current and uses the backend PUT contract', async () => {
+    const subjectId = '00000000-0000-4000-8000-000000000001'
+    const sanctionId = '00000000-0000-4000-8000-000000000021'
+    api.request.mockResolvedValueOnce({ current: {
+      id: sanctionId, userId: subjectId, reason: 'motivo', startsAt: '2026-10-30T12:00:00.000Z',
+      endsAt: null, permanent: true, status: 'ACTIVE', imposedById: '00000000-0000-4000-8000-000000000002',
+      revokedAt: null, revokedById: null, evidence: null,
+    }, history: { items: [], hasMore: false, nextCursor: null } }).mockResolvedValueOnce({
+      id: sanctionId, userId: subjectId, reason: 'motivo', startsAt: '2026-10-30T12:00:00.000Z',
+      endsAt: null, permanent: true, status: 'REVOKED', imposedById: '00000000-0000-4000-8000-000000000002',
+      revokedAt: '2026-10-30T13:00:00.000Z', revokedById: '00000000-0000-4000-8000-000000000002', evidence: null,
+    })
+    await expect(userAdminGateway.revokeSanction(subjectId as never)).resolves.toMatchObject({ kind: 'revoked', id: sanctionId })
+    expect(api.request).toHaveBeenNthCalledWith(2, `/admin/users/${subjectId}/comment-sanctions/${sanctionId}/revocation`, { method: 'PUT', body: {} })
+  })
+
+  it('maps the authenticated user restriction without converting invalid data to none', async () => {
+    api.request.mockResolvedValueOnce({ active: false, reason: null, endsAt: null, permanent: false })
+    await expect(userAdminGateway.getMyCommentRestriction()).resolves.toEqual({ kind: 'none' })
+    expect(api.request).toHaveBeenLastCalledWith('/auth/me/comment-restriction')
+    api.request.mockResolvedValueOnce({ active: true, reason: 'reincidencia', endsAt: '2026-11-01T00:00:00.000Z', permanent: false })
+    await expect(userAdminGateway.getMyCommentRestriction()).resolves.toEqual({ kind: 'active-temporary', reason: 'reincidencia', endsAt: '2026-11-01T00:00:00.000Z' })
+    api.request.mockResolvedValueOnce({ active: true, reason: null, endsAt: null, permanent: true })
+    await expect(userAdminGateway.getMyCommentRestriction()).rejects.toThrow(/motivo/)
   })
 
   it('adapts cursor pages without turning unknown sanctions into none', async () => {

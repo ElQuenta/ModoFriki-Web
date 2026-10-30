@@ -1,11 +1,11 @@
 # Registro de integración y dependencias
 
-**Fecha**: 2026-10-29
+**Fecha**: 2026-10-30
 **Feature**: [spec.md](spec.md)
 
 ## Evidencia y límites
 
-Backend inspeccionado: `../ModoFriki-Backend`, rama `dev`, revisión `c6a9f18a631db992e584d5a2d04fbf49745fef5c`, árbol limpio al consultar. Se contrastaron `docs/API.md`, `openapi.yaml`, rutas registradas, esquemas Joi, controladores, servicios y repositorios. No se consultó un servidor en ejecución ni se verificó disponibilidad remota.
+Backend inspeccionado: `../ModoFriki-Backend`, rama `main`, revisión `97b3be1`, árbol limpio al consultar. Se contrastó además con la revisión previamente auditada `c6a9f18a631db992e584d5a2d04fbf49745fef5c`. No se consultó un servidor en ejecución ni se verificó disponibilidad remota.
 
 Frontend inspeccionado: servicios de auth, catálogo, administración, comunidad, descubrimiento y lectura; tipos, comentarios, formulario de obra y panel. Hay integración existente; no se presupone que haya que rehacerla. El README contiene descripciones históricas de mocks que no coinciden con el código.
 
@@ -54,7 +54,7 @@ Todas las rutas de esta tabla llevan prefijo `/api`. Las operaciones indicadas e
 
 ### Revisión de contratos administrativos — 2026-10-30
 
-Se contrastaron `../ModoFriki-Backend/docs/API.md`, `openapi.yaml`, rutas, esquemas Joi, controladores, servicios y repositorios en `dev` (revisión `c6a9f18a631db992e584d5a2d04fbf49745fef5c`). DEP-001, DEP-002 y DEP-007 cuentan con contrato publicado y rutas registradas; el cliente web las adapta en esta rama. DEP-003 publica operaciones parciales de sanciones y consulta propia, detalladas abajo. La presencia de contratos no equivale a verificación en un servidor de prueba: no se levantó ni se consultó el entorno.
+Se contrastaron `../ModoFriki-Backend/docs/API.md`, `openapi.yaml`, rutas, esquemas Joi, controladores, servicios y repositorios en `main` (revisión `97b3be1`, 2026-10-30), comparándolo con la revisión auditada anteriormente `c6a9f18`. DEP-001, DEP-002 y DEP-007 conservan sus contratos. DEP-003 ahora tiene respuestas OpenAPI detalladas; DEP-004 ya publica los tres campos independientes de obra. La adaptación frontend se registra en [validation.md](validation.md). La presencia de contratos y pruebas del backend no equivale a verificación del servidor desplegado: esta rama no levantó ni consultó el entorno de integración.
 
 El listado administrativo ofrece cursor `{createdAt,id}`, no búsqueda. La UI filtra las páginas ya cargadas y permite continuar; para verificar un sujeto se usa el GET de detalle. El listado de obras seleccionables reutiliza el contrato vigente `GET /works` con `includeDrafts=true` en sesión de personal. Los cambios de rol usan `updatedAt` como CAS y asignaciones usan `version`; para reasignar una relación revocada se envía su versión histórica, no la versión inicial `0`.
 
@@ -77,11 +77,12 @@ El listado administrativo ofrece cursor `{createdAt,id}`, no búsqueda. La UI fi
 
 ### DEP-003 — Sanciones de comentarios y estado del afectado
 
-- **Estado (revisión 2026-10-30, backend `c6a9f18`)**: Contrato parcial publicado. Rutas: `GET`/`POST /api/admin/users/:userId/comment-sanctions`, `PUT /api/admin/users/:userId/comment-sanctions/:sanctionId/revocation` y consulta propia `GET /api/auth/me/comment-restriction`. Rutas administrativas protegidas por ADMIN. No se encontró operación de extensión temporal. No equivale a verificación del servidor en ejecución.
+- **Estado (backend `97b3be1`)**: Publicados `GET`/`POST /api/admin/users/:userId/comment-sanctions`, `PUT /api/admin/users/:userId/comment-sanctions/:sanctionId/revocation` y consulta propia `GET /api/auth/me/comment-restriction`. OpenAPI detalla DTO, paginación y errores; Joi limita el motivo a 2000 caracteres, acepta vencimiento UTC ISO con milisegundos o `null` permanente, y permite evidencia opcional de comentario/reporte. Rutas administrativas protegidas por ADMIN. No hay operación de extensión temporal. No equivale a verificación del servidor desplegado.
 - **Afecta**: FR-008 a FR-012; historia 2.
 - **Responsable de resolución**: Backend, con confirmación del alcance de moderación por producto.
 - **Contrato verificado en código**: crear con motivo no vacío (Joi hasta 2000 caracteres), fin ISO o `null` permanente; historial paginado por cursor y estado activo/revocado/vencido; retirada por endpoint dedicado; consulta propia devuelve `active`, `reason`, `endsAt`, `permanent`. El rechazo de sanción en creación de comentarios está implementado en el backend.
-- **Pendiente**: no hay extensión temporal publicada; falta verificar si edición de comentarios está bloqueada, y probar creación/respuesta/edición y permisos en servidor real. El contrato y estos hallazgos no acreditan disponibilidad remota.
+- **Frontend**: `getSanction`, `applySanction`, `revokeSanction` y `getMyCommentRestriction` se adaptan al contrato; extensión y management access permanecen indisponibles antes de HTTP.
+- **Pendiente**: no hay extensión temporal publicada; falta verificar si edición de comentarios está bloqueada, y probar creación/respuesta/edición, persistencia y permisos en servidor real. El contrato y las pruebas unitarias no acreditan disponibilidad remota.
 - **Regla de producto confirmada**: Respuesta A del usuario: impedir crear, responder y editar comentarios propios; conservar lectura, login, votos, reportes y permiso existente de eliminar comentarios propios, sin retirada automática de comentarios previos. Es una sanción de comentarios independiente del estado SUSPENDED de la cuenta; no se debe reutilizar este estado para implementarla. Backend debe aplicar la restricción, no solo la interfaz.
 - **Destinatarios confirmados**: Solo BASIC y EDITOR. No se admite aplicar, extender ni quitar sanciones de cuentas ADMIN desde el panel, incluida la cuenta propia; un estado histórico puede consultarse sin dar permiso para modificarlo. Se debe comprobar el rol vigente también si cambia mientras un modal está abierto.
 - **Necesario además**: validar semántica de vencimiento y concurrencia en runtime, y comprobar auditoría autoritativa y privacidad del motivo con los permisos confirmados. No inventar operación de extensión temporal.
@@ -90,14 +91,13 @@ El listado administrativo ofrece cursor `{createdAt,id}`, no búsqueda. La UI fi
 
 ### DEP-004 — Tres imágenes independientes de obra
 
-- **Estado**: Solo existen archivos `cover` e `inpagecover`; el detalle devuelve `coverAsset` e `incapBannerAsset`. El segundo es la imagen inicial compartida por capítulos. Frontend lo usa también como `bannerUrl` de ficha, por lo que hoy no existen tres campos independientes.
+- **Estado (backend `97b3be1`; soporte ya existía en `c6a9f18`)**: Hay tres campos independientes: multipart `cover`, `banner` e `inpagecover`; el DTO devuelve `coverAsset`, `bannerAsset` e `incapBannerAsset`. El banner de ficha y el banner inicial compartido por capítulos son assets separados. La auditoría anterior de esta dependencia pasó por alto el campo existente.
 - **Afecta**: FR-018 a FR-021; historia 4.
 - **Responsable de resolución**: Backend para contrato y persistencia; frontend para formulario y destinos visuales.
-- **Necesario**: Tercer campo persistido para banner de ficha, nombre definitivo de multipart y DTO, conservación/reemplazo independiente, respuesta de errores y tratamiento de obras antiguas. Mantener el significado del banner de capítulo existente.
-- **Cambio de validación**: El contrato actual permite borradores sin imágenes y exige portada para publicar; la especificación exige las tres al crear y guardar, incluso borradores. El plan debe registrar este cambio explícito y coordinarlo, sin modificar la constitución silenciosamente ni implementar el backend en esta entrega.
-- **Transición**: Hasta disponer del tercer campo, la preparación de este flujo impide enviar el guardado de obras y explica su indisponibilidad; se conservan consulta y lectura. No se envían tres imágenes a campos de dos ni se declara exitosa una operación parcial. El banner de ficha nuevo no es el banner general de plataforma descrito en el vault.
-- **Límites actuales de referencia**: JPEG, PNG o WebP, 10 MiB por imagen, 100 MiB por solicitud; servidor valida contenido. Confirmar que el tercer campo siga esos límites.
-- **Desbloqueo**: Crear/editar con tres imágenes y recargar cada destino; comprobar reemplazo de solo una, conservación de las otras, validación de faltantes y conflicto de edición.
+- **Contrato verificado en código**: El backend recibe y conserva los tres campos; edición sin archivo mantiene cada asset y la respuesta incluye sus DTO independientes. La publicación exige portada, banner y banner de capítulo (con exención heredada para algunas obras antiguas). Los borradores no están obligados por backend a tener los tres medios.
+- **Regla frontend**: La especificación exige los tres al crear/guardar, también en borradores. La UI los valida y envía con los nombres publicados; esta validación de borradores es una política del cliente hasta que producto/backend acuerden enforcement servidor.
+- **Límites actuales**: JPEG, PNG o WebP, 10 MiB por archivo y 100 MiB por solicitud; backend valida contenido.
+- **Pendiente**: comprobar en un servidor integrado crear/editar/recargar los tres destinos, reemplazo único, obra antigua y conflicto de edición. El banner de ficha no es el banner general de plataforma del vault.
 
 ### DEP-005 — Operaciones históricas no registradas
 

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { z } from 'zod'
 import { ApiError, errorMessage } from '@/lib/api'
@@ -28,7 +28,8 @@ export function SanctionDialog({
 }) {
   const { user, revalidateSession, revalidating } = useAuth()
   const zone = accountTimeZone(user?.timezone)
-  const current = subject?.sanction
+  const [loadedSanction, setLoadedSanction] = useState<{ subjectId: string; status: SanctionStatus }>()
+  const current: SanctionStatus = subject && loadedSanction?.subjectId === subject.id ? loadedSanction.status : { kind: 'unknown' }
   const active = current?.kind === 'active-temporary' || current?.kind === 'active-permanent'
   const [type, setType] = useState<'temporary' | 'permanent'>('temporary')
   const [date, setDate] = useState('')
@@ -42,8 +43,24 @@ export function SanctionDialog({
   const [activeAction, setActiveAction] = useState<'revoke' | 'extend'>('revoke')
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string>()
+  const [loadError, setLoadError] = useState<{ subjectId: string; message: string }>()
   const [fieldError, setFieldError] = useState<string>()
   const [confirmDiscard, setConfirmDiscard] = useState(false)
+  useEffect(() => {
+    let currentRequest = true
+    if (!open || !subject || !gateway.capabilities.getSanction.available) return () => { currentRequest = false }
+    void gateway.getSanction(subject.id).then((status) => {
+      if (currentRequest) setLoadedSanction({ subjectId: subject.id, status })
+    }).catch((cause: unknown) => {
+      if (currentRequest) setLoadError({ subjectId: subject.id, message: errorMessage(cause, 'No pudimos consultar la sanción vigente.') })
+    })
+    return () => { currentRequest = false }
+  }, [open, subject, gateway])
+  const visibleError = error ?? (subject && loadError?.subjectId === subject.id
+    ? loadError.message
+    : open && subject && !gateway.capabilities.getSanction.available
+      ? 'No se puede consultar el estado vigente de la sanción.'
+      : undefined)
   const available = active
     ? activeAction === 'extend'
       ? current?.kind === 'active-temporary' && gateway.capabilities.extendSanction.available
@@ -98,6 +115,7 @@ export function SanctionDialog({
         } else {
           updated = await gateway.revokeSanction(subject.id)
         }
+        setLoadedSanction({ subjectId: subject.id, status: updated })
         onSaved(updated)
         onClose()
       } catch (cause) {
@@ -134,6 +152,7 @@ export function SanctionDialog({
         ? { subjectId: subject.id, reason: reason.trim(), type: 'permanent' as const }
         : { subjectId: subject.id, reason: reason.trim(), type: 'temporary' as const, endsAt: endsAt! }
       const updated = await gateway.applySanction(input)
+      setLoadedSanction({ subjectId: subject.id, status: updated })
       onSaved(updated)
       onClose()
     } catch (cause) {
@@ -163,11 +182,11 @@ export function SanctionDialog({
           {candidates.length ? <div><label className={labelClass} htmlFor="sanction-offset">Hora ambigua; selecciona desfase</label><select id="sanction-offset" className={inputClass} value={offset} onChange={(e) => setOffset(e.target.value)}><option value="">Seleccionar</option>{candidates.map((candidate) => <option key={candidate.offset} value={candidate.offset}>{candidate.offset} · {new Date(candidate.instant).toLocaleString('es', { timeZone: 'UTC' })}</option>)}</select></div> : null}
           <p className="text-muted text-xs">La fecha se interpreta en {zone}; la hora debe existir y ser futura.</p>
         </> : null}
-        <div><label className={labelClass} htmlFor="sanction-reason">Motivo</label><textarea id="sanction-reason" className={textareaClass} rows={3} {...register('reason')} aria-describedby={fieldError ? 'sanction-error' : undefined} /></div>
+        <div><label className={labelClass} htmlFor="sanction-reason">Motivo</label><textarea id="sanction-reason" className={textareaClass} rows={3} maxLength={2000} {...register('reason')} aria-describedby={fieldError ? 'sanction-error' : undefined} /></div>
       </>}
       {fieldError ? <p id="sanction-error" role="alert" className="text-danger text-sm">{fieldError}</p> : null}
       {!available ? <p role="status" className="text-secondary rounded-xl bg-raised p-3 text-sm">Esta operación todavía no está disponible porque falta el contrato correspondiente. No se enviará ninguna solicitud.</p> : null}
-      {error ? <p role="alert" className="text-danger text-sm">{error}</p> : null}
+      {visibleError ? <p role="alert" className="text-danger text-sm">{visibleError}</p> : null}
       <div className="rounded-xl border border-line p-3 text-sm"><strong>Confirmación:</strong> {active ? `${activeAction === 'extend' ? `extender la sanción de ${subject.username} hasta ${resolved?.kind === 'resolved' ? formatInstantInZone(resolved.candidate.instant, zone) : 'una fecha pendiente'}` : `retirar la sanción de ${subject.username}`}` : `${type === 'temporary' ? 'temporal' : 'permanente'} para ${subject.username}; vencimiento: ${preview}`}</div>
       <div className="flex justify-end gap-2"><Button variant="secondary" disabled={pending} onClick={requestClose}>Cancelar</Button><Button variant={activeAction === 'revoke' && active ? 'danger' : 'primary'} disabled={!allowed || !available || pending || revalidating} onClick={() => void handleSubmit(() => submit())()}>{pending || revalidating ? 'Verificando…' : active ? activeAction === 'extend' ? 'Confirmar extensión' : 'Retirar sanción' : 'Confirmar sanción'}</Button></div>
       </>}
@@ -179,6 +198,7 @@ function validationMessage(error: string) {
   const messages: Record<string, string> = {
     'subject-required': 'Selecciona una cuenta.',
     'reason-required': 'Escribe un motivo.',
+    'reason-too-long': 'El motivo no puede superar los 2000 caracteres.',
     'ends-at-required': 'Indica el vencimiento.',
     'ends-at-invalid': 'El vencimiento no es válido.',
     'ends-at-not-future': 'El vencimiento debe ser posterior al momento actual.',

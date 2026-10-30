@@ -40,7 +40,7 @@ Se conservan React, Router, Hook Form, Zod, el cliente HTTP y UI compartida. La 
 | II — Evolución incremental | Pasa: aplicación y dependencias inspeccionadas | Pasa: servicios/hook/UI actuales, sin migración de arquitectura; parser nuevo justificado |
 | III — Contratos | Pasa condicionado a mantener bloqueos explícitos | Pasa para preparación: puertos locales, adaptadores pendientes sin HTTP inventado; activación real requiere contratos DEP-001/002/003/004/007 |
 | IV — Identidad y permisos | Discrepancia de eliminación resuelta por usuario | Pasa para diseño: política de ADMIN exclusivo explícita; servidor actual pendiente DEP-006; visibilidad no prueba asignación |
-| V — Medios y conflictos | Cambio explícito de tres imágenes obligatorio autorizado | Pasa para diseño: guardado bloqueado hasta DEP-004, precondiciones conservadas, confirmación de reemplazo; sin purga física |
+| V — Medios y conflictos | Cambio explícito de tres imágenes obligatorio autorizado | Integrado en frontend con campos independientes; el backend exige los tres al publicar y permite borradores incompletos. Persistencia real pendiente de T077; sin purga física |
 | VI — Lectura y actividad | Pasa: separar remoto/local | Pasa: banner fuera de páginas, claves por cuenta, eventos idempotentes conservados |
 | VII — Diseño y acceso | Pasa: tokens y componentes reutilizados | Pasa: mejorar modal compartido y etiquetas; teclado, foco y movimiento reducido medibles |
 | VIII — Comunidad y privacidad | Pasa: sanitización obligatoria | Pasa: parser AST, HTML deshabilitado, enlaces restringidos, sin nueva autoridad local |
@@ -116,7 +116,7 @@ Restringir eliminar capítulo a ADMIN tanto en botón como handler de frontend. 
 
 ### 3. Obras e imágenes
 
-Separar slots portada/banner ficha/banner capítulo. Remapear el DTO actual para que incap sea banner de capítulo, sin duplicarlo como medio persistido de ficha. Mantener fallback visual de contenido antiguo separado de validación. Validar tres slots incluso DRAFT; mostrar previews, conservar sin resubir y confirmar cada reemplazo al guardar. El nuevo campo multipart depende de DEP-004 y no se elige por conjetura.
+Separar slots portada/banner ficha/banner capítulo. Mapear `bannerAsset` e `incapBannerAsset` a slots distintos. Mantener fallback visual de contenido antiguo separado de validación. Validar tres slots incluso DRAFT; mostrar previews, conservar sin resubir y confirmar cada reemplazo al guardar. Enviar los nombres multipart publicados `cover`, `banner`, `inpagecover`; contrastar persistencia y conflictos en T077.
 
 Bloquear únicamente guardado de obra que requiere el contrato de tres imágenes hasta que exista; explicar indisponibilidad y conservar consulta/lectura. Banner de capítulo al inicio del lector sin cambiar numeración, página exacta o evento de lectura. Las subidas siguen servicios/admin.ts y precondiciones, sin limpiar Blob desde frontend.
 
@@ -144,7 +144,7 @@ No copiar límites de motivo de reportes a sanciones; el contrato pendiente fija
 | B — Comentarios | Dependencias Markdown fijadas, plugin, renderer y editor único, carga robusta y conflictos | Contrato actual permite Markdown almacenado; sanciones reales aún DEP-003 |
 | C — Integración disponible | Paginación, novedades, calendario, progreso/favoritos y regresiones del lector | Endpoints existentes y entorno real de prueba para evidencia E2E |
 | D — Administración preparada | Usuarios, roles, sanciones y asignaciones con proveedor tipado y tests aislados; indisponibilidad normal | DEP-001/002/003/007 para activar HTTP real; eliminación ADMIN en frontend sin esperar DEP-006 |
-| E — Tres medios preparados | Slots y destinos separados, previews, validación y confirmación | Guardado real bloqueado por DEP-004; lectura sigue operativa |
+| E — Tres medios preparados | Slots y destinos separados, previews, validación, confirmación y adaptador multipart | Adaptación de frontend verificada localmente; lectura sigue operativa y persistencia real pendiente T077 |
 | F — Activación y cierre real | Adaptación y verificación independientes para listado, roles, sanciones y asignaciones; matriz por operación | Cada pareja avanza al resolverse su propia DEP/entorno; el cierre E2E global exige todas las capacidades requeridas |
 
 Se pueden desarrollar B/C y preparación D/E con independencia de que el servidor publique sus contratos. No se ejecutan cambios del backend ni se ocultan sus bloqueos. `$speckit-tasks` deberá dividir por archivo y separar trabajo implementable de activaciones externas.

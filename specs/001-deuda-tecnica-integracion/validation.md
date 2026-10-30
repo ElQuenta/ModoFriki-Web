@@ -1,12 +1,26 @@
 # Evidencia de validación
 
+## Adaptación de contratos backend — rama `fix/backend-contracts-integration` (2026-10-30)
+
+Esta rama parte de `dev`. La inspección de `ModoFriki-Backend/main` (`97b3be1`) encontró contratos publicados que la auditoría anterior no había reflejado completamente. Se regeneró `src/types/api.generated.ts` desde OpenAPI y se adaptó el cliente:
+
+- DEP-003: GET/POST de sanciones, revocación y consulta propia; validación de motivo de hasta 2000 caracteres, fechas temporales y estados devueltos. La interfaz consulta el estado vigente. La extensión sigue deshabilitada porque el backend no publica esa operación.
+- DEP-004: envío multipart `cover`, `banner` e `inpagecover`; lectura de `coverAsset`, `bannerAsset` e `incapBannerAsset`; el banner de ficha se mapea por separado y detalle de capítulo usa `CatalogChapterDetail`. La UI mantiene los tres medios requeridos por la regla de producto, incluidos borradores.
+- Cobertura local: 41 pruebas focalizadas y suite completa 169/169 en 38 archivos; `npm.cmd run build` y `npm.cmd run lint` correctos.
+
+La adaptación valida el contrato y el comportamiento del cliente, no la disponibilidad del backend remoto. No se levantó servidor ni se verificaron persistencia, permisos, expiración, conflicto real o bloqueo de comentarios. T046 y T077 siguen pendientes hasta registrar evidencia con backend integrado; no hay endpoint de extensión, así que esa operación no puede comprobarse sin cambio contractual.
+
 ## Phase 7 — Polish y preocupaciones transversales (2026-10-30)
 
 **Rama:** `phase7-polish-cross-cutting-concerns`, descendiente de `phase6-tres-imagenes-por-obra`; Phase 6 parte de `dev` en `5829537`. **Alcance:** revisión documental, pruebas frontend locales y clasificación de dependencias. No se conectó backend de prueba ni navegador E2E en este entorno.
 
 ### T078 — Accesibilidad y responsive
 
-La revisión estática encontró pruebas jsdom de foco inicial, confinamiento/retorno y cierre seguro en `src/components/ui/modal.test.tsx`, asociación de etiqueta/ayuda/error en `src/components/admin/Field.test.tsx`, `:focus-visible` y reduced motion en estilos globales, además de tests de interacciones del editor. No hay herramientas de navegador/Playwright MCP conectadas a esta sesión (aunque `.mcp.json` documente su configuración), así que no fue posible recorrer teclado en navegador ni comprobar layout, scroll local y reduced motion a 360/1280 px. T078 permanece pendiente de esa comprobación manual; no se afirma cumplimiento visual completo.
+La revisión estática encontró pruebas jsdom de foco inicial, confinamiento/retorno y cierre seguro en `src/components/ui/modal.test.tsx`, asociación de etiqueta/ayuda/error en `src/components/admin/Field.test.tsx`, `:focus-visible` y reduced motion en estilos globales, además de tests de interacciones del editor. En esta sesión Playwright MCP está disponible, pero su servidor no pudo iniciar porque falta Chrome en `C:\Users\fredd\AppData\Local\Google\Chrome\Application\chrome.exe` (mensaje del navegador: ejecutar `npx playwright install chrome`). Por tanto no se pudo hacer recorrido visual/teclado en navegador ni medir layout, scroll local o reduced motion a 360/1280 px. La evidencia previa de jsdom y CSS no sustituye esa revisión; T078 permanece pendiente.
+
+### T024 — Rendimiento de la vista previa
+
+Pendiente de medición conforme al protocolo: build de producción, Chromium estable, CPU 4x, cinco calentamientos, 30 muestras de fuente de 10 000 unidades tras pausa de 150 ms. No se ejecutó una medición alternativa como si fuera equivalente, porque el Chromium requerido no está instalado y el navegador de Playwright no inició. T024 sigue sin marcarse; no hay p95 válido ni base para ajustar el parser.
 
 ### T079 — Privacidad y aislamiento
 

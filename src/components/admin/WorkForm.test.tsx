@@ -39,7 +39,7 @@ describe('WorkForm independent media slots', () => {
     Object.defineProperty(URL, 'revokeObjectURL', { configurable: true, value: vi.fn() })
   })
 
-  it('requires all three image slots even for a draft and keeps transport blocked', async () => {
+  it('requires all three image slots for a draft and submits them using the backend multipart fields', async () => {
     const onSubmit = vi.fn()
     render(<WorkForm onSubmit={onSubmit} onCancel={vi.fn()} />)
     fillRequiredText()
@@ -47,8 +47,12 @@ describe('WorkForm independent media slots', () => {
       fireEvent.change(screen.getByLabelText(label), { target: { files: [image(`${label}.png`)] } })
     }
     fireEvent.click(screen.getByRole('button', { name: 'Crear obra' }))
-    expect(await screen.findByRole('alert')).toHaveTextContent(/servidor admita los tres medios/)
-    expect(onSubmit).not.toHaveBeenCalled()
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({ title: 'Obra de prueba', publicationStatus: 'DRAFT' }),
+      expect.objectContaining({
+        cover: expect.any(File), banner: expect.any(File), inpagecover: expect.any(File),
+      }),
+    ))
     expect(screen.getAllByRole('img', { name: /^Vista previa:/ })).toHaveLength(3)
   })
 
@@ -66,8 +70,10 @@ describe('WorkForm independent media slots', () => {
     expect(await screen.findByRole('group', { name: 'Confirmar reemplazo de medios' })).toHaveTextContent('Portada')
     expect(screen.getByRole('group', { name: 'Confirmar reemplazo de medios' })).not.toHaveTextContent('Banner de ficha, Banner de capítulo')
     fireEvent.click(screen.getByRole('button', { name: 'Confirmar reemplazos' }))
-    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent(/DEP-004/))
-    expect(onSubmit).not.toHaveBeenCalled()
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({ title: 'Obra existente' }),
+      { cover: expect.any(File) },
+    ))
     expect(screen.getByRole('img', { name: 'Vista previa: Banner de ficha' })).toHaveAttribute('src', mediaRefs.detailBannerMedia.url)
     expect(screen.getByRole('img', { name: 'Vista previa: Banner de capítulo' })).toHaveAttribute('src', mediaRefs.chapterBannerMedia.url)
   })
@@ -92,15 +98,17 @@ describe('WorkForm independent media slots', () => {
       bannerUrl: mediaRefs.chapterBannerMedia.url,
     }
     render(<WorkForm work={legacy} onSubmit={onSubmit} onCancel={vi.fn()} />)
-    expect(screen.getByText(/DEP-004/)).toHaveTextContent(/tres medios independientes/)
+    expect(screen.getByText(/Esta interfaz los requiere también para los borradores/)).toBeInTheDocument()
     expect(screen.getByRole('img', { name: 'Vista previa: Portada' })).toHaveAttribute('src', mediaRefs.coverMedia.url)
     expect(screen.getByText('Sin medio guardado ni vista previa.')).toBeInTheDocument()
     expect(screen.queryByRole('img', { name: 'Vista previa: Banner de ficha' })).not.toBeInTheDocument()
 
     fireEvent.change(screen.getByLabelText('Banner de ficha'), { target: { files: [image('detail-banner.webp', 'image/webp')] } })
     fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }))
-    expect(await screen.findByRole('alert')).toHaveTextContent(/DEP-004/)
-    expect(onSubmit).not.toHaveBeenCalled()
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({ title: 'Obra existente' }),
+      { banner: expect.any(File) },
+    ))
   })
 
 })

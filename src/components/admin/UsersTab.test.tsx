@@ -25,8 +25,10 @@ const account = (id: string, username: string, role: AdminUser['role'], kind: Ad
 describe('UsersTab', () => {
   it('lists only injected server-style rows and keeps unknown distinct from no sanction', async () => {
     const users = [account('reader-id', 'ana', 'BASIC', 'unknown')]
+    const getSanction = vi.fn().mockResolvedValue({ kind: 'none' })
     const gateway = createFakeUserAdminGateway({
       listUsers: vi.fn().mockResolvedValue({ items: users, nextCursor: null }),
+      getSanction,
     })
     render(<UsersTab gateway={gateway} />)
 
@@ -34,6 +36,8 @@ describe('UsersTab', () => {
     expect(screen.getByText('Estado no disponible')).toBeInTheDocument()
     expect(screen.queryByText('Sin sanción')).not.toBeInTheDocument()
     expect(gateway.listUsers).toHaveBeenCalledWith({ limit: 20 })
+    fireEvent.click(screen.getByRole('button', { name: 'Consultar sanción' }))
+    await waitFor(() => expect(getSanction).toHaveBeenCalledWith('reader-id'))
   })
 
   it('does not show mutation actions for the acting account or an ADMIN subject', async () => {

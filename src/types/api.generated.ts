@@ -4,6 +4,259 @@
  */
 
 export interface paths {
+    "/api/admin/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Listar cuentas administrables
+         * @description cursorCreatedAt y cursorId deben enviarse juntos. Excluye cuentas eliminadas y datos privados.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    limit?: number;
+                    role?: components["schemas"]["Role"];
+                    status?: "ACTIVE" | "SUSPENDED";
+                    cursorCreatedAt?: string;
+                    cursorId?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                200: components["responses"]["AdminUserPage"];
+                400: components["responses"]["BadRequest"];
+                401: components["responses"]["Unauthorized"];
+                403: components["responses"]["Forbidden"];
+                503: components["responses"]["ServiceUnavailable"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/users/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Obtener cuenta y token CAS actual */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    userId: components["parameters"]["AdminUserId"];
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                200: components["responses"]["AdminUserResult"];
+                400: components["responses"]["BadRequest"];
+                401: components["responses"]["Unauthorized"];
+                403: components["responses"]["Forbidden"];
+                404: components["responses"]["NotFound"];
+                503: components["responses"]["ServiceUnavailable"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/users/{userId}/role": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Cambiar rol BASIC o EDITOR
+         * @description La degradación a BASIC revoca y audita atómicamente todas las asignaciones activas.
+         */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    userId: components["parameters"]["AdminUserId"];
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        role: "BASIC" | "EDITOR";
+                        /**
+                         * Format: date-time
+                         * @example 2026-10-30T12:00:00.000Z
+                         */
+                        expectedUpdatedAt: string;
+                    };
+                };
+            };
+            responses: {
+                200: components["responses"]["AdminUserResult"];
+                400: components["responses"]["BadRequest"];
+                401: components["responses"]["Unauthorized"];
+                403: components["responses"]["Forbidden"];
+                404: components["responses"]["NotFound"];
+                409: components["responses"]["Conflict"];
+                503: components["responses"]["ServiceUnavailable"];
+            };
+        };
+        trace?: never;
+    };
+    "/api/admin/users/{userId}/work-assignments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Listar asignaciones editoriales */
+        get: {
+            parameters: {
+                query?: {
+                    limit?: number;
+                    includeRevoked?: boolean;
+                    cursorCreatedAt?: string;
+                    cursorId?: string;
+                };
+                header?: never;
+                path: {
+                    userId: components["parameters"]["AdminUserId"];
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                200: components["responses"]["AdminAssignmentPage"];
+                400: components["responses"]["BadRequest"];
+                401: components["responses"]["Unauthorized"];
+                403: components["responses"]["Forbidden"];
+                404: components["responses"]["NotFound"];
+                503: components["responses"]["ServiceUnavailable"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/users/{userId}/work-assignments/{workId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Asignar editor activo a una obra */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    userId: components["parameters"]["AdminUserId"];
+                    workId: components["parameters"]["AdminWorkId"];
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        expectedVersion: number;
+                    };
+                };
+            };
+            responses: {
+                200: components["responses"]["AdminAssignmentResult"];
+                400: components["responses"]["BadRequest"];
+                401: components["responses"]["Unauthorized"];
+                403: components["responses"]["Forbidden"];
+                404: components["responses"]["NotFound"];
+                409: components["responses"]["Conflict"];
+                503: components["responses"]["ServiceUnavailable"];
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/users/{userId}/work-assignments/{workId}/revocation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Revocar asignación editorial */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    userId: components["parameters"]["AdminUserId"];
+                    workId: components["parameters"]["AdminWorkId"];
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        expectedVersion: number;
+                    };
+                };
+            };
+            responses: {
+                200: components["responses"]["AdminAssignmentResult"];
+                400: components["responses"]["BadRequest"];
+                401: components["responses"]["Unauthorized"];
+                403: components["responses"]["Forbidden"];
+                404: components["responses"]["NotFound"];
+                409: components["responses"]["Conflict"];
+                503: components["responses"]["ServiceUnavailable"];
+            };
+        };
+        trace?: never;
+    };
     "/api/works/{workId}/visits": {
         parameters: {
             query?: never;
@@ -882,7 +1135,10 @@ export interface paths {
         post: {
             parameters: {
                 query?: never;
-                header?: never;
+                header?: {
+                    /** @description UUID v4 opcional; misma solicitud reproduce el comentario actual, otra solicitud con la misma clave devuelve 409. */
+                    "Idempotency-Key"?: string;
+                };
                 path?: never;
                 cookie?: never;
             };
@@ -905,7 +1161,10 @@ export interface paths {
                 201: components["responses"]["CommentResult"];
                 400: components["responses"]["BadRequest"];
                 401: components["responses"]["Unauthorized"];
+                403: components["responses"]["Forbidden"];
                 404: components["responses"]["NotFound"];
+                409: components["responses"]["Conflict"];
+                503: components["responses"]["ServiceUnavailable"];
             };
         };
         delete?: never;
@@ -1406,6 +1665,8 @@ export interface paths {
                         /** Format: binary */
                         cover?: string;
                         /** Format: binary */
+                        banner?: string;
+                        /** Format: binary */
                         inpagecover?: string;
                     };
                 };
@@ -1626,6 +1887,8 @@ export interface paths {
                         /** Format: binary */
                         cover?: string;
                         /** Format: binary */
+                        banner?: string;
+                        /** Format: binary */
                         inpagecover?: string;
                     };
                 };
@@ -1832,6 +2095,8 @@ export interface paths {
                         expectedUpdatedAt: string;
                         /** Format: binary */
                         cover?: string;
+                        /** Format: binary */
+                        banner?: string;
                         /** Format: binary */
                         inpagecover?: string;
                     };
@@ -2160,7 +2425,7 @@ export interface paths {
                             success: boolean;
                             /** @example 200 */
                             code: number;
-                            data: components["schemas"]["CatalogChapter"];
+                            data: components["schemas"]["CatalogChapterDetail"];
                         };
                     };
                 };
@@ -3197,10 +3462,233 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/auth/me/comment-restriction": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Restricción vigente del usuario autenticado */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Restricción propia; no expone actor, evidencia ni historial */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {boolean} */
+                            success: true;
+                            /** @enum {integer} */
+                            code: 200;
+                            data: components["schemas"]["CommentRestriction"];
+                        };
+                    };
+                };
+                401: components["responses"]["Unauthorized"];
+                503: components["responses"]["ServiceUnavailable"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/users/{userId}/comment-sanctions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: components["parameters"]["AdminUserId"];
+            };
+            cookie?: never;
+        };
+        /** Historial de restricciones de comentarios */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description ISO UTC, junto con cursorId o ambos ausentes */
+                    cursorCreatedAt?: components["parameters"]["CursorCreatedAt"];
+                    cursorId?: components["parameters"]["CursorId"];
+                    limit?: components["parameters"]["CursorLimit"];
+                };
+                header?: never;
+                path: {
+                    userId: components["parameters"]["AdminUserId"];
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Restricción actual independiente del cursor e historial paginado */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {boolean} */
+                            success: true;
+                            /** @enum {integer} */
+                            code: 200;
+                            data: components["schemas"]["CommentSanctionHistory"];
+                        };
+                    };
+                };
+                400: components["responses"]["BadRequest"];
+                401: components["responses"]["Unauthorized"];
+                403: components["responses"]["Forbidden"];
+                404: components["responses"]["NotFound"];
+                503: components["responses"]["ServiceUnavailable"];
+            };
+        };
+        put?: never;
+        /** Imponer una restricción de comentarios */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    userId: components["parameters"]["AdminUserId"];
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** @description Se recortan espacios exteriores; no puede quedar vacío. */
+                        reason: string;
+                        /**
+                         * Format: date-time
+                         * @description UTC con milisegundos; futuro según reloj SQL. null significa permanente.
+                         */
+                        endsAt: string | null;
+                        evidence?: components["schemas"]["CommentSanctionEvidence"];
+                    };
+                };
+            };
+            responses: {
+                201: components["responses"]["CommentSanctionCreated"];
+                400: components["responses"]["BadRequest"];
+                401: components["responses"]["Unauthorized"];
+                403: components["responses"]["Forbidden"];
+                404: components["responses"]["NotFound"];
+                409: components["responses"]["Conflict"];
+                503: components["responses"]["ServiceUnavailable"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/users/{userId}/comment-sanctions/{sanctionId}/revocation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: components["parameters"]["AdminUserId"];
+                sanctionId: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /** Revocar una restricción concreta */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    userId: components["parameters"]["AdminUserId"];
+                    sanctionId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": Record<string, never>;
+                };
+            };
+            responses: {
+                200: components["responses"]["CommentSanctionResult"];
+                400: components["responses"]["BadRequest"];
+                401: components["responses"]["Unauthorized"];
+                403: components["responses"]["Forbidden"];
+                404: components["responses"]["NotFound"];
+                503: components["responses"]["ServiceUnavailable"];
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        CommentSanctionEvidence: {
+            /** @enum {string} */
+            type: "COMMENT" | "REPORT";
+            /** Format: uuid */
+            id: string;
+        };
+        CommentRestriction: {
+            active: boolean;
+            reason: string | null;
+            /** Format: date-time */
+            endsAt: string | null;
+            permanent: boolean;
+        };
+        CommentSanction: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            userId: string;
+            reason: string;
+            /** Format: date-time */
+            startsAt: string;
+            /** Format: date-time */
+            endsAt: string | null;
+            permanent: boolean;
+            /** @enum {string} */
+            status: "ACTIVE" | "EXPIRED" | "REVOKED";
+            /** Format: uuid */
+            imposedById: string;
+            /** Format: date-time */
+            revokedAt: string | null;
+            /** Format: uuid */
+            revokedById: string | null;
+            evidence: components["schemas"]["CommentSanctionEvidence"] | null;
+        };
+        CommentSanctionHistory: {
+            current: components["schemas"]["CommentSanction"] | null;
+            history: {
+                items: components["schemas"]["CommentSanction"][];
+                hasMore: boolean;
+                nextCursor: {
+                    /** Format: date-time */
+                    createdAt: string;
+                    /** Format: uuid */
+                    id: string;
+                } | null;
+            };
+        };
         Taxonomy: {
             /** Format: uuid */
             id: string;
@@ -3246,6 +3734,8 @@ export interface components {
             visitsCount: number;
             type: components["schemas"]["Taxonomy"];
             coverAsset: components["schemas"]["CatalogMediaAsset"] | null;
+            /** @description Banner de ficha; no se incluye en la secuencia de lectura. */
+            bannerAsset: components["schemas"]["CatalogMediaAsset"] | null;
             /** @description Miniatura WebP de 300 px; null hasta que corre media:thumbnails. */
             coverThumbAsset: components["schemas"]["CatalogMediaAsset"] | null;
             incapBannerAsset: components["schemas"]["CatalogMediaAsset"] | null;
@@ -3267,6 +3757,7 @@ export interface components {
                 genre: components["schemas"]["Taxonomy"];
             }[];
         };
+        /** @description Página editorial ordinaria. Un mensaje final, si existe, es simplemente la última página de esta colección. */
         CatalogPage: {
             /** Format: uuid */
             id: string;
@@ -3297,6 +3788,18 @@ export interface components {
             publishedAt: string | null;
             pages: components["schemas"]["CatalogPage"][];
         };
+        CatalogChapterDetail: components["schemas"]["CatalogChapter"] & {
+            readingImages: components["schemas"]["ChapterReadingImages"];
+        };
+        /** @description Apertura compartida opcional seguida por las páginas editoriales; pages no se modifica. */
+        ChapterReadingImages: {
+            /** @enum {string} */
+            kind: "WORK_OPENING" | "PAGE";
+            asset: components["schemas"]["CatalogMediaAsset"];
+            /** Format: uuid */
+            pageId: string | null;
+            position: number | null;
+        }[];
         HealthStatus: {
             /** @enum {string} */
             status: "ok" | "degraded";
@@ -3568,6 +4071,54 @@ export interface components {
             /** Format: date-time */
             updatedAt: string;
         };
+        AdminUser: {
+            /** Format: uuid */
+            id: string;
+            username: string;
+            role: components["schemas"]["Role"];
+            /** @enum {string} */
+            status: "ACTIVE" | "SUSPENDED";
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        AdminAssignment: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            workId: string;
+            /** Format: uuid */
+            editorId: string;
+            /** Format: uuid */
+            assignedById: string;
+            /** Format: date-time */
+            assignedAt: string;
+            /**
+             * Format: date-time
+             * @description Cursor immutable de la primera asignación
+             */
+            createdAt: string;
+            /** Format: date-time */
+            revokedAt: string | null;
+            version: number;
+        };
+        AdminCursor: {
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: uuid */
+            id: string;
+        };
+        AdminUserPage: {
+            items: components["schemas"]["AdminUser"][];
+            hasMore: boolean;
+            nextCursor: components["schemas"]["AdminCursor"] | null;
+        };
+        AdminAssignmentPage: {
+            items: components["schemas"]["AdminAssignment"][];
+            hasMore: boolean;
+            nextCursor: components["schemas"]["AdminCursor"] | null;
+        };
         ErrorResponse: {
             /** @enum {boolean} */
             success: false;
@@ -3593,6 +4144,80 @@ export interface components {
         FavoriteStatus: "LEYENDO" | "POR_LEER" | "COMPLETADO" | "PAUSA";
     };
     responses: {
+        /** @description Sanción concreta; revocación idempotente sin alterar una posterior */
+        CommentSanctionResult: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": {
+                    /** @enum {boolean} */
+                    success: true;
+                    /** @enum {integer} */
+                    code: 200;
+                    data: components["schemas"]["CommentSanction"];
+                };
+            };
+        };
+        /** @description Sanción y auditoría confirmadas atómicamente */
+        CommentSanctionCreated: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": {
+                    /** @enum {boolean} */
+                    success: true;
+                    /** @enum {integer} */
+                    code: 201;
+                    data: components["schemas"]["CommentSanction"];
+                };
+            };
+        };
+        /** @description Cuenta administrativa sin email, normalizados ni credenciales */
+        AdminUserResult: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["SuccessEnvelope"] & {
+                    data?: components["schemas"]["AdminUser"];
+                };
+            };
+        };
+        /** @description Página por createdAt e id de cuentas no eliminadas */
+        AdminUserPage: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["SuccessEnvelope"] & {
+                    data?: components["schemas"]["AdminUserPage"];
+                };
+            };
+        };
+        /** @description Relación versionada; assignedAt cambia al reasignar y createdAt permanece estable */
+        AdminAssignmentResult: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["SuccessEnvelope"] & {
+                    data?: components["schemas"]["AdminAssignment"];
+                };
+            };
+        };
+        /** @description Página por createdAt e id de asignaciones editoriales */
+        AdminAssignmentPage: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["SuccessEnvelope"] & {
+                    data?: components["schemas"]["AdminAssignmentPage"];
+                };
+            };
+        };
         /** @description Identidad pública y JWT HS256 válido siete días */
         AuthResult: {
             headers: {
@@ -3732,6 +4357,24 @@ export interface components {
                 "application/json": components["schemas"]["ErrorResponse"];
             };
         };
+        /** @description Persistencia administrativa temporalmente no disponible */
+        ServiceUnavailable: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "success": false,
+                 *       "code": 503,
+                 *       "error": {
+                 *         "message": "Administrative persistence unavailable"
+                 *       }
+                 *     }
+                 */
+                "application/json": components["schemas"]["ErrorResponse"];
+            };
+        };
     };
     parameters: {
         Id: string;
@@ -3741,6 +4384,8 @@ export interface components {
         CursorLimit: number;
         Page: number;
         Limit: number;
+        AdminUserId: string;
+        AdminWorkId: string;
     };
     requestBodies: never;
     headers: never;

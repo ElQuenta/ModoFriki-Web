@@ -26,6 +26,7 @@ const work: WorkDto = {
   visitsCount: 7,
   type: { id: 't1', name: 'Manhwa', slug: 'manhwa' },
   coverAsset: asset('cover'),
+  bannerAsset: null,
   coverThumbAsset: null,
   incapBannerAsset: null,
   alternativeTitles: [{ id: 'a1', workId: 'w1', title: 'Alt', normalizedTitle: 'alt' }],
