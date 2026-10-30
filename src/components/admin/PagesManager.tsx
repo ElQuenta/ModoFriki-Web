@@ -92,7 +92,7 @@ export function PagesManager({
         ) : (
           <ol className="grid max-h-80 grid-cols-3 gap-2 overflow-y-auto sm:grid-cols-5">
             {order.map((page, index) => (
-              <li key={page.id} className="border-line bg-base rounded-lg border p-1">
+              <li key={page.id} className="border-line bg-canvas rounded-lg border p-1">
                 <img
                   src={page.imageUrl}
                   alt={`Página ${index + 1}`}

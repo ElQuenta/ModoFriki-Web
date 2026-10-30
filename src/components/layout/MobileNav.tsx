@@ -37,7 +37,7 @@ export function MobileNav() {
         className="absolute inset-0 bg-black/75 backdrop-blur-sm"
         onClick={closeMobileNav}
       />
-      <aside className="animate-fade-in border-line bg-base absolute inset-y-0 left-0 flex w-[min(88vw,22rem)] flex-col border-r p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
+      <aside className="animate-fade-in border-line bg-canvas absolute inset-y-0 left-0 flex w-[min(88vw,22rem)] flex-col border-r p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
         <div className="flex items-center justify-between">
           <Link
             to="/"

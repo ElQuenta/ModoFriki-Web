@@ -380,8 +380,8 @@ export function ReaderView({
   }, [settingsOpen])
 
   return (
-    <div className="bg-base min-h-dvh pb-24">
-      <header className="border-line bg-base/90 sticky top-0 z-40 border-b backdrop-blur-xl">
+    <div className="bg-canvas min-h-dvh pb-24">
+      <header className="border-line bg-canvas/90 sticky top-0 z-40 border-b backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-7xl items-center gap-1.5 px-2 sm:gap-2 sm:px-5">
           <Link
             to={`/series/${series.id}`}
@@ -668,7 +668,7 @@ export function ReaderView({
         />
       </div>
 
-      <footer className="border-line bg-base/95 fixed inset-x-0 bottom-0 z-40 border-t pb-[env(safe-area-inset-bottom)] backdrop-blur-xl">
+      <footer className="border-line bg-canvas/95 fixed inset-x-0 bottom-0 z-40 border-t pb-[env(safe-area-inset-bottom)] backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center gap-1.5 px-2 py-2 sm:gap-2 sm:px-5 sm:py-2.5">
           {previousChapter ? (
             <Link

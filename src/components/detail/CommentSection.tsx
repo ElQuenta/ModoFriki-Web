@@ -112,7 +112,7 @@ export function CommentSection({
                 aria-label="Escribe un comentario"
                 maxLength={COMMENT_MAX}
                 rows={3}
-                className="border-line bg-base text-primary placeholder:text-muted focus:border-accent/60 w-full resize-none rounded-xl border px-3 py-2.5 text-sm transition-colors outline-none"
+                className="border-line bg-canvas text-primary placeholder:text-muted focus:border-accent/60 w-full resize-none rounded-xl border px-3 py-2.5 text-sm transition-colors outline-none"
               />
               <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-muted text-[11px]">

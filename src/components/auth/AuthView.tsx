@@ -46,7 +46,7 @@ const registerSchema = z.object({
 type FieldName = 'name' | 'email' | 'password'
 
 const inputBase =
-  'border-line bg-base placeholder:text-muted h-11 w-full rounded-xl border text-sm transition-colors focus:border-accent/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent'
+  'border-line bg-canvas placeholder:text-muted h-11 w-full rounded-xl border text-sm transition-colors focus:border-accent/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent'
 
 export function AuthView({ mode }: { mode: 'login' | 'register' }) {
   const navigate = useNavigate()
@@ -145,7 +145,7 @@ export function AuthView({ mode }: { mode: 'login' | 'register' }) {
             alt=""
             className="size-full object-cover"
           />
-          <div className="from-base via-base/70 to-base/20 absolute inset-0 bg-gradient-to-t" />
+          <div className="from-canvas via-canvas/70 to-canvas/20 absolute inset-0 bg-gradient-to-t" />
           <div className="absolute inset-0 flex flex-col justify-between p-10">
             <Link to="/" className="font-display text-2xl font-bold">
               MODO<span className="text-accent">FRIKI</span>

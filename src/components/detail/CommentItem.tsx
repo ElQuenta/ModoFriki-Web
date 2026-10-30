@@ -184,7 +184,7 @@ export function CommentItem({
                 aria-label="Editar comentario"
                 maxLength={10000}
                 rows={3}
-                className="border-line bg-base focus:border-accent/60 w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none"
+                className="border-line bg-canvas focus:border-accent/60 w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none"
               />
               <div className="mt-2 flex gap-2">
                 <Button
@@ -287,7 +287,7 @@ export function CommentItem({
                 placeholder={`Responde a ${name}...`}
                 maxLength={10000}
                 rows={2}
-                className="border-line bg-base focus:border-accent/60 w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none"
+                className="border-line bg-canvas focus:border-accent/60 w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none"
               />
               <div className="mt-2 flex gap-2">
                 <Button

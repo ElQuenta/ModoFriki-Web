@@ -126,7 +126,7 @@ export function WorkForm({
           {genres?.map((genre) => (
             <label
               key={genre.id}
-              className="border-line bg-base has-checked:border-accent/50 has-checked:text-accent flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs"
+              className="border-line bg-canvas has-checked:border-accent/50 has-checked:text-accent flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs"
             >
               <input
                 type="checkbox"
