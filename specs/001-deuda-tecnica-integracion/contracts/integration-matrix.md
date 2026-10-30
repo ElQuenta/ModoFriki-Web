@@ -83,6 +83,19 @@ El listado visible no prueba asignación editorial: `work.repository.ts` permite
 
 La implementación normal de capacidades pendientes devuelve indisponibilidad por capacidad, no una lista vacía ni éxito local. Un proveedor de prueba aislado puede ejercitar su interfaz sin registrar contratos remotos ficticios. Al desbloquear una dependencia se incorpora el adaptador del contrato publicado y se actualizan filas y evidencias. La ausencia de servidor o credenciales afecta la validación real de operaciones existentes; no transforma huecos de frontend en dependencias resueltas.
 
+### Preparación local de US2 — 2026-10-30
+
+Las siguientes comprobaciones usan fixtures y no acreditan respuestas del backend, autorización real, auditoría ni persistencia:
+
+| Dependencia | Evidencia simulada | Estado de integración |
+| --- | --- | --- |
+| DEP-001 | `UsersTab.test.tsx`, `user-admin.test.ts`: listado paginado, estado `unknown`, privacidad y capacidad ausente | Preparación frontend; falta contrato/listado real |
+| DEP-002 | `admin-policy.test.ts`, `UsersTab.test.tsx`: política BASIC/EDITOR, rol propio/ADMIN protegido y rechazo local ante destinatario cuyo rol actualizado es ADMIN | Preparación frontend; falta contrato/permisos/persistencia |
+| DEP-003 | `admin-validation.test.ts`, `zoned-date.test.ts`, `AuthRevalidation.test.tsx`: validación de fecha/motivo, zonas y sesión; hook de restricción preparado, integración de consumidor pendiente de T019–T023 de US1 | Preparación parcial; falta contrato y comprobación de servidor |
+| DEP-007 | `admin-policy.test.ts`, `AssignmentsPanel.test.tsx`: solo EDITOR como destinatario, lectura actualizada antes de mutar, duplicado vigente no crea otra relación | Preparación frontend; falta contrato/permisos/persistencia |
+
+La evidencia detallada y los comandos están en [`validation.md`](../validation.md). No se añaden resultados reales porque las cuatro capacidades siguen sin contrato publicado.
+
 ## Evidencia futura por operación
 
 Se crea una entrada por ID y variante utilizada al ejecutar las verificaciones; pueden añadirse varias entradas por rol/escenario. Las filas de alias señalan la evidencia compartida y justifican equivalencia, sin afirmar que se ejecutó una variante que no se llamó. No registrar tokens, contraseñas, correos privados ni identidad innecesaria de reporteros.

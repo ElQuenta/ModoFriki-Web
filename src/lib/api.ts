@@ -6,6 +6,7 @@ export const API_URL = (
 ).replace(/\/$/, '')
 
 export const UNAUTHORIZED_EVENT = 'modofriki:unauthorized'
+export const PROTECTED_FORBIDDEN_EVENT = 'modofriki:protected-forbidden'
 
 export class ApiError extends Error {
   status: number
@@ -117,6 +118,8 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
     const isAuthAttempt = path === '/auth/login' || path === '/auth/register'
     if (response.status === 401 && token && !isAuthAttempt)
       window.dispatchEvent(new Event(UNAUTHORIZED_EVENT))
+    if (response.status === 403 && token && !isAuthAttempt)
+      window.dispatchEvent(new Event(PROTECTED_FORBIDDEN_EVENT))
     const detail = payload?.error?.message
     const message =
       (detail && DETAILS[detail]) ??
