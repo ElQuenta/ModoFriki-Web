@@ -1,3 +1,4 @@
+import { PUBLIC_CACHE_MS } from '@/lib/constants'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Crown, Eye, Medal, Trophy } from 'lucide-react'
 import { listPopularWorks } from '@/services/discovery'
@@ -21,6 +22,9 @@ export function RankingsPage() {
   const { data, loading, error, reload } = useAsync(
     () => listPopularWorks({ period, limit: 50 }),
     `rankings:${period}`,
+    true,
+    undefined,
+    PUBLIC_CACHE_MS,
   )
   const ranking = data?.items ?? []
   const podium = ranking.slice(0, 3)
@@ -89,7 +93,7 @@ export function RankingsPage() {
             <div className="bg-accent/5 absolute -top-12 -right-12 size-40 rounded-full blur-3xl" />
             <div className="relative flex items-start gap-3">
               <CoverImage
-                src={series.coverUrl}
+                src={series.thumbUrl || series.coverUrl}
                 alt={`Portada de ${series.title}`}
                 title={series.title}
                 className="h-32 w-22 shrink-0 rounded-xl sm:h-36 sm:w-24"
@@ -130,7 +134,7 @@ export function RankingsPage() {
               {index + 4}
             </span>
             <CoverImage
-              src={series.coverUrl}
+              src={series.thumbUrl || series.coverUrl}
               alt={`Portada de ${series.title}`}
               title={series.title}
               className="h-16 w-11 shrink-0 rounded-md"

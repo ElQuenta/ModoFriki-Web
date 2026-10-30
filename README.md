@@ -29,6 +29,7 @@ La aplicación queda disponible en `http://localhost:5173`.
 | `npm run dev` | Servidor de desarrollo. |
 | `npm run dev:e2e` | Servidor de desarrollo contra el backend de pruebas (`.env.e2e`). |
 | `npm run build` | Verificación de tipos y build de producción. |
+| `npm run gen:api` | Regenera `src/types/api.generated.ts` desde `../ModoFriki-Backend/openapi.yaml`. Córrelo cuando cambie el contrato y commitea el resultado. |
 | `npm run preview` | Previsualiza el build. |
 | `npm run lint` | ESLint. |
 | `npm run format` | Formatea con Prettier. |
@@ -77,6 +78,14 @@ src/
   styles/       # tokens y estilos globales
   pages/        # pantallas de cada ruta
 ```
+
+## Documentación
+
+| Qué | Dónde |
+| --- | --- |
+| Contrato con la API | `ModoFriki-Backend/docs/API.md` y `openapi.yaml` |
+| Pruebas E2E | [`e2e/README.md`](e2e/README.md) |
+| Decisiones, dominio y mejoras | Vault de Obsidian `Obsidian-ModoFriki/ModoFriki` (carpeta hermana de los repos; empieza por `ModoFriki - Mapa`) |
 
 ## Personalización
 

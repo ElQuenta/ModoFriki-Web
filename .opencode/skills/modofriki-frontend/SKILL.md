@@ -7,9 +7,9 @@ description: Convenciones de arquitectura, diseño y componentes para la interfa
 
 ## Contexto
 
-ModoFriki-Web es un lector de cómics, manhwas y novelas en español. En esta fase es
-**solo frontend**: no hay llamadas al backend, no hay panel de administración y los
-datos viven en mocks locales.
+ModoFriki-Web es un lector de cómics, manhwas y novelas en español. Consume la API
+de ModoFriki-Backend (`VITE_API_URL`) e incluye el panel `/admin` para ADMIN y EDITOR.
+El contrato vive en el backend (`docs/API.md` y `openapi.yaml`).
 
 ## Stack
 
@@ -53,9 +53,10 @@ src/
   components/   # ui, layout, home, catalog, detail, reader, auth, favorites, profile, common
   context/      # Auth, Library, UI
   hooks/        # hooks reutilizables y de dominio
-  data/         # mocks tipados
+  services/     # llamadas a la API por dominio y adaptadores DTO → dominio
+  pages/        # pantallas de cada ruta (cargadas con React.lazy)
   types/        # contratos del dominio
-  lib/          # cn, format, storage
+  lib/          # api (cliente HTTP), cn, format, storage
   styles/       # tokens y estilos globales
 ```
 
@@ -73,14 +74,16 @@ src/
 
 ## Datos
 
-- Los mocks viven en `src/data/` y están tipados.
-- No crees clientes HTTP ni servicios de API en esta fase.
+- Toda llamada pasa por `src/lib/api.ts` (`request`): agrega el token, traduce errores y emite `modofriki:unauthorized` ante 401.
+- Los DTO de catálogo y descubrimiento son tipos generados desde el `openapi.yaml` del backend (`npm run gen:api` → `src/types/api.generated.ts`, no se edita a mano). Si el backend cambia el contrato, regenera y deja que `tsc` muestre lo que hay que ajustar.
+- Cada dominio tiene su servicio en `src/services/` con adaptadores (`toSeries`, `toChapter`…) que convierten los DTO de la API en tipos de `src/types`.
+- Los componentes usan hooks (`useAsync`, contextos), nunca `fetch` directo.
 - La persistencia local usa `useLocalStorage` con claves que empiezan por `modofriki_`.
 
 ## Rutas
 
-- `/`, `/series`, `/series/:slug`, `/read/:slug/:chapter`.
-- `/genres`, `/rankings`, `/favorites`, `/profile`, `/login`, `/register`.
+- `/`, `/series`, `/series/:id/:slug?`, `/read/:workId/:chapterId`.
+- `/genres`, `/rankings`, `/favorites`, `/profile`, `/admin`, `/login`, `/register`.
 - Cualquier otra ruta muestra la página 404.
 
 ## Verificación

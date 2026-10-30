@@ -2,8 +2,6 @@ import { Plugin } from "@opencode/plugin"
 
 const PUSH = /\bgit\s+push\b/i
 const DESTRUCTIVE = /\b(rm\s+-rf|rmdir\s+\/s|format\s+[a-z]:)\b/i
-const BLOCKED_PATHS = ["modofrikibackend", ".git", ".env"]
-
 function inputPath(input: unknown): string {
   if (!input || typeof input !== "object") return ""
   const record = input as Record<string, unknown>
@@ -27,7 +25,8 @@ export default Plugin.define({
 
       if (event.tool === "edit" || event.tool === "write") {
         const path = inputPath(event.input)
-        if (path.includes("modofrikibackend")) {
+        // La ruta va en minúsculas: "modofriki-backend". Acepta con o sin guion.
+        if (/modofriki-?backend/.test(path)) {
           throw new Error("ModoFriki guard: el backend está fuera del alcance de esta fase.")
         }
         if (path.includes("/.git/") || path.endsWith("/.git")) {

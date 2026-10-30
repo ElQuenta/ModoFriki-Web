@@ -25,7 +25,7 @@ export function SeriesCard({
       >
         <div className="relative aspect-[2/3] overflow-hidden">
           <CoverImage
-            src={series.coverUrl}
+            src={series.thumbUrl || series.coverUrl}
             alt={`Portada de ${series.title}`}
             title={series.title}
             className="size-full rounded-none"

@@ -6,6 +6,7 @@ interface WorkSummaryDto {
   slug: string
   title: string
   coverUrl: string | null
+  thumbUrl?: string | null
 }
 
 interface Paginated<T> {

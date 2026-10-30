@@ -1,3 +1,4 @@
+import { PUBLIC_CACHE_MS } from '@/lib/constants'
 import { Sparkles, X } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useUI } from '@/hooks/useUI'
@@ -10,6 +11,8 @@ export function AnnouncementBar() {
     () => listLatestChapters({ limit: 1 }),
     'announcement-latest',
     !announcementDismissed,
+    undefined,
+    PUBLIC_CACHE_MS,
   )
   const latest = data?.items[0]
   if (announcementDismissed || !latest) return null
