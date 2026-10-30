@@ -10,6 +10,8 @@ const mocks = vi.hoisted(() => ({
   listReplies: vi.fn(),
   toastSuccess: vi.fn(),
   userId: 'user-1',
+  restrictionBlocked: false,
+  restrictionMessage: undefined as string | undefined,
 }))
 
 vi.mock('@/services/community', () => ({
@@ -21,6 +23,13 @@ vi.mock('@/services/community', () => ({
 vi.mock('@/hooks/useAuth', () => ({
   useAuth: () => ({
     user: { id: mocks.userId, username: 'lector', role: 'BASIC' },
+  }),
+}))
+
+vi.mock('@/hooks/useCommentRestriction', () => ({
+  useCommentRestriction: () => ({
+    blocked: mocks.restrictionBlocked,
+    message: mocks.restrictionMessage,
   }),
 }))
 
@@ -38,6 +47,7 @@ vi.mock('@/components/detail/CommentEditor', () => ({
     onSourceChange,
     onSubmit,
     pending,
+    submitDisabled,
     error,
     label,
   }: {
@@ -45,6 +55,7 @@ vi.mock('@/components/detail/CommentEditor', () => ({
     onSourceChange: (value: string) => void
     onSubmit: (value: string) => void | Promise<void>
     pending: boolean
+    submitDisabled?: boolean
     error?: string
     label: string
   }) => (
@@ -54,7 +65,7 @@ vi.mock('@/components/detail/CommentEditor', () => ({
         value={source}
         onChange={(event) => onSourceChange(event.target.value)}
       />
-      <button type="button" disabled={pending} onClick={() => void onSubmit(source)}>
+      <button type="button" disabled={pending || submitDisabled} onClick={() => void onSubmit(source)}>
         Enviar comentario
       </button>
       {error ? <p role="alert">{error}</p> : null}
@@ -103,6 +114,8 @@ describe('CommentSection', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mocks.userId = 'user-1'
+    mocks.restrictionBlocked = false
+    mocks.restrictionMessage = undefined
     mocks.listComments.mockResolvedValue(page([]))
     mocks.createComment.mockResolvedValue(comment('created'))
   })
@@ -183,5 +196,15 @@ describe('CommentSection', () => {
     )
 
     expect(screen.getByRole('textbox', { name: 'Escribe un comentario' })).toHaveValue('')
+  })
+
+  it('bloquea publicar solo cuando hay una sanción activa confirmada', async () => {
+    mocks.restrictionBlocked = true
+    mocks.restrictionMessage = 'No puedes comentar hasta mañana.'
+    renderSection()
+
+    expect(await screen.findByRole('status')).toHaveTextContent('No puedes comentar hasta mañana.')
+    expect(screen.getByRole('button', { name: 'Enviar comentario' })).toBeDisabled()
+    expect(mocks.createComment).not.toHaveBeenCalled()
   })
 })

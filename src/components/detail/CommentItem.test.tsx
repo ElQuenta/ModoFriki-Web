@@ -59,6 +59,7 @@ vi.mock('@/components/detail/CommentEditor', () => ({
     onCancel,
     label,
     pending,
+    submitDisabled,
     error,
   }: {
     source: string
@@ -67,6 +68,7 @@ vi.mock('@/components/detail/CommentEditor', () => ({
     onCancel?: () => void
     label: string
     pending: boolean
+    submitDisabled?: boolean
     error?: string
   }) => (
     <div>
@@ -75,7 +77,7 @@ vi.mock('@/components/detail/CommentEditor', () => ({
         value={source}
         onChange={(event) => onSourceChange(event.target.value)}
       />
-      <button type="button" disabled={pending} onClick={() => void onSubmit(source)}>
+      <button type="button" disabled={pending || submitDisabled} onClick={() => void onSubmit(source)}>
         Guardar comentario
       </button>
       {onCancel ? <button type="button" onClick={onCancel}>Cancelar editor</button> : null}
@@ -110,7 +112,11 @@ const page = (items: Comment[], hasMore = false, nextCursor: CursorPage<Comment>
   nextCursor,
 })
 
-function renderItem(comment = makeComment(), onRefreshComment = vi.fn()) {
+function renderItem(
+  comment = makeComment(),
+  onRefreshComment = vi.fn(),
+  restriction: { blocked?: boolean; message?: string } = {},
+) {
   const onChange = vi.fn()
   const result = render(
     <CommentItem
@@ -119,6 +125,8 @@ function renderItem(comment = makeComment(), onRefreshComment = vi.fn()) {
       targetType="WORK"
       targetId="work-1"
       onRefreshComment={onRefreshComment}
+      commentRestricted={restriction.blocked}
+      restrictionMessage={restriction.message}
     />,
   )
   return { ...result, onChange, onRefreshComment }
@@ -184,6 +192,33 @@ describe('CommentItem', () => {
     ))
     expect(onChange).not.toHaveBeenCalled()
     expect(await screen.findByText('respuesta creada')).toBeInTheDocument()
+  })
+
+  it('bloquea respuesta y edición por sanción confirmada, conservando voto, reporte y eliminación', async () => {
+    renderItem(makeComment(), vi.fn(), {
+      blocked: true,
+      message: 'No puedes crear, responder ni editar comentarios mientras esté vigente esta sanción permanente.',
+    })
+
+    expect(screen.getByRole('button', { name: 'Responder' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Editar' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Votar a favor' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Eliminar' })).toBeEnabled()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Votar en contra' }))
+    await waitFor(() => expect(mocks.voteComment).toHaveBeenCalledWith('comment-1', -1))
+    expect(mocks.createComment).not.toHaveBeenCalled()
+    expect(mocks.editComment).not.toHaveBeenCalled()
+  })
+
+  it('mantiene disponible reportar cuando la cuenta tiene una sanción activa', () => {
+    renderItem(makeComment({ author: { id: 'user-2', username: 'otra persona' } }), vi.fn(), {
+      blocked: true,
+      message: 'No puedes comentar mientras esté vigente esta sanción.',
+    })
+
+    expect(screen.getByRole('button', { name: 'Responder' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Reportar' })).toBeEnabled()
   })
 
   it('conserva el borrador tras conflicto y permite revisar la versión vigente antes de reintentar', async () => {

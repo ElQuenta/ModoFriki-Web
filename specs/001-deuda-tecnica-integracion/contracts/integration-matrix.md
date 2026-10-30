@@ -83,13 +83,37 @@ El listado visible no prueba asignación editorial: `work.repository.ts` permite
 
 La implementación normal de capacidades pendientes devuelve indisponibilidad por capacidad, no una lista vacía ni éxito local. Un proveedor de prueba aislado puede ejercitar su interfaz sin registrar contratos remotos ficticios. Al desbloquear una dependencia se incorpora el adaptador del contrato publicado y se actualizan filas y evidencias. La ausencia de servidor o credenciales afecta la validación real de operaciones existentes; no transforma huecos de frontend en dependencias resueltas.
 
+### Preparación local de US2 — 2026-10-30
+
+Las siguientes comprobaciones usan fixtures y no acreditan respuestas del backend, autorización real, auditoría ni persistencia:
+
+| Dependencia | Evidencia simulada | Estado de integración |
+| --- | --- | --- |
+| DEP-001 | `UsersTab.test.tsx`, `user-admin.test.ts`: listado paginado, estado `unknown`, privacidad y capacidad ausente | Preparación frontend; falta contrato/listado real |
+| DEP-002 | `admin-policy.test.ts`, `UsersTab.test.tsx`: política BASIC/EDITOR, rol propio/ADMIN protegido y rechazo local ante destinatario cuyo rol actualizado es ADMIN | Preparación frontend; falta contrato/permisos/persistencia |
+| DEP-003 | `admin-validation.test.ts`, `zoned-date.test.ts`, `AuthRevalidation.test.tsx`: validación de fecha/motivo, zonas y sesión; hook de restricción preparado, integración de consumidor pendiente de T019–T023 de US1 | Preparación parcial; falta contrato y comprobación de servidor |
+| DEP-007 | `admin-policy.test.ts`, `AssignmentsPanel.test.tsx`: solo EDITOR como destinatario, lectura actualizada antes de mutar, duplicado vigente no crea otra relación | Preparación frontend; falta contrato/permisos/persistencia |
+
+La evidencia detallada está en [`validation.md`](../validation.md). DEP-001/002/007 tienen contrato y adaptación frontend, pero faltan recorridos reales; DEP-003 sigue sin contrato.
+
 ## Evidencia futura por operación
 
 Se crea una entrada por ID y variante utilizada al ejecutar las verificaciones; pueden añadirse varias entradas por rol/escenario. Las filas de alias señalan la evidencia compartida y justifican equivalencia, sin afirmar que se ejecutó una variante que no se llamó. No registrar tokens, contraseñas, correos privados ni identidad innecesaria de reporteros.
 
 | ID / escenario | Entorno y versión frontend/backend | Identidad de prueba / rol sin credenciales | Fecha | Resultado positivo / evidencia | Resultado negativo / evidencia | Persistencia tras recarga | Clasificación |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| INT026–INT032 / US1 — pruebas frontend | Vitest local; frontend de esta rama; servicios simulados | BASIC simulado | Render y disclosure Markdown; crear, responder, editar, votar, reportar, tombstone, cursores, deduplicación, error y conflicto según pruebas focalizadas | Casos seguros y negativos cubiertos por 27 pruebas; 6 archivos pasan | No aplica a mocks; persistencia del backend no verificada | Proveedor de prueba |
+| INT026–INT032 / US1 — pruebas frontend | Vitest local; frontend de esta rama; servicios simulados | BASIC simulado | Render/disclosure Markdown; crear, responder, editar, votar, reportar, tombstone, cursores, deduplicación, error, conflicto y restricción conocida por sanción | 30 pruebas en 6 archivos pasan; no se prueba persistencia con mocks | No aplica a mocks; persistencia del backend no verificada | Proveedor de prueba |
 | INT026–INT032 / US1 — recorrido real | Entorno/backend no conectado en esta revisión | Pendiente | Pendiente | Pendiente | Pendiente | Por verificar en entorno real |
 
 Para listados y consultas, persistencia se comprueba sobre un cambio relacionado cuando corresponda o se justifica «no aplica»; no se inventa una mutación. Las capacidades nuevas con proveedor de prueba no acreditan persistencia ni autorización real. Cada hueco frontend permanece pendiente hasta implementar y comprobar el recorrido; ningún E2E está aprobado por la existencia de esta matriz.
+
+### Adaptación de contratos administrativos US2 — 2026-10-30
+
+Backend de referencia: rama `dev`, revisión `6d3a989`. Esta evidencia acredita adaptación y pruebas unitarias del cliente, no recorridos de servidor.
+
+| Capacidad | Contrato consumido | Evidencia frontend | Verificación real |
+| --- | --- | --- | --- |
+| DEP-001 listado/detalle | GET `/api/admin/users`, GET `/api/admin/users/:userId`; cursor `{createdAt,id}`; búsqueda local en páginas cargadas | `user-admin.test.ts`: mapeo de DTO, continuación y sanción `unknown` | T042 pendiente |
+| DEP-002 roles | GET detalle + PATCH `/api/admin/users/:userId/role` con `expectedUpdatedAt` | `user-admin.test.ts`, `UsersTab.test.tsx`: token CAS y políticas BASIC/EDITOR | T044 pendiente |
+| DEP-007 asignaciones | GET cursor, PUT con `expectedVersion`, PATCH revocación; obras desde GET `/api/works` para personal | `user-admin.test.ts`, `AssignmentsPanel.test.tsx`: cursor, CAS, duplicado e historial | T048 pendiente |
+| DEP-003 sanciones | Sin contrato administrativo publicado | Gateway indisponible; T038 solo bloquea con estado propio activo confirmado | T045/T046 pendientes |

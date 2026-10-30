@@ -8,6 +8,7 @@ import { COMMENT_SOURCE_MAX_LENGTH, validateCommentSource } from '@/lib/comments
 import { createComment, listComments, listReplies } from '@/services/community'
 import { useAsync } from '@/hooks/useAsync'
 import { useAuth } from '@/hooks/useAuth'
+import { useCommentRestriction } from '@/hooks/useCommentRestriction'
 import { Avatar } from '@/components/ui/avatar'
 import { buttonStyles } from '@/components/ui/button'
 import { ErrorState } from '@/components/ui/empty-state'
@@ -25,6 +26,7 @@ export function CommentSection({
   title?: string
 }) {
   const { user } = useAuth()
+  const restriction = useCommentRestriction()
   const ownerScope = user?.id ?? 'guest'
   const key = `comments:${ownerScope}:${targetType}:${targetId}`
   const [draft, setDraft] = useState({ key, source: '' })
@@ -144,6 +146,7 @@ export function CommentSection({
   }
 
   const submit = async (source: string) => {
+    if (restriction.blocked) return
     const validationError = validateCommentSource(source)
     if (validationError) {
       setSubmission({ key, pending: false, error: validationError })
@@ -197,6 +200,9 @@ export function CommentSection({
 
       {user ? (
         <div className="surface-card p-3 sm:p-4">
+          {restriction.message ? (
+            <p className="text-warning mb-3 text-sm" role="status">{restriction.message}</p>
+          ) : null}
           <div className="flex gap-2.5 sm:gap-3">
             <Avatar alt={user.username} size="sm" className="mt-1" />
             <div className="min-w-0 flex-1">
@@ -209,6 +215,7 @@ export function CommentSection({
                 onSubmit={submit}
                 mode="create"
                 pending={sending}
+                submitDisabled={restriction.blocked}
                 error={submitError}
                 label="Escribe un comentario"
               />
@@ -247,6 +254,8 @@ export function CommentSection({
               targetType={targetType}
               targetId={targetId}
               onRefreshComment={refreshComment}
+              commentRestricted={restriction.blocked}
+              restrictionMessage={restriction.message}
             />
           ))
         )}

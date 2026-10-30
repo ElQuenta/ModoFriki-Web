@@ -52,9 +52,21 @@ Todas las rutas de esta tabla llevan prefijo `/api`. Las operaciones indicadas e
 
 ## Dependencias pendientes del backend
 
+### Revisión de contratos administrativos — 2026-10-30
+
+Se contrastaron `../ModoFriki-Backend/docs/API.md`, `openapi.yaml`, `src/routes/admin.routes.ts`, controladores y servicios del backend en `dev` (revisión `6d3a989`). DEP-001, DEP-002 y DEP-007 cuentan con contrato publicado y rutas registradas; el cliente web las adapta en esta rama. DEP-003 sigue sin operaciones de sanciones ni estado propio. La presencia de contratos no equivale a verificación en un servidor de prueba: no se levantó ni se consultó el entorno.
+
+El listado administrativo ofrece cursor `{createdAt,id}`, no búsqueda. La UI filtra las páginas ya cargadas y permite continuar; para verificar un sujeto se usa el GET de detalle. El listado de obras seleccionables reutiliza el contrato vigente `GET /works` con `includeDrafts=true` en sesión de personal. Los cambios de rol usan `updatedAt` como CAS y asignaciones usan `version`; para reasignar una relación revocada se envía su versión histórica, no la versión inicial `0`.
+
+### Revisión de contratos administrativos — 2026-10-30
+
+Se contrastaron `../ModoFriki-Backend/docs/API.md`, `openapi.yaml`, `src/routes/admin.routes.ts`, controladores y servicios del backend en `dev` (revisión `6d3a989`). DEP-001, DEP-002 y DEP-007 cuentan con contrato publicado y rutas registradas; el cliente web las adapta en esta rama. DEP-003 sigue sin operaciones de sanciones ni estado propio. La presencia de contratos no equivale a verificación en un servidor de prueba: no se levantó ni se consultó el entorno.
+
+El listado administrativo ofrece cursor `{createdAt,id}`, no búsqueda. La UI filtra las páginas ya cargadas y permite continuar; para verificar un sujeto se usa el GET de detalle. El listado de obras seleccionables reutiliza el contrato vigente `GET /works` con `includeDrafts=true` en sesión de personal. Los cambios de rol usan `updatedAt` como CAS y asignaciones usan `version`; para reasignar una relación revocada se envía su versión histórica, no la versión inicial `0`.
+
 ### DEP-001 — Listado administrativo de usuarios
 
-- **Estado**: No se encontró una ruta registrada para listar usuarios administrativos. GET `/auth/me` no sustituye un listado.
+- **Estado (revisión 2026-10-30)**: Publicado y registrado: GET `/api/admin/users` y GET `/api/admin/users/:userId`; cursor/DTO documentados en `../ModoFriki-Backend/docs/API.md` y `openapi.yaml`. El frontend adapta ambos en `src/services/user-admin.ts`; el servidor real sigue pendiente de prueba.
 - **Afecta**: FR-006, FR-012, FR-014; historia 2.
 - **Responsable de resolución**: Backend; frontend consume el contrato acordado.
 - **Necesario**: Ruta y permiso ADMIN, identidad y rol visibles, estado de sanción, forma de paginación y continuación, orden estable y errores. No se fija una URL propuesta como si existiera.
@@ -62,7 +74,7 @@ Todas las rutas de esta tabla llevan prefijo `/api`. Las operaciones indicadas e
 
 ### DEP-002 — Cambio de roles
 
-- **Estado**: No se encontró ruta registrada. Los roles actuales son BASIC, EDITOR y ADMIN; la identidad se obtiene del servidor en cada petición protegida.
+- **Estado (revisión 2026-10-30)**: Publicado y registrado: PATCH `/api/admin/users/:userId/role` con precondición `expectedUpdatedAt`; el frontend obtiene el token vigente por GET de detalle. Contrato en `docs/API.md`, `openapi.yaml` y `src/routes/admin.routes.ts`; persistencia/permisos reales pendientes.
 - **Afecta**: FR-007, FR-011, FR-012; historia 2.
 - **Responsable de resolución**: Backend.
 - **Política aclarada**: Solo ADMIN puede cambiar otras cuentas entre BASIC y EDITOR. No puede cambiar su propio rol, modificar el rol de ninguna cuenta ADMIN ni promover cuentas a ADMIN. No se añade un mecanismo alternativo de gestión de ADMIN en esta feature.
@@ -110,7 +122,7 @@ Todas las rutas de esta tabla llevan prefijo `/api`. Las operaciones indicadas e
 
 ### DEP-007 — Gestión de asignaciones editoriales
 
-- **Estado**: Alcance confirmado por el usuario: incluir interfaz de consulta, asignación y revocación de obras a EDITOR. El modelo WorkEditorAssignment existe, pero no se encontraron rutas de gestión registradas; una tabla no constituye un contrato disponible.
+- **Estado (revisión 2026-10-30)**: Publicado y registrado: GET `/api/admin/users/:userId/work-assignments`, PUT asignación y PATCH revocación con `expectedVersion`. El frontend adapta lectura, asignación y revocación; la selección de obras usa el listado editorial existente. Persistencia/autorización real pendiente.
 - **Afecta**: FR-012, FR-025, FR-027 y FR-028; historia 2, escenarios 12 a 16; SC-009.
 - **Responsable de resolución**: Backend para operaciones, autorización y trazabilidad; frontend para consulta, selección y confirmación de asignar/revocar.
 - **Necesario**: Contratos exclusivos ADMIN para consultar asignaciones vigentes, asignar y revocar por obra y editor; paginación o continuación cuando corresponda, respuesta confirmada, validación de rol EDITOR y tratamiento de duplicados y concurrencia. No se proponen URLs como si estuvieran implementadas.
