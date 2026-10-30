@@ -29,6 +29,7 @@ La aplicación queda disponible en `http://localhost:5173`.
 | `npm run dev` | Servidor de desarrollo. |
 | `npm run dev:e2e` | Servidor de desarrollo contra el backend de pruebas (`.env.e2e`). |
 | `npm run build` | Verificación de tipos y build de producción. |
+| `npm run gen:api` | Regenera `src/types/api.generated.ts` desde `../ModoFriki-Backend/openapi.yaml`. Córrelo cuando cambie el contrato y commitea el resultado. |
 | `npm run preview` | Previsualiza el build. |
 | `npm run lint` | ESLint. |
 | `npm run format` | Formatea con Prettier. |

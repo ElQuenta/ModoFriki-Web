@@ -1,48 +1,11 @@
 import { request } from '@/lib/api'
-import type {
-  Chapter,
-  ChapterKind,
-  PublicationStatus,
-  ReleaseStatus,
-  Series,
-  SeriesStatus,
-  Taxonomy,
-} from '@/types'
+import type { Chapter, ReleaseStatus, Series, SeriesStatus, Taxonomy } from '@/types'
+import type { components } from '@/types/api.generated'
 
-interface AssetDto {
-  id: string
-  url: string
-}
-
-export interface WorkDto {
-  id: string
-  slug: string
-  title: string
-  synopsis: string
-  typeId: string
-  publicationStatus: PublicationStatus
-  releaseStatus: ReleaseStatus
-  updatedAt: string
-  visitsCount?: number
-  type: Taxonomy
-  coverAsset: AssetDto | null
-  incapBannerAsset: AssetDto | null
-  alternativeTitles: { id: string; title: string }[]
-  genres: { genre: Taxonomy }[]
-}
-
-export interface ChapterDto {
-  id: string
-  workId: string
-  number: string
-  title: string | null
-  kind: ChapterKind
-  status: PublicationStatus
-  version: number
-  publishedAt: string | null
-  createdAt: string
-  pages?: { id: string; position: number; asset: AssetDto }[]
-}
+// Generados desde openapi.yaml del backend (npm run gen:api): si el contrato cambia,
+// el build falla aquí en vez de fallar en producción.
+export type WorkDto = components['schemas']['CatalogWork']
+export type ChapterDto = components['schemas']['CatalogChapter']
 
 export const RELEASE_STATUS_LABELS: Record<ReleaseStatus, SeriesStatus> = {
   ONGOING: 'En emisión',
