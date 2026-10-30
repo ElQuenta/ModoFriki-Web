@@ -73,7 +73,7 @@ Con dos sesiones de prueba, cambiar el rol de la cuenta afectada y recuperar foc
 
 ## Sanciones
 
-Con DEP-003 pendiente, validar preparación de formularios y restricciones de controles en tests; no declarar restricciones reales en comentarios por disponer solo de un mock.
+El frontend adapta las rutas publicadas de sanciones y consulta propia en DEP-003. Validar el cliente con pruebas locales, sin declarar persistencia, permisos ni restricciones reales del servidor. La extensión permanece deshabilitada porque no existe endpoint; T046 requiere entorno integrado.
 
 Tras activarla con contrato aprobado:
 
@@ -86,7 +86,7 @@ Tras activarla con contrato aprobado:
 
 ## Tres imágenes y edición editorial
 
-Mientras DEP-004 esté pendiente, el guardado de obra está deshabilitado y explicado; consultar y leer no se bloquea. Verificarlo sin mandar un archivo nuevo bajo un campo supuesto.
+El formulario envía los medios por los campos publicados `cover`, `banner` e `inpagecover` y mapea `coverAsset`, `bannerAsset` e `incapBannerAsset` de forma independiente. La UI exige los tres incluso para borradores; el backend exige los tres al publicar, pero permite borradores incompletos. Revisar que esta diferencia siga siendo la regla aprobada. En entorno integrado crear/editar una obra de prueba, recargar cada destino, reemplazar solo uno y provocar un conflicto; las pruebas de servicio no acreditan persistencia real.
 
 Con contrato acordado, crear obra de prueba con tres imágenes distintas y confirmar tarjetas/ficha/inicio de capítulos tras recarga. Guardar un borrador también exige tres. Editar sin seleccionar nuevos archivos conserva imágenes; reemplazar una mantiene las otras y requiere confirmación informada. Selección inválida bloquea aunque haya persistida previa; cancelar selección conserva esta última. Una obra antigua incompleta sigue consultable y exige completar campos en siguiente guardado.
 

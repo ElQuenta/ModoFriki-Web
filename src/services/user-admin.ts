@@ -9,9 +9,10 @@ import type {
 } from '@/types/user-admin'
 import { request } from '@/lib/api'
 import { listWorks } from '@/services/catalog'
+import type { components } from '@/types/api.generated'
 export type { AdminUser } from '@/types/user-admin'
 
-/** Capacidades aún sin contrato remoto: se activan individualmente al publicarse. */
+/** Capacidades habilitadas únicamente cuando su operación está publicada en el backend. */
 export type UserAdminOperation =
   | 'listUsers'
   | 'getUser'
@@ -78,11 +79,12 @@ export interface UserAdminGateway {
   getManagementAccess(workId: UUID): Promise<ManagementAccess>
 }
 
-// No existe ruta/DTO publicado para estas operaciones. Por tanto, la instancia
-// de producción falla antes de iniciar cualquier solicitud HTTP.
+// La vista de usuarios no contiene estado autoritativo de sanción; se consulta
+// el historial separado antes de permitir cualquier acción de moderación.
 type BackendPage<T> = { items: T[]; hasMore: boolean; nextCursor: { createdAt: string; id: string } | null }
 type BackendAdminUser = { id: string; username: string; role: AdminRole; status: 'ACTIVE' | 'SUSPENDED'; createdAt: string; updatedAt: string }
 type BackendAssignment = { id: string; workId: string; editorId: string; assignedAt: string; createdAt: string; revokedAt: string | null; version: number }
+type BackendSanction = components['schemas']['CommentSanction']
 
 function record(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('El servicio administrativo devolvió una respuesta inválida.')
@@ -127,11 +129,46 @@ function mapAssignment(value: unknown): WorkEditorAssignment {
   return { id: item.id as UUID, workId: item.workId as UUID, editorId: item.editorId as UUID, assignedAt: item.assignedAt, createdAt: item.createdAt, revokedAt: item.revokedAt as string | null, version: item.version as number }
 }
 
+function mapSanction(value: unknown): SanctionStatus {
+  const item = record(value)
+  if (!uuid(item.id) || !uuid(item.userId) || typeof item.reason !== 'string' || typeof item.permanent !== 'boolean' || !['ACTIVE', 'EXPIRED', 'REVOKED'].includes(String(item.status))) {
+    throw new Error('El servicio devolvió una sanción inválida.')
+  }
+  const endsAt = item.endsAt
+  if (endsAt !== null && (typeof endsAt !== 'string' || !Number.isFinite(Date.parse(endsAt)))) {
+    throw new Error('El servicio devolvió un vencimiento inválido.')
+  }
+  const shared = { id: item.id as UUID, reason: item.reason, ...(typeof endsAt === 'string' ? { endsAt } : {}) }
+  if (item.status === 'REVOKED') return { kind: 'revoked', ...shared }
+  if (item.status === 'EXPIRED') return { kind: 'expired', ...shared }
+  if (item.permanent !== (endsAt === null)) throw new Error('El servicio devolvió una duración de sanción inconsistente.')
+  return endsAt === null
+    ? { kind: 'active-permanent', id: item.id as UUID, reason: item.reason }
+    : { kind: 'active-temporary', id: item.id as UUID, reason: item.reason, endsAt }
+}
+
+function mapOwnRestriction(value: unknown): SanctionStatus {
+  const item = record(value)
+  if (typeof item.active !== 'boolean' || typeof item.permanent !== 'boolean') {
+    throw new Error('El servicio devolvió un estado de restricción inválido.')
+  }
+  if (!item.active) return { kind: 'none' }
+  if (typeof item.reason !== 'string') throw new Error('El servicio omitió el motivo de una restricción activa.')
+  if (item.permanent) {
+    if (item.endsAt !== null) throw new Error('El vencimiento de una restricción permanente es inválido.')
+    return { kind: 'active-permanent', reason: item.reason }
+  }
+  if (typeof item.endsAt !== 'string' || !Number.isFinite(Date.parse(item.endsAt))) {
+    throw new Error('El servicio devolvió un vencimiento inválido.')
+  }
+  return { kind: 'active-temporary', reason: item.reason, endsAt: item.endsAt }
+}
+
 const capabilities = Object.freeze({
   listUsers: { available: true }, getUser: { available: true }, changeRole: { available: true },
-  getSanction: { available: false }, applySanction: { available: false }, extendSanction: { available: false }, revokeSanction: { available: false },
+  getSanction: { available: true }, applySanction: { available: true }, extendSanction: { available: false, reason: 'El backend no publica extensión de sanciones.' }, revokeSanction: { available: true },
   listAssignments: { available: true }, listAssignableWorks: { available: true }, assignWork: { available: true }, revokeAssignment: { available: true },
-  getMyCommentRestriction: { available: false }, getManagementAccess: { available: false },
+  getMyCommentRestriction: { available: true }, getManagementAccess: { available: false },
 }) satisfies UserAdminCapabilities
 
 const unavailable = (operation: UserAdminOperation): Promise<never> => {
@@ -152,10 +189,35 @@ export const userAdminGateway: UserAdminGateway = Object.freeze({
     if (!current.updatedAt) throw new Error('El servicio no devolvió el token vigente para cambiar el rol.')
     return mapUser(await request<unknown>(`/admin/users/${encodeURIComponent(input.subjectId)}/role`, { method: 'PATCH', body: { role: input.role, expectedUpdatedAt: current.updatedAt } }))
   },
-  getSanction: () => unavailable('getSanction'),
-  applySanction: () => unavailable('applySanction'),
+  async getSanction(subjectId: UUID): Promise<SanctionStatus> {
+    const response = record(await request<unknown>(`/admin/users/${encodeURIComponent(subjectId)}/comment-sanctions`))
+    if (!('current' in response)) throw new Error('El servicio devolvió un historial de sanciones inválido.')
+    if (response.current === null) return { kind: 'none' }
+    return mapSanction(response.current)
+  },
+  async applySanction(input: SanctionInput) {
+    const endsAt = input.type === 'permanent' ? null : input.endsAt
+    if (input.type === 'temporary' && (!endsAt || !Number.isFinite(Date.parse(endsAt)))) {
+      throw new Error('El vencimiento temporal no es válido.')
+    }
+    const response = await request<BackendSanction>(`/admin/users/${encodeURIComponent(input.subjectId)}/comment-sanctions`, {
+      method: 'POST',
+      body: { reason: input.reason, endsAt },
+    })
+    return mapSanction(response)
+  },
   extendSanction: () => unavailable('extendSanction'),
-  revokeSanction: () => unavailable('revokeSanction'),
+  async revokeSanction(subjectId: UUID) {
+    const current = await userAdminGateway.getSanction(subjectId)
+    if ((current.kind !== 'active-temporary' && current.kind !== 'active-permanent') || !current.id) {
+      throw new Error('No hay una sanción vigente para retirar.')
+    }
+    const response = await request<BackendSanction>(`/admin/users/${encodeURIComponent(subjectId)}/comment-sanctions/${encodeURIComponent(current.id)}/revocation`, {
+      method: 'PUT',
+      body: {},
+    })
+    return mapSanction(response)
+  },
   async listAssignments(editorId: UUID) {
     const result: WorkEditorAssignment[] = []
     let cursor: BackendPage<BackendAssignment>['nextCursor'] = null
@@ -184,7 +246,9 @@ export const userAdminGateway: UserAdminGateway = Object.freeze({
     if (!current) throw new Error('La asignaciÃ³n no estÃ¡ vigente.')
     return mapAssignment(await request<BackendAssignment>(`/admin/users/${encodeURIComponent(input.editorId)}/work-assignments/${encodeURIComponent(input.workId)}/revocation`, { method: 'PATCH', body: { expectedVersion: current.version } }))
   },
-  getMyCommentRestriction: () => unavailable('getMyCommentRestriction'),
+  async getMyCommentRestriction() {
+    return mapOwnRestriction(await request<unknown>('/auth/me/comment-restriction'))
+  },
   getManagementAccess: () => unavailable('getManagementAccess'),
 })
 

@@ -12,9 +12,10 @@ const input: SanctionInput = {
 }
 
 describe('sanction form validation', () => {
-  it('requires a nonblank reason but adds no invented maximum', () => {
+  it('requires a nonblank reason and enforces the published 2000-character maximum', () => {
     expect(validateSanctionInput({ ...input, reason: ' \n ' }, { now })).toBe('reason-required')
-    expect(validateSanctionInput({ ...input, reason: 'x'.repeat(50_000) }, { now })).toBeNull()
+    expect(validateSanctionInput({ ...input, reason: 'x'.repeat(2000) }, { now })).toBeNull()
+    expect(validateSanctionInput({ ...input, reason: 'x'.repeat(2001) }, { now })).toBe('reason-too-long')
   })
 
   it('requires a future end only for temporary sanctions', () => {

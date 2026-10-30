@@ -1,5 +1,15 @@
 # Evidencia de validación
 
+## Adaptación de contratos backend — rama `fix/backend-contracts-integration` (2026-10-30)
+
+Esta rama parte de `dev`. La inspección de `ModoFriki-Backend/main` (`97b3be1`) encontró contratos publicados que la auditoría anterior no había reflejado completamente. Se regeneró `src/types/api.generated.ts` desde OpenAPI y se adaptó el cliente:
+
+- DEP-003: GET/POST de sanciones, revocación y consulta propia; validación de motivo de hasta 2000 caracteres, fechas temporales y estados devueltos. La interfaz consulta el estado vigente. La extensión sigue deshabilitada porque el backend no publica esa operación.
+- DEP-004: envío multipart `cover`, `banner` e `inpagecover`; lectura de `coverAsset`, `bannerAsset` e `incapBannerAsset`; el banner de ficha se mapea por separado y detalle de capítulo usa `CatalogChapterDetail`. La UI mantiene los tres medios requeridos por la regla de producto, incluidos borradores.
+- Cobertura local: 41 pruebas focalizadas y suite completa 169/169 en 38 archivos; `npm.cmd run build` y `npm.cmd run lint` correctos.
+
+La adaptación valida el contrato y el comportamiento del cliente, no la disponibilidad del backend remoto. No se levantó servidor ni se verificaron persistencia, permisos, expiración, conflicto real o bloqueo de comentarios. T046 y T077 siguen pendientes hasta registrar evidencia con backend integrado; no hay endpoint de extensión, así que esa operación no puede comprobarse sin cambio contractual.
+
 ## Phase 7 — Polish y preocupaciones transversales (2026-10-30)
 
 **Rama:** `phase7-polish-cross-cutting-concerns`, descendiente de `phase6-tres-imagenes-por-obra`; Phase 6 parte de `dev` en `5829537`. **Alcance:** revisión documental, pruebas frontend locales y clasificación de dependencias. No se conectó backend de prueba ni navegador E2E en este entorno.
