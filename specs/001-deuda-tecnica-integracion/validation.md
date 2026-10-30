@@ -35,6 +35,28 @@ Las pruebas de componentes usan un gateway falso inyectado explícitamente. Ese 
 
 ---
 
+## Phase 2 — bases compartidas (2026-10-30)
+
+**Rama:** `phase-foundational-bases-compartidas`. **Base:** `dev` en `3bd4873` (rama limpia al inicio).
+
+### Resultado
+
+- T004: se añadieron tipos discriminados de disponibilidad y estado de consulta, además de `ManagementAccess`; `IntegrationUnavailableError` conserva el identificador DEP y no equipara indisponibilidad con vacío ni concede permisos.
+- T005–T008: pruebas y cambios de modal/ConfirmDialog cubren foco inicial, Tab/Shift+Tab, Escape, retorno, cierre exterior, pending y confirmación de descarte dentro del diálogo; `Field` conecta etiqueta, hint y error mediante IDs y anuncia error.
+- T009: pruebas de cliente cubren JSON, multipart, 204, 401 central, 403 protegido, 404/409, AbortSignal y reintento optativo de operación idempotente. No se duplicó cliente HTTP ni estado visual.
+- `npm.cmd run test:run`: 24 archivos, 124 pruebas correctas.
+- `npm.cmd run build`: correcto.
+- `npm.cmd run lint`: correcto.
+- `git diff --check`: correcto.
+
+Las pruebas de API son unitarias con `fetch` simulado. No acreditan permisos, disponibilidad ni persistencia de servidor. No se modificó la checklist UX/datos.
+
+### Hooks y publicación
+
+Se ejecutaron manualmente los hooks locales SessionStart, PostToolUse (el recordatorio se activa para comandos que mencionan rutas `src`) y PreToolUse. La política de PreToolUse deniega explícitamente `git push` y asigna el push al usuario; por ello la rama queda local y no se publicó desde esta sesión.
+
+---
+
 # Validación de US1 — comentarios y spoilers
 
 **Fecha:** 2026-10-29

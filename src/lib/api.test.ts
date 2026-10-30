@@ -1,10 +1,21 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { ApiError, request, UNAUTHORIZED_EVENT, withRetry } from './api'
+import { ApiError, PROTECTED_FORBIDDEN_EVENT, request, UNAUTHORIZED_EVENT, withRetry } from './api'
 import { TOKEN_KEY } from './constants'
+import { assertAvailable, IntegrationUnavailableError } from './integration'
 
 const fetchMock = vi.fn()
 const reply = (status: number, body?: unknown) =>
   new Response(body === undefined ? null : JSON.stringify(body), { status })
+
+describe('integration availability', () => {
+  it('keeps unavailable capacity distinct from empty and preserves its DEP reference', () => {
+    expect(() => assertAvailable({ status: 'unavailable', dependency: 'DEP-003' })).toThrow(
+      expect.objectContaining({ name: 'IntegrationUnavailableError', dependency: 'DEP-003' }),
+    )
+    expect(() => assertAvailable({ status: 'available' })).not.toThrow()
+    expect(IntegrationUnavailableError).toBeDefined()
+  })
+})
 
 beforeEach(() => {
   vi.stubGlobal('fetch', fetchMock)
@@ -50,6 +61,15 @@ describe('request', () => {
     ).resolves.toBeUndefined()
   })
 
+  it('preserves AbortSignal and does not translate cancellation into a network error', async () => {
+    const controller = new AbortController()
+    fetchMock.mockImplementation((_url, init) => {
+      expect(init.signal).toBe(controller.signal)
+      return Promise.reject(new DOMException('Aborted', 'AbortError'))
+    })
+    await expect(request('/works', { signal: controller.signal })).rejects.toMatchObject({ name: 'AbortError' })
+  })
+
   it('traduce un mensaje conocido del backend', async () => {
     fetchMock.mockResolvedValue(
       reply(409, { error: { message: 'Chapter number already exists' } }),
@@ -82,6 +102,21 @@ describe('request', () => {
     await expect(request('/auth/me')).rejects.toBeInstanceOf(ApiError)
     expect(listener).toHaveBeenCalledTimes(1)
     window.removeEventListener(UNAUTHORIZED_EVENT, listener)
+  })
+
+  it.each([403, 404, 409])('preserves status %i as a typed API error', async (status) => {
+    fetchMock.mockResolvedValue(reply(status, { error: { message: 'failure' } }))
+    await expect(request('/resource')).rejects.toMatchObject({ name: 'ApiError', status })
+  })
+
+  it('emits the protected-forbidden event once after an authenticated 403', async () => {
+    localStorage.setItem(TOKEN_KEY, JSON.stringify('tok'))
+    const listener = vi.fn()
+    window.addEventListener(PROTECTED_FORBIDDEN_EVENT, listener)
+    fetchMock.mockResolvedValue(reply(403, { error: { message: 'Forbidden' } }))
+    await expect(request('/admin/users')).rejects.toMatchObject({ status: 403 })
+    expect(listener).toHaveBeenCalledTimes(1)
+    window.removeEventListener(PROTECTED_FORBIDDEN_EVENT, listener)
   })
 
   it('un 401 en login o registro no cierra la sesión existente', async () => {
@@ -117,6 +152,16 @@ describe('withRetry', () => {
     await vi.runAllTimersAsync()
     await expect(result).resolves.toBe('ok')
     expect(run).toHaveBeenCalledTimes(3)
+    vi.useRealTimers()
+  })
+
+  it('retries an idempotent operation only when the caller opts in', async () => {
+    vi.useFakeTimers()
+    const run = vi.fn().mockRejectedValueOnce(new ApiError('offline', 0)).mockResolvedValue('saved')
+    const result = withRetry(run)
+    await vi.runAllTimersAsync()
+    await expect(result).resolves.toBe('saved')
+    expect(run).toHaveBeenCalledTimes(2)
     vi.useRealTimers()
   })
 })
