@@ -3,7 +3,15 @@ import { toChapter, toSeries, type ChapterDto, type WorkDto } from './catalog'
 import { refToSeries } from './discovery'
 import { validateImages } from './admin'
 
-const asset = (id: string) => ({ id, url: `https://blob.test/${id}.png` })
+const date = '2026-10-01T00:00:00.000Z'
+const asset = (id: string) => ({
+  id,
+  url: `https://blob.test/${id}.png`,
+  contentType: 'image/png' as const,
+  status: 'AVAILABLE' as const,
+  createdAt: date,
+})
+const genre = { id: 'g1', name: 'Acción', slug: 'accion' }
 const work: WorkDto = {
   id: 'w1',
   slug: 'obra',
@@ -12,13 +20,16 @@ const work: WorkDto = {
   typeId: 't1',
   publicationStatus: 'PUBLISHED',
   releaseStatus: 'HIATUS',
-  updatedAt: '2026-10-01T00:00:00.000Z',
+  createdAt: date,
+  updatedAt: date,
+  publishedAt: date,
   visitsCount: 7,
   type: { id: 't1', name: 'Manhwa', slug: 'manhwa' },
   coverAsset: asset('cover'),
+  coverThumbAsset: null,
   incapBannerAsset: null,
-  alternativeTitles: [{ id: 'a1', title: 'Alt' }],
-  genres: [{ genre: { id: 'g1', name: 'Acción', slug: 'accion' } }],
+  alternativeTitles: [{ id: 'a1', workId: 'w1', title: 'Alt', normalizedTitle: 'alt' }],
+  genres: [{ id: 'wg1', workId: 'w1', genreId: 'g1', genre }],
 }
 
 describe('toSeries', () => {
@@ -56,9 +67,10 @@ describe('toChapter', () => {
       version: 3,
       publishedAt: '2026-10-02T00:00:00.000Z',
       createdAt: '2026-10-01T00:00:00.000Z',
+      updatedAt: '2026-10-02T00:00:00.000Z',
       pages: [
-        { id: 'p2', position: 2, asset: asset('p2') },
-        { id: 'p1', position: 1, asset: asset('p1') },
+        { id: 'p2', chapterId: 'c1', position: 2, asset: asset('p2') },
+        { id: 'p1', chapterId: 'c1', position: 1, asset: asset('p1') },
       ],
     }
     expect(toChapter(dto)).toMatchObject({
@@ -74,7 +86,7 @@ describe('toChapter', () => {
     })
   })
 
-  it('sin publicar usa createdAt y sin pages devuelve []', () => {
+  it('sin publicar usa createdAt y sin páginas devuelve []', () => {
     const chapter = toChapter({
       id: 'c',
       workId: 'w',
@@ -85,6 +97,8 @@ describe('toChapter', () => {
       version: 1,
       publishedAt: null,
       createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+      pages: [],
     })
     expect(chapter.releaseDate).toBe('2026-01-01T00:00:00.000Z')
     expect(chapter.pages).toEqual([])

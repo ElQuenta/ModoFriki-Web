@@ -75,6 +75,7 @@ src/
 ## Datos
 
 - Toda llamada pasa por `src/lib/api.ts` (`request`): agrega el token, traduce errores y emite `modofriki:unauthorized` ante 401.
+- Los DTO de catálogo y descubrimiento son tipos generados desde el `openapi.yaml` del backend (`npm run gen:api` → `src/types/api.generated.ts`, no se edita a mano). Si el backend cambia el contrato, regenera y deja que `tsc` muestre lo que hay que ajustar.
 - Cada dominio tiene su servicio en `src/services/` con adaptadores (`toSeries`, `toChapter`…) que convierten los DTO de la API en tipos de `src/types`.
 - Los componentes usan hooks (`useAsync`, contextos), nunca `fetch` directo.
 - La persistencia local usa `useLocalStorage` con claves que empiezan por `modofriki_`.
