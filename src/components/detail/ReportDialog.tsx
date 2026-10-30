@@ -10,10 +10,12 @@ export function ReportDialog({
   open,
   commentId,
   onClose,
+  onSuccess,
 }: {
   open: boolean
   commentId: string
   onClose: () => void
+  onSuccess?: () => void
 }) {
   const [reason, setReason] = useState<ReportReason>('SPAM')
   const [details, setDetails] = useState('')
@@ -23,6 +25,7 @@ export function ReportDialog({
     setBusy(true)
     try {
       await reportComment(commentId, reason, details.trim() || undefined)
+      onSuccess?.()
       toast.success('Gracias, revisaremos el reporte')
       setDetails('')
       onClose()
