@@ -22,6 +22,7 @@ export function toSeries(work: WorkDto): Series {
     title: work.title,
     alternativeTitles: work.alternativeTitles.map((item) => item.title),
     coverUrl: cover,
+    thumbUrl: work.coverThumbAsset?.url,
     bannerUrl: work.incapBannerAsset?.url ?? cover,
     type: work.type.name,
     typeId: work.typeId,

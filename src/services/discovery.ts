@@ -20,6 +20,7 @@ export function refToSeries(
     title: ref.title,
     alternativeTitles: [],
     coverUrl: ref.coverUrl ?? '',
+    thumbUrl: ref.thumbUrl ?? undefined,
     bannerUrl: ref.coverUrl ?? '',
     type: '',
     synopsis: '',

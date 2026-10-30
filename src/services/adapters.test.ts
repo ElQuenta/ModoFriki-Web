@@ -141,3 +141,18 @@ describe('validateImages', () => {
     ).toContain('100 páginas')
   })
 })
+
+describe('miniaturas', () => {
+  it('toSeries expone la miniatura si existe y la omite si no', () => {
+    expect(toSeries({ ...work, coverThumbAsset: asset('thumb') }).thumbUrl).toBe(
+      'https://blob.test/thumb.png',
+    )
+    expect(toSeries(work).thumbUrl).toBeUndefined()
+  })
+
+  it('refToSeries expone thumbUrl y tolera null', () => {
+    const ref = { id: 'w', slug: 's', title: 'T', coverUrl: 'https://c' }
+    expect(refToSeries({ ...ref, thumbUrl: 'https://t' }).thumbUrl).toBe('https://t')
+    expect(refToSeries({ ...ref, thumbUrl: null }).thumbUrl).toBeUndefined()
+  })
+})

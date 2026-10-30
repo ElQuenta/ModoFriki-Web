@@ -59,7 +59,7 @@ export function RankingSection() {
                     {index + 1}
                   </span>
                   <CoverImage
-                    src={series.coverUrl}
+                    src={series.thumbUrl || series.coverUrl}
                     alt={`Portada de ${series.title}`}
                     title={series.title}
                     className="h-16 w-11 shrink-0 rounded-lg sm:h-24 sm:w-17"
