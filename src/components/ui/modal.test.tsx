@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { ConfirmDialog } from './confirm-dialog'
+import { describe, expect, it, vi } from 'vitest'
 import { Modal } from './modal'
 
 function ModalHarness({ children }: { children?: ReactNode }) {
@@ -62,5 +63,49 @@ describe('Modal', () => {
     fireEvent.keyDown(window, { key: 'Tab' })
 
     expect(close).toHaveFocus()
+  })
+
+  it('asks to discard dirty changes in the same dialog and can keep editing', async () => {
+    function DirtyHarness() {
+      const [open, setOpen] = useState(false)
+      const [dirty, setDirty] = useState(true)
+      const close = () => {
+        if (dirty) return
+        else setOpen(false)
+      }
+      return <>
+        <button onClick={() => setOpen(true)}>Abrir</button>
+        <Modal open={open} onClose={close} title="Editar" dirty={dirty}
+          onKeepEditing={() => {}} onDiscardChanges={() => { setDirty(false); setOpen(false) }}>
+          <input aria-label="Borrador" />
+        </Modal>
+      </>
+    }
+    render(<DirtyHarness />)
+    fireEvent.click(screen.getByRole('button', { name: 'Abrir' }))
+    fireEvent.keyDown(window, { key: 'Escape' })
+    expect(screen.getByRole('dialog', { name: 'Editar' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Seguir editando' }))
+    expect(screen.getByRole('textbox', { name: 'Borrador' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Cerrar' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Descartar cambios' }))
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+  })
+
+  it('blocks Escape and outside close while confirmation is pending, then closes on success', async () => {
+    let finish!: () => void
+    const onConfirm = vi.fn(() => new Promise<void>((resolve) => { finish = resolve }))
+    function ConfirmHarness() {
+      const [open, setOpen] = useState(true)
+      return <ConfirmDialog open={open} title="Borrar" description="Confirmar" onConfirm={onConfirm} onClose={() => setOpen(false)} />
+    }
+    render(<ConfirmHarness />)
+    fireEvent.click(screen.getByRole('button', { name: 'Eliminar' }))
+    expect(screen.getByRole('button', { name: 'Procesando…' })).toBeDisabled()
+    fireEvent.keyDown(window, { key: 'Escape' })
+    fireEvent.mouseDown(screen.getByRole('dialog').parentElement!, { target: screen.getByRole('dialog').parentElement })
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    finish()
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
   })
 })

@@ -30,7 +30,7 @@ export function ConfirmDialog({
   }
 
   return (
-    <Modal open={open} onClose={onClose} title={title} description={description}>
+    <Modal open={open} onClose={onClose} title={title} description={description} pending={busy}>
       <div className="mt-4 flex justify-end gap-2">
         <Button variant="secondary" onClick={onClose} disabled={busy}>
           Cancelar
