@@ -112,7 +112,10 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
   } | null
 
   if (!response.ok) {
-    if (response.status === 401 && token)
+    // Un 401 al intentar entrar o registrarse es un fallo de credenciales, no una
+    // sesión expirada: no debe cerrar la sesión que ya existiera en el dispositivo.
+    const isAuthAttempt = path === '/auth/login' || path === '/auth/register'
+    if (response.status === 401 && token && !isAuthAttempt)
       window.dispatchEvent(new Event(UNAUTHORIZED_EVENT))
     const detail = payload?.error?.message
     const message =
